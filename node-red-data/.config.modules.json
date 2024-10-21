@@ -1,0 +1,9 @@
+{
+    "discord.js": {
+        "spec": "discord.js",
+        "module": "discord.js",
+        "subpath": "",
+        "builtin": false,
+        "known": false
+    }
+}

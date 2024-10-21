@@ -1,0 +1,108 @@
+{
+    "_": {
+        "editor": {
+            "view": {
+                "view-store-zoom": false,
+                "view-store-position": false,
+                "view-show-grid": true,
+                "view-snap-grid": true,
+                "view-grid-size": "20",
+                "view-node-status": true,
+                "view-node-show-label": true,
+                "view-show-tips": true,
+                "view-show-welcome-tours": true
+            },
+            "tours": {
+                "welcome": "4.0.2"
+            },
+            "dialog": {
+                "export": {
+                    "pretty": true,
+                    "json-view": false
+                }
+            }
+        },
+        "menu-menu-item-palette": true,
+        "debug": {
+            "filter": "filterAll",
+            "filteredNodes": [
+                "b339ea31f02bb312",
+                "00cefdfc5f8f2ea1",
+                "c660839ed087c2e4",
+                "cf52b6dd.5febb8",
+                "5f78ed9d5208fc9d",
+                "60496d0c1ea669fe",
+                "b6d983e513ec0479",
+                "f2533efe7fc5352a"
+            ]
+        },
+        "menu-menu-item-sidebar": true
+    },
+    "admin": {
+        "editor": {
+            "view": {
+                "view-store-zoom": false,
+                "view-store-position": false,
+                "view-show-grid": true,
+                "view-snap-grid": true,
+                "view-grid-size": "20",
+                "view-node-status": true,
+                "view-node-show-label": true,
+                "view-show-tips": true,
+                "view-show-welcome-tours": true
+            },
+            "tours": {
+                "welcome": "4.0.2"
+            },
+            "dialog": {
+                "export": {
+                    "pretty": false,
+                    "json-view": true
+                }
+            }
+        },
+        "menu-menu-item-sidebar": false,
+        "menu-menu-item-palette": true,
+        "debug": {
+            "filteredNodes": [
+                "49ec41015fc9ab2b",
+                "d74f1d0816f2f64c",
+                "e907294f64b59265",
+                "afa8956c4db3070d",
+                "84f431587714c681",
+                "91fc90d0b54e3977",
+                "d48a6e6a8821150b",
+                "cdae812f895a89c7",
+                "ec2ad5d6020ab801",
+                "051c9eacc0c34543",
+                "18b0aa4e3eed56d2",
+                "2c9f646cbccb7f98",
+                "39024b5f3eab808e",
+                "6a2bffa8ae2e23ab",
+                "ac27c5650334cbfc",
+                "4c20e954f1739e6e",
+                "39e86b7c46873277",
+                "00ebc7beda4a626b",
+                "7dda83d5ca7a6fa0",
+                "3dfacb5d49c6dd2a",
+                "f5f47806e19138db",
+                "ab6fe45c19c0f87a",
+                "af231928a4cfad32",
+                "26356e869db80c54",
+                "a7c047f9be6c4502",
+                "b93ee67ba961999a",
+                "df48c70833f96380",
+                "64bd79682aa5f4bc",
+                "44d3f2ac1ea4bfc5",
+                "ac601e6d4444ba04",
+                "2da763adb5e70f88",
+                "d19effadf66e3324",
+                "9faaad73e029812b",
+                "f205d117ae709ba7"
+            ],
+            "filter": "filterAll"
+        },
+        "menu-deploymenu-item-flow": true,
+        "menu-deploymenu-item-full": false
+    }
+}

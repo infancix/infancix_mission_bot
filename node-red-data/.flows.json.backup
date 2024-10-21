@@ -1,0 +1,3597 @@
+[
+    {
+        "id": "7d70a7613877ca33",
+        "type": "tab",
+        "label": "Baby-DC-MileStone",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "368332cd9fdfa425",
+        "type": "tab",
+        "label": "Test",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "13b9b877d3385daf",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "獲得Baby List 並發送",
+        "style": {
+            "label": true,
+            "fill": "#bfdbef"
+        },
+        "nodes": [
+            "abf8b9abf223b305",
+            "f205d117ae709ba7",
+            "b917d6586087e24f",
+            "f2085bb00bd83705",
+            "9faaad73e029812b",
+            "daaa8554c2bd34a4",
+            "43612b207fba6991",
+            "44d3f2ac1ea4bfc5",
+            "79d0add718013d3f",
+            "716e3f5352fbdda1",
+            "06c6f3c0297a64cd",
+            "6607430d9025428c",
+            "ac601e6d4444ba04",
+            "2da763adb5e70f88",
+            "d19effadf66e3324",
+            "1b3f12b94077be15",
+            "3dd64590f4286942",
+            "26356e869db80c54",
+            "825aef1708a5ea1f",
+            "245f0717b6fdca23"
+        ],
+        "x": 194,
+        "y": -1,
+        "w": 1492,
+        "h": 262
+    },
+    {
+        "id": "b4a805abca00d443",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "接收訊息並設定task",
+        "style": {
+            "label": true,
+            "color": "#ffffff",
+            "fill": "#b797cf"
+        },
+        "nodes": [
+            "bd4b4db46e47715d",
+            "2140e528ae751ed1",
+            "b93ee67ba961999a",
+            "df48c70833f96380",
+            "481609c32a4c58e3",
+            "a3653cd7302cabf0",
+            "eea5d6c8c626c119",
+            "3017e2395e349bea",
+            "effcb6d97cea3d4c",
+            "1162fbf38caaed5e",
+            "301b70f847c89b43",
+            "769a3af3970a9d7f",
+            "cbcc207a07586dac",
+            "f05d5d362b42ee60",
+            "aa700387a328be6a",
+            "262c2337f69b661f",
+            "3651b0c89a9619bb",
+            "fbfbff90ddf3b271",
+            "3aa9128b929f645c",
+            "c03c08c9f3d8a5f6",
+            "a7c047f9be6c4502",
+            "dfab8b3cf331afbf",
+            "69da112f2eefe128",
+            "051c9eacc0c34543",
+            "cf8060d83aff4290",
+            "5b9766d333b915ee",
+            "05e1d821c485058e",
+            "f64618345880e749",
+            "492ca6d7e82190a8",
+            "baf8507e1a49ccbb",
+            "b3fc1101eed84a6b",
+            "d055dd0deee718dc",
+            "f4d4e634ed88167b",
+            "27701523ebd29de5",
+            "ba40def6acf9c383",
+            "6228a07b099b089f",
+            "39024b5f3eab808e",
+            "cac0be6411603536",
+            "745f8b5853c3f4d9",
+            "0af6bb97aac94bb0",
+            "3559c8d558496a90",
+            "522074515f2b019a",
+            "58967789a25b00f7",
+            "7251e19a2fa52ed5",
+            "f34a0926ba395f95",
+            "9ce7fec197871410",
+            "0f12665f70683d6d",
+            "58de9ad96734c4c7",
+            "1a1d3726bb3462d1",
+            "28b9ab84b5c3133f",
+            "23689ea318033014",
+            "c1528fb3121aff99"
+        ],
+        "x": 4,
+        "y": 639,
+        "w": 2322,
+        "h": 802
+    },
+    {
+        "id": "aee746fa7a2368e4",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "使task逾時無法操作",
+        "style": {
+            "fill": "#ffdf7f",
+            "label": true
+        },
+        "nodes": [
+            "8303a284fb8aa40b",
+            "e80614d9cac0ca50",
+            "64bd79682aa5f4bc"
+        ],
+        "x": 114,
+        "y": 1699,
+        "w": 592,
+        "h": 122
+    },
+    {
+        "id": "2a58c43305dfd059",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "API 推播任務",
+        "style": {
+            "label": true,
+            "fill": "#ffdf7f"
+        },
+        "nodes": [
+            "74caea0aaf3c37ec",
+            "2db27ab10504a405",
+            "ab6fe45c19c0f87a",
+            "f5f47806e19138db",
+            "ee08b7f5f8efaeed",
+            "af231928a4cfad32",
+            "b10ddb96f2f1575f",
+            "3fb2417e80a34f45"
+        ],
+        "x": 294,
+        "y": 299,
+        "w": 772,
+        "h": 162
+    },
+    {
+        "id": "b20789c136978453",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "清除flow variable",
+        "style": {
+            "fill": "#ffdf7f",
+            "label": true
+        },
+        "nodes": [
+            "eea7659f9d750784",
+            "6850bc2b9ed5c852",
+            "d2afc3cce355da4d"
+        ],
+        "x": 114,
+        "y": 2439,
+        "w": 592,
+        "h": 122
+    },
+    {
+        "id": "518f5465b717fb85",
+        "type": "group",
+        "z": "7d70a7613877ca33",
+        "name": "解過去未完成任務",
+        "style": {
+            "label": true,
+            "fill": "#7f8faf"
+        },
+        "nodes": [
+            "cd33d3f46e9aa73d",
+            "6ebc5a3210f2dbbc",
+            "3e9b0f7bbcc39edb",
+            "6dc2cc641906a901",
+            "41146c88c9d68502",
+            "dd956abcd6fda581",
+            "0f5ff39df35ae1ac"
+        ],
+        "x": 24,
+        "y": 479,
+        "w": 782,
+        "h": 142
+    },
+    {
+        "id": "728529627694b3f4",
+        "type": "group",
+        "z": "368332cd9fdfa425",
+        "name": "Attach an embed from buffer",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "a8b5cbcb94a0f141",
+            "d612a768b4c19572",
+            "1f28a89ef31414cc",
+            "fccf59b2afcf0462",
+            "cdae812f895a89c7",
+            "d29b386fb067f9fe"
+        ],
+        "x": 214,
+        "y": 1039,
+        "w": 892,
+        "h": 142
+    },
+    {
+        "id": "a87a3cf5afd85fab",
+        "type": "discord-token",
+        "name": "baby"
+    },
+    {
+        "id": "bd4b4db46e47715d",
+        "type": "discordInteraction",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "all",
+        "custom_id": "click_opt1",
+        "commandResponse": "",
+        "interactionObject": false,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 120,
+        "y": 820,
+        "wires": [
+            [
+                "b93ee67ba961999a",
+                "27701523ebd29de5"
+            ]
+        ]
+    },
+    {
+        "id": "2140e528ae751ed1",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "根據user_id得到 task",
+        "func": "\nvar user_id = msg.user_id;\nvar user_stage = flow.get(`${user_id}_stage`);\n\nvar interaction_id = msg.payload.id = msg.payload.id;\n\n\n/*\n    逾時會把 flow.user_id.stage 設為 -1 \n */\nif(user_stage == -1){\n    msg.interactionId = msg.payload.id;\n    msg.payload = \"超過任務時間，請把握下次機會～\";\n    msg.user = `${user_id}`;\n\n    return msg;\n}\n\n/*\n    任務還在執行當中 \n*/\n\nif(user_stage.length > 0){\n    msg.interactionId = msg.payload.id;\n    msg.payload = user_stage[0];\n    flow.set(`${user_id}_stage`, user_stage.slice(1));\n    var label = user_stage.length == 1 ? \"完成\" : \"下一步\";\n    \n    msg.components =\n        [\n            {\n                \"type\": 1,\n                \"components\": [\n                    {\n                        \"type\": 2,\n                        \"label\": label,\n                        \"style\": 3,\n                        \"custom_id\": \"click_opt1\"\n                    }\n                ]\n\n            }\n        ];\n\n\n}\n/*\n    最後一個任務 \n*/\nelse {\n    msg.interactionId = msg.payload.id;\n    msg.payload = \"🎉 恭喜完成任務，獲得🪙20金幣🎉\";\n    flow.set(`${user_id}_stage`, []);\n}\n\nmsg.user = `${user_id}`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 660,
+        "y": 820,
+        "wires": [
+            [
+                "df48c70833f96380",
+                "a3653cd7302cabf0"
+            ]
+        ]
+    },
+    {
+        "id": "b93ee67ba961999a",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 90,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "df48c70833f96380",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 670,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "481609c32a4c58e3",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 1070,
+        "y": 1400,
+        "wires": [
+            [
+                "fbfbff90ddf3b271"
+            ]
+        ]
+    },
+    {
+        "id": "406a793dbeb67369",
+        "type": "comment",
+        "z": "7d70a7613877ca33",
+        "name": "TODO",
+        "info": "1. 編輯已傳送訊息\n2. 把逾期操作還有已傳送變成編輯",
+        "x": 170,
+        "y": 2040,
+        "wires": []
+    },
+    {
+        "id": "a3653cd7302cabf0",
+        "type": "switch",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "任務類型",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "https://drive.google.com",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "恭喜完成任務",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "check baby record",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 840,
+        "y": 900,
+        "wires": [
+            [
+                "effcb6d97cea3d4c"
+            ],
+            [
+                "301b70f847c89b43"
+            ],
+            [
+                "c03c08c9f3d8a5f6"
+            ],
+            [
+                "481609c32a4c58e3"
+            ]
+        ]
+    },
+    {
+        "id": "eea5d6c8c626c119",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "Dowload Image",
+        "method": "GET",
+        "ret": "bin",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1180,
+        "y": 720,
+        "wires": [
+            [
+                "c1528fb3121aff99"
+            ]
+        ]
+    },
+    {
+        "id": "3017e2395e349bea",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "Embed attachment from buffer",
+        "func": "msg.embed = {\n\n      \"image\": {\n        \"url\": \"attachment:/data/output.jpg\"\n      }\n}; \n\n// msg.attachments = { buffer: msg.payload, name: \"output.jpg\"};\nmsg.attachments = '/data/output.jpg';\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1890,
+        "y": 720,
+        "wires": [
+            [
+                "1162fbf38caaed5e",
+                "28b9ab84b5c3133f"
+            ]
+        ]
+    },
+    {
+        "id": "effcb6d97cea3d4c",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "set url",
+        "func": "/*\nhttps://drive.google.com/file/d/1UpiSWHI8YCnex_A1PSH26S4W02oPOhzU/preview\"\nhttps://drive.google.com/uc?export=download&id=16NyfW9uVXfJXatnaM4P6L59Yj51DbXVV\n\n*/\n\nconst url = msg.payload;\nconst id = url.split('/')[5]; // Extract the ID from the URL\n\nmsg.url = `https://drive.google.com/uc?export=download&id=${id}`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 720,
+        "wires": [
+            [
+                "eea5d6c8c626c119",
+                "1a1d3726bb3462d1"
+            ]
+        ]
+    },
+    {
+        "id": "1162fbf38caaed5e",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 2170,
+        "y": 720,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f2085bb00bd83705",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "Main Entry",
+        "props": [],
+        "repeat": "",
+        "crontab": "00 02 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 310,
+        "y": 100,
+        "wires": [
+            [
+                "b917d6586087e24f"
+            ]
+        ]
+    },
+    {
+        "id": "b917d6586087e24f",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_baby_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 520,
+        "y": 100,
+        "wires": [
+            [
+                "9faaad73e029812b",
+                "43612b207fba6991"
+            ]
+        ]
+    },
+    {
+        "id": "9faaad73e029812b",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 490,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "301b70f847c89b43",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 1090,
+        "y": 900,
+        "wires": [
+            [
+                "769a3af3970a9d7f"
+            ]
+        ]
+    },
+    {
+        "id": "769a3af3970a9d7f",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "增加金幣",
+        "func": "\nmsg.payload = {\n    \"gold\": 20,\n    \"user_id\": `${msg.user}`\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1300,
+        "y": 900,
+        "wires": [
+            [
+                "cbcc207a07586dac"
+            ]
+        ]
+    },
+    {
+        "id": "f05d5d362b42ee60",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1450,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "cbcc207a07586dac",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://52.194.218.189:8080/api/v1/add-gold",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1460,
+        "y": 900,
+        "wires": [
+            [
+                "f05d5d362b42ee60",
+                "cac0be6411603536",
+                "745f8b5853c3f4d9"
+            ]
+        ]
+    },
+    {
+        "id": "aa700387a328be6a",
+        "type": "comment",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "image task",
+        "info": "",
+        "x": 1020,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "262c2337f69b661f",
+        "type": "comment",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "final message",
+        "info": "",
+        "x": 1050,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "3651b0c89a9619bb",
+        "type": "comment",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "other task (include video task)",
+        "info": "",
+        "x": 1080,
+        "y": 1360,
+        "wires": []
+    },
+    {
+        "id": "8303a284fb8aa40b",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "g": "aee746fa7a2368e4",
+        "name": "週期性清除每個user的狀態",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 270,
+        "y": 1740,
+        "wires": [
+            [
+                "e80614d9cac0ca50"
+            ]
+        ]
+    },
+    {
+        "id": "e80614d9cac0ca50",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "aee746fa7a2368e4",
+        "name": "根據user_id得到他的user_stage",
+        "func": "var user_stages_arr = flow.keys().filter(function(item, index, array){\n  return item.endsWith(\"_stage\"); \n});\n\nfor (let i=0 ; i < user_stages_arr.length ; i++){\n  flow.set(user_stages_arr[i], -1);\n}\nmsg.debug = [];\nfor (let i = 0; i < user_stages_arr.length; i++) {\n  msg.debug.push([user_stages_arr[i], flow.get(user_stages_arr[i])]);\n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 1740,
+        "wires": [
+            [
+                "64bd79682aa5f4bc"
+            ]
+        ]
+    },
+    {
+        "id": "64bd79682aa5f4bc",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "aee746fa7a2368e4",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 1780,
+        "wires": []
+    },
+    {
+        "id": "fbfbff90ddf3b271",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1250,
+        "y": 1400,
+        "wires": []
+    },
+    {
+        "id": "abf8b9abf223b305",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "debug",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"data\":[{\"discord_id\":\"353477306674839552\",\"baby_name\":\"寶寶丁\",\"birth_date\":\"2024.07.21\",\"gender\":\"f\",\"join_date\":\"2024-09-27 10:25\"}]}",
+        "payloadType": "json",
+        "x": 490,
+        "y": 180,
+        "wires": [
+            [
+                "f205d117ae709ba7",
+                "43612b207fba6991"
+            ]
+        ]
+    },
+    {
+        "id": "f205d117ae709ba7",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 490,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "3aa9128b929f645c",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1280,
+        "y": 1060,
+        "wires": [
+            [
+                "a7c047f9be6c4502",
+                "dfab8b3cf331afbf",
+                "69da112f2eefe128"
+            ]
+        ]
+    },
+    {
+        "id": "c03c08c9f3d8a5f6",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "function 3",
+        "func": "msg.payload = { \"discord_id\": msg.user};\n\n// msg.payload = { \"discord_id\": \"873195793727774772\"};\n\nmsg.url = \"http://140.119.164.70:8000/api/get_baby_records\"\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 1060,
+        "wires": [
+            [
+                "3aa9128b929f645c"
+            ]
+        ]
+    },
+    {
+        "id": "a7c047f9be6c4502",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 9",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "dfab8b3cf331afbf",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "function 4",
+        "func": "const twoWeeksAgo = new Date();\ntwoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);\n\nconst recentTimestamps = msg.payload.records\n  .filter(entry => new Date(entry.timestamp) >= twoWeeksAgo)\n  .map(entry => entry.timestamp);\n  \nif (recentTimestamps.length > 0){\n  msg.success = true;\n}\nelse{\n  msg.success = false;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 1060,
+        "wires": [
+            [
+                "051c9eacc0c34543",
+                "cf8060d83aff4290"
+            ]
+        ]
+    },
+    {
+        "id": "69da112f2eefe128",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1290,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "051c9eacc0c34543",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 10",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1460,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "cf8060d83aff4290",
+        "type": "switch",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "property": "success",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1590,
+        "y": 1060,
+        "wires": [
+            [
+                "5b9766d333b915ee"
+            ],
+            [
+                "05e1d821c485058e"
+            ]
+        ]
+    },
+    {
+        "id": "5b9766d333b915ee",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "success",
+        "func": "msg.payload = \"很棒！過去兩週已有作息紀錄，繼續保持 !\";\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1780,
+        "y": 1020,
+        "wires": [
+            [
+                "f64618345880e749"
+            ]
+        ]
+    },
+    {
+        "id": "05e1d821c485058e",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "沒紀錄",
+        "func": "msg.payload = \"過去兩週未見寶寶作息紀錄，請至寶寶檔案室補上紀錄以完成任務。\\n <@!1165875139553021995>\";\nmsg.components = [ ];\n// msg.components =\n//     [\n//         {\n//             \"type\": 1,\n//             \"components\": [\n//                 {\n//                     \"type\": 2,\n//                     \"label\": \"Jump\",\n//                     \"style\": 3,\n//                     \"custom_id\": \"nofinish123\"\n//                 }\n//             ]\n//         }\n//     ];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1770,
+        "y": 1140,
+        "wires": [
+            [
+                "f64618345880e749",
+                "58de9ad96734c4c7",
+                "c4bc58b10b09bd27"
+            ]
+        ]
+    },
+    {
+        "id": "f64618345880e749",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 2050,
+        "y": 1100,
+        "wires": [
+            [
+                "492ca6d7e82190a8"
+            ]
+        ]
+    },
+    {
+        "id": "492ca6d7e82190a8",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 2070,
+        "y": 1160,
+        "wires": []
+    },
+    {
+        "id": "baf8507e1a49ccbb",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "加金幣",
+        "func": "\nmsg.payload = {\n    \"gold\": 20,\n    \"user_id\": `${msg.user}`\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1550,
+        "y": 1260,
+        "wires": [
+            [
+                "b3fc1101eed84a6b"
+            ]
+        ]
+    },
+    {
+        "id": "b3fc1101eed84a6b",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://52.194.218.189:8080/api/v1/add-gold",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1580,
+        "y": 1220,
+        "wires": [
+            [
+                "d055dd0deee718dc"
+            ]
+        ]
+    },
+    {
+        "id": "d055dd0deee718dc",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1570,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "f4d4e634ed88167b",
+        "type": "comment",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "檢查任務(特殊任務)",
+        "info": "",
+        "x": 1130,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "daaa8554c2bd34a4",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_mission_list ",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 980,
+        "y": 80,
+        "wires": [
+            [
+                "26356e869db80c54",
+                "825aef1708a5ea1f"
+            ]
+        ]
+    },
+    {
+        "id": "43612b207fba6991",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "Init",
+        "func": "msg.babys = msg.payload\n\nvar user_stages_arr = flow.keys();\n\nfor (let i = 0; i < user_stages_arr.length; i++) {\n    flow.set(user_stages_arr[i], undefined);\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 80,
+        "wires": [
+            [
+                "daaa8554c2bd34a4"
+            ]
+        ]
+    },
+    {
+        "id": "44d3f2ac1ea4bfc5",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1350,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "79d0add718013d3f",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "計算日齡",
+        "func": "const qualified_user = msg.qualified_user;\nconst tasks = msg.tasks;\n\nmsg.babys = [];\n\n\nfor (var i = 0; i < qualified_user.length; i++) {\n  var stage = parseInt(qualified_user[i][1]);\n  var task = tasks[stage] ? tasks[stage] : [];\n  \n\n  var mission_id = task[0].mission_id;\n\n\n  task = task.map(obj => {\n    let result = [\n      \"🎖**育兒學習**🎖\\r\\n\\r\\n\" + \"📑任務： **\" + obj.mission_title + \"**\\r\\n\"\n      + \"*\" + obj.mission_type + '*',\n      obj.mission_video_contents,\n      obj.mission_image_contents,\n      obj.notification_content\n    ];\n\n    // If notification_content is not empty, push the extra string\n    if (obj.notification_content !== \"\") {\n      result.push(\"check baby record\");\n    }\n\n    return result;\n  });\n\n  task = task.map(subArray =>\n    Array.isArray(subArray) ? subArray.filter(item => item !== \"\") : subArray\n  );\n\n\n  node.send(\n    {\n      debug: qualified_user,\n      payload: task.flat(),\n      mission_id: mission_id.toString(),\n      task: task.flat(),\n      task_len: task.map(item => item.length),\n      user: qualified_user[i][0],\n    }\n  );\n}\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1340,
+        "y": 80,
+        "wires": [
+            [
+                "44d3f2ac1ea4bfc5",
+                "6607430d9025428c"
+            ]
+        ]
+    },
+    {
+        "id": "6607430d9025428c",
+        "type": "delay",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "0.5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1560,
+        "y": 80,
+        "wires": [
+            [
+                "ac601e6d4444ba04",
+                "716e3f5352fbdda1"
+            ]
+        ]
+    },
+    {
+        "id": "ac601e6d4444ba04",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1570,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "08494bd5542ddfde",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 1440,
+        "wires": [
+            [
+                "0e6792f64cad2993"
+            ]
+        ]
+    },
+    {
+        "id": "0e6792f64cad2993",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 8",
+        "func": "var payload = {};\n// payload.discord_id = \"353477306674839552\";\n// payload.mission_id  = \"1\";\n// payload.total_steps = \"3\";\n// payload.current_step= \"1\";\n\nmsg.payload ={\"discord_id\":\"353477306674839552\",\"current_step\":\"1\",\"total_steps\":\"5\",\"mission_id\":\"1\"}\n// msg.payload = payload;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 1440,
+        "wires": [
+            [
+                "58d027d3e910a5d8"
+            ]
+        ]
+    },
+    {
+        "id": "58d027d3e910a5d8",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/update_student_mission_status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 520,
+        "y": 1440,
+        "wires": [
+            [
+                "2c9f646cbccb7f98"
+            ]
+        ]
+    },
+    {
+        "id": "8d1eb7a1732eb1cc",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 1500,
+        "wires": [
+            [
+                "b46470171b5acdd1"
+            ]
+        ]
+    },
+    {
+        "id": "b46470171b5acdd1",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 9",
+        "func": "var payload = {};\npayload.discord_id = \"353477306674839552\";\npayload.mission_id = \"15\"\n\nmsg.payload = payload;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 1500,
+        "wires": [
+            [
+                "f8cc844e9412c00d"
+            ]
+        ]
+    },
+    {
+        "id": "f8cc844e9412c00d",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_student_mission_status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 520,
+        "y": 1500,
+        "wires": [
+            [
+                "18b0aa4e3eed56d2"
+            ]
+        ]
+    },
+    {
+        "id": "18b0aa4e3eed56d2",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 16",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 1560,
+        "wires": []
+    },
+    {
+        "id": "2c9f646cbccb7f98",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 17",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 710,
+        "y": 1440,
+        "wires": []
+    },
+    {
+        "id": "716e3f5352fbdda1",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "設定任務進度",
+        "func": "var payload = {}\npayload.discord_id = msg.user;\npayload.current_step = \"1\";\npayload.total_steps = msg.task_len[0].toString();\npayload.mission_id = msg.mission_id;\n\nmsg.payload = payload;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 200,
+        "wires": [
+            [
+                "2da763adb5e70f88",
+                "06c6f3c0297a64cd"
+            ]
+        ]
+    },
+    {
+        "id": "06c6f3c0297a64cd",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/update_student_mission_status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1040,
+        "y": 200,
+        "wires": [
+            [
+                "1b3f12b94077be15",
+                "3dd64590f4286942"
+            ]
+        ]
+    },
+    {
+        "id": "2da763adb5e70f88",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 790,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "27701523ebd29de5",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "更新任務進度",
+        "func": "var user_id = `${msg.payload.user.id}`;\nmsg.user_id = user_id;\nvar user_stage = flow.get(`${user_id}_stage`);\nvar user_task_len = flow.get(`${user_id}_task_len`);\n\n// var user_cur_step = (flow.get(`${user_id}_cur_step`)+1).toString();\nvar user_cur_step = flow.get(`${user_id}_cur_step`);\n\n\nvar user_mission_id = flow.get(`${user_id}_mission_id`);\nvar user_subtask_id= flow.get(`${user_id}_subtask_id`);\n\nif (user_stage.length > 0) {\n    var payload = {};\n    payload.discord_id = user_id;\n    payload.user_stage = user_stage;\n    payload.user_task_len = user_task_len;\n    \n    var total_steps = user_task_len[user_subtask_id].toString();\n\n    user_cur_step = (user_cur_step + 1).toString();\n    \n    if(user_cur_step == total_steps){\n        /*\n            Next sub-task\n        */\n        flow.set(`${user_id}_subtask_id`, user_subtask_id+1);\n        flow.set(`${user_id}_cur_step`, 0);\n        flow.set(`${user_id}_mission_id`, (parseInt(user_mission_id) + 1).toString());\n\n    }\n    else{\n        flow.set(`${user_id}_cur_step`, parseInt(user_cur_step));\n\n    }\n    \n    payload.total_steps = total_steps;\n    payload.current_step = user_cur_step;\n    payload.mission_id = `${user_mission_id}`;\n\n    msg.payload = payload;\n}\nelse {\n    var payload2 = {};\n    var total_steps = user_task_len[user_subtask_id].toString();\n\n    var complete_flag = flow.get(`${user_id}_${user_mission_id}_flag`);\n    user_cur_step = (user_cur_step + 1).toString();\n\n    if (complete_flag==undefined){\n        flow.set(`${user_id}_${user_mission_id}_flag`, true);\n    }\n    else{\n        return null;\n    }\n    payload2.discord_id = user_id;\n    payload2.total_steps = total_steps;\n    payload2.current_step = user_cur_step;\n    payload2.mission_id = `${user_mission_id}`;\n\n    msg.payload = payload2;\n\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 820,
+        "wires": [
+            [
+                "ba40def6acf9c383",
+                "6228a07b099b089f"
+            ]
+        ]
+    },
+    {
+        "id": "ba40def6acf9c383",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 19",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 300,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "6228a07b099b089f",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/update_student_mission_status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 480,
+        "y": 820,
+        "wires": [
+            [
+                "2140e528ae751ed1",
+                "39024b5f3eab808e"
+            ]
+        ]
+    },
+    {
+        "id": "39024b5f3eab808e",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 20",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 480,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "2e88abdd2bf532fe",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "清空里程碑",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 200,
+        "y": 2140,
+        "wires": [
+            [
+                "9e86b4166e9ffe56"
+            ]
+        ]
+    },
+    {
+        "id": "9e86b4166e9ffe56",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_baby_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 2140,
+        "wires": [
+            [
+                "00ebc7beda4a626b",
+                "e6921f53f9332bbe"
+            ]
+        ]
+    },
+    {
+        "id": "e6921f53f9332bbe",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 11",
+        "func": "var user_id_list = msg.payload.data.map(obj =>\n    obj.discord_id\n);\n\nfor (let x of Array(67).keys()) {\n    for(let user_id of user_id_list){\n        node.send({\n            payload:{\n                discord_id: user_id,\n                mission_id: `${x + 1}`,\n                total_steps: \"3\",\n                current_step: \"0\"\n            }\n        })\n    }\n}\n\n// msg.payload = user_id_list;\n// return msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 2140,
+        "wires": [
+            [
+                "b3036bf3165220e9"
+            ]
+        ]
+    },
+    {
+        "id": "ac27c5650334cbfc",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 22",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "b3036bf3165220e9",
+        "type": "delay",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 740,
+        "y": 2140,
+        "wires": [
+            [
+                "ac27c5650334cbfc",
+                "6a4152a2bf46ef4b"
+            ]
+        ]
+    },
+    {
+        "id": "4c20e954f1739e6e",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 23",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 550,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "6a4152a2bf46ef4b",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/update_student_mission_status",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 920,
+        "y": 2140,
+        "wires": [
+            [
+                "39e86b7c46873277"
+            ]
+        ]
+    },
+    {
+        "id": "39e86b7c46873277",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 25",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "00ebc7beda4a626b",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 26",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 340,
+        "y": 2200,
+        "wires": []
+    },
+    {
+        "id": "4f1b34f3b95fc2d1",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "檢查里程碑",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 200,
+        "y": 2340,
+        "wires": [
+            [
+                "2c9e9595a5350b4b"
+            ]
+        ]
+    },
+    {
+        "id": "d8dfc9e062530b1e",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_student_current_mission",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 920,
+        "y": 2340,
+        "wires": [
+            [
+                "7dda83d5ca7a6fa0"
+            ]
+        ]
+    },
+    {
+        "id": "7dda83d5ca7a6fa0",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 27",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload.data[0]",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 2380,
+        "wires": []
+    },
+    {
+        "id": "5d5d141bb7814f3b",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 13",
+        "func": "var user_id_list = msg.payload.data.map(obj =>\n    obj.discord_id\n);\n\nfor(let user_id of user_id_list){\n    node.send({\n        payload:{\n            discord_id: user_id,\n        }\n    })\n}\n\n\n// msg.payload = user_id_list;\n// return msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 2340,
+        "wires": [
+            [
+                "f1101c73f2f0fa27"
+            ]
+        ]
+    },
+    {
+        "id": "2c9e9595a5350b4b",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_baby_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 360,
+        "y": 2340,
+        "wires": [
+            [
+                "5d5d141bb7814f3b"
+            ]
+        ]
+    },
+    {
+        "id": "f1101c73f2f0fa27",
+        "type": "delay",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "pauseType": "delay",
+        "timeout": "1",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 720,
+        "y": 2340,
+        "wires": [
+            [
+                "d8dfc9e062530b1e"
+            ]
+        ]
+    },
+    {
+        "id": "2db27ab10504a405",
+        "type": "http in",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "",
+        "url": "push_task",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 400,
+        "y": 380,
+        "wires": [
+            [
+                "ab6fe45c19c0f87a",
+                "b10ddb96f2f1575f",
+                "3fb2417e80a34f45"
+            ]
+        ]
+    },
+    {
+        "id": "ab6fe45c19c0f87a",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "74caea0aaf3c37ec",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "設定推播任務",
+        "func": "// msg.user_id = msg.payload.user_id;\n// msg.payload.discord_id = msg.payload.user_id;\n\n// ======\n\nconst missions = msg.payload.data\n\nconst aggregateByMissionID = (missions) => {\n  return missions.reduce((acc, mission) => {\n    // const day = parseInt(mission.notification_day) - 30;\n    const day = parseInt(mission.mission_id) ;\n\n\n    if (!acc[day]) {\n      acc[day] = mission;\n    }\n\n    return acc;\n  }, {});\n};\n\nvar tasks = aggregateByMissionID(missions);\n\nvar task = [tasks[msg.mission_id]];\ntask = task.map(obj => [\n  \"🎖**育兒學習**🎖\\r\\n\\r\\n\" + \"📑任務： **\" + obj.mission_title + \"**\\r\\n\"\n  + \"*\" + obj.mission_type + '*',\n  obj.mission_video_contents,\n  obj.mission_image_contents,\n  obj.notification_content\n])[0];\ntask = task.filter(item => item !== \"\");\nmsg.payload = task;\nmsg.task = task;\nmsg.task_len = [task.length];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 380,
+        "wires": [
+            [
+                "f5f47806e19138db",
+                "716e3f5352fbdda1"
+            ]
+        ]
+    },
+    {
+        "id": "f5f47806e19138db",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "debug 29",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "ee08b7f5f8efaeed",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_mission_list ",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 740,
+        "y": 380,
+        "wires": [
+            [
+                "74caea0aaf3c37ec",
+                "af231928a4cfad32"
+            ]
+        ]
+    },
+    {
+        "id": "af231928a4cfad32",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "debug 30",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "b10ddb96f2f1575f",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "檢查input",
+        "func": "msg.user = msg.payload.user_id;\n\nif (msg.payload.mission_id == undefined){\n    msg.mission_id = \"0\";\n} \nelse{\n    msg.mission_id = msg.payload.mission_id;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 380,
+        "wires": [
+            [
+                "ee08b7f5f8efaeed"
+            ]
+        ]
+    },
+    {
+        "id": "3fb2417e80a34f45",
+        "type": "http response",
+        "z": "7d70a7613877ca33",
+        "g": "2a58c43305dfd059",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 390,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "1b3f12b94077be15",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "第一個task",
+        "func": "if (msg.task !== undefined && msg.task.length > 0)\n{\n    msg.discord_id = msg.user;\n    msg.current_step = \"1\";\n    msg.total_step = msg.task_len[0];\n    \n    flow.set(`${msg.user}_stage`, msg.task.slice(1));\n\n    flow.set(`${msg.user}_task_len`, msg.task_len);\n    flow.set(`${msg.user}_cur_step`, 0);\n    flow.set(`${msg.user}_mission_id`, msg.mission_id);\n    flow.set(`${msg.user}_subtask_id`, 0);\n\n\n    var label = \"下一步\";\n\n    msg.payload = msg.task[0];\n    msg.task = msg.task;\n\n    msg.components =\n        [\n            {\n                \"type\": 1,\n                \"components\": [\n                    {\n                        \"type\": 2,\n                        \"label\": label,\n                        \"style\": 3,\n                        \"custom_id\": \"click_opt1\"\n                    }\n                ]\n\n            }\n        ];\n\n}\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1310,
+        "y": 200,
+        "wires": [
+            [
+                "d19effadf66e3324",
+                "3dd64590f4286942"
+            ]
+        ]
+    },
+    {
+        "id": "3dd64590f4286942",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 1550,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d19effadf66e3324",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1310,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "26356e869db80c54",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "debug 31",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 980,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "eea7659f9d750784",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "g": "b20789c136978453",
+        "name": "週期性清除每個user的狀態",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 270,
+        "y": 2480,
+        "wires": [
+            [
+                "6850bc2b9ed5c852"
+            ]
+        ]
+    },
+    {
+        "id": "6850bc2b9ed5c852",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b20789c136978453",
+        "name": "根據user_id得到他的user_stage",
+        "func": "var user_stages_arr = flow.keys();\n\nfor (let i=0 ; i < user_stages_arr.length ; i++){\n  flow.set(user_stages_arr[i], undefined);\n}\nmsg.debug = [];\nfor (let i = 0; i < user_stages_arr.length; i++) {\n  msg.debug.push([user_stages_arr[i], flow.get(user_stages_arr[i])]);\n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 2480,
+        "wires": [
+            [
+                "d2afc3cce355da4d"
+            ]
+        ]
+    },
+    {
+        "id": "d2afc3cce355da4d",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b20789c136978453",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 530,
+        "y": 2520,
+        "wires": []
+    },
+    {
+        "id": "cd33d3f46e9aa73d",
+        "type": "discordInteraction",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "button",
+        "custom_id": "rec_1,rec_2,rec_3",
+        "commandResponse": "",
+        "interactionObject": true,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 140,
+        "y": 580,
+        "wires": [
+            [
+                "3e9b0f7bbcc39edb"
+            ]
+        ]
+    },
+    {
+        "id": "6ebc5a3210f2dbbc",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_student_incompleted_mission_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 500,
+        "y": 580,
+        "wires": [
+            [
+                "6dc2cc641906a901",
+                "dd956abcd6fda581"
+            ]
+        ]
+    },
+    {
+        "id": "3e9b0f7bbcc39edb",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "function 17",
+        "func": "msg.opt = parseInt(msg.payload.customId.slice(-1))-1;\nmsg.user = msg.payload.user.id;\n\nmsg.payload = { \"discord_id\": msg.payload.user.id }\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 580,
+        "wires": [
+            [
+                "6ebc5a3210f2dbbc",
+                "41146c88c9d68502"
+            ]
+        ]
+    },
+    {
+        "id": "6dc2cc641906a901",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "debug 35",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 490,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "41146c88c9d68502",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "debug 36",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 330,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "dd956abcd6fda581",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "function 18",
+        "func": "msg.mission_id = msg.payload.data[msg.opt].mission_id;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 580,
+        "wires": [
+            [
+                "0f5ff39df35ae1ac",
+                "ee08b7f5f8efaeed"
+            ]
+        ]
+    },
+    {
+        "id": "0f5ff39df35ae1ac",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "518f5465b717fb85",
+        "name": "debug 37",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "cac0be6411603536",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 38",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1460,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "745f8b5853c3f4d9",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "re-format payload",
+        "func": "msg.payload = { \"discord_id\": msg.user }\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 900,
+        "wires": [
+            [
+                "0af6bb97aac94bb0"
+            ]
+        ]
+    },
+    {
+        "id": "0af6bb97aac94bb0",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_student_incompleted_mission_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1820,
+        "y": 900,
+        "wires": [
+            [
+                "3559c8d558496a90",
+                "522074515f2b019a"
+            ]
+        ]
+    },
+    {
+        "id": "3559c8d558496a90",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 39",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1800,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "522074515f2b019a",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "function 19",
+        "func": "\n// msg.components =\n//     [\n//         {\n//             \"type\": 1,\n//             \"components\": [\n//                 {\n//                     \"type\": 2,\n//                     \"label\": msg.payload.data[0].mission_title,\n//                     \"style\": 3,\n//                     \"custom_id\": \"rec_1\"\n//                 }\n//             ]\n//         },\n//         {\n//             \"type\": 1,\n//             \"components\": [\n//                 {\n//                     \"type\": 2,\n//                     \"label\": msg.payload.data[1].mission_title,\n//                     \"style\": 3,\n//                     \"custom_id\": \"rec_2\"\n//                 }\n//             ]\n//         },\n//         {\n//             \"type\": 1,\n//             \"components\": [\n//                 {\n//                     \"type\": 2,\n//                     \"label\": msg.payload.data[2].mission_title,\n//                     \"style\": 3,\n//                     \"custom_id\": \"rec_3\"\n//                 }\n//             ]\n//         }\n//     ];\n\n\nconst data = msg.payload.data;\nvar components = [];\nfor (let index = 0; index < data.length; index++) {\n    const element = data[index];\n    components.push(\n        {\n            \"label\": element.mission_title,\n            \"value\": `${element.mission_id}`,\n            \"description\": element.mission_type\n        }\n    )\n\n}\nmsg.components =\n    [\n        {\n            \"type\": 1,\n            \"components\": [\n                {\n                    \"type\": 3,\n                    \"custom_id\": \"rec_menu\",\n                    \"options\": components,\n                    \"placeholder\": \"Choose a task\",\n                    \"min_values\": 1,\n                    \"max_values\": 1\n                }\n            ]\n        }\n    ];\nmsg.payload = \"🔍 *以下是您尚未完成的里程碑任務，按下方按鈕開始任務* 🔍\";\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1990,
+        "y": 900,
+        "wires": [
+            [
+                "7251e19a2fa52ed5",
+                "58967789a25b00f7"
+            ]
+        ]
+    },
+    {
+        "id": "58967789a25b00f7",
+        "type": "discordMessageManager",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 2190,
+        "y": 900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7251e19a2fa52ed5",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 40",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2000,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "2d1e01638dfd346c",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 20",
+        "func": "\nfor (let x of Array(67).keys()) {\n\n    node.send({\n        payload: {\n            discord_id: \"353477306674839552\",\n            mission_id: `${x + 1}`,\n            total_steps: \"3\",\n            current_step: \"0\"\n        }\n    })\n\n}\n\n// msg.payload = user_id_list;\n// return msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 2080,
+        "wires": [
+            [
+                "b3036bf3165220e9"
+            ]
+        ]
+    },
+    {
+        "id": "3536b1c90b01fb60",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "清空里程碑",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 500,
+        "y": 2080,
+        "wires": [
+            [
+                "2d1e01638dfd346c"
+            ]
+        ]
+    },
+    {
+        "id": "f34a0926ba395f95",
+        "type": "discordInteraction",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "button",
+        "custom_id": "nofinish",
+        "commandResponse": "",
+        "interactionObject": true,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 1650,
+        "y": 820,
+        "wires": [
+            [
+                "9ce7fec197871410",
+                "0f12665f70683d6d"
+            ]
+        ]
+    },
+    {
+        "id": "9ce7fec197871410",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 41",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1640,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "0f12665f70683d6d",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "re-format payload",
+        "func": "msg.user = msg.payload.user.id;\n\nmsg.payload = { \"discord_id\": msg.payload.user.id }\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1870,
+        "y": 820,
+        "wires": [
+            [
+                "0af6bb97aac94bb0"
+            ]
+        ]
+    },
+    {
+        "id": "721812e64e9e1dd7",
+        "type": "http request",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1680,
+        "y": 1600,
+        "wires": [
+            [
+                "0ac87d06a537cae3"
+            ]
+        ]
+    },
+    {
+        "id": "c4bc58b10b09bd27",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 21",
+        "func": "// msg.payload = { \"discord_id\": msg.user};\n\nmsg.payload = { \"discord_id\": msg.user};\n\nmsg.url = \"http://140.119.164.70:8000/api/get_baby_records\"\n\nvar try_times = flow.get(`${msg.user}_check`);\nif (try_times == undefined){\n    flow.set(`${msg.user}_check`, 0);\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1510,
+        "y": 1600,
+        "wires": [
+            [
+                "721812e64e9e1dd7"
+            ]
+        ]
+    },
+    {
+        "id": "2acab3e4297dd787",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 1350,
+        "y": 1600,
+        "wires": [
+            [
+                "c4bc58b10b09bd27"
+            ]
+        ]
+    },
+    {
+        "id": "0ac87d06a537cae3",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 22",
+        "func": "const twoWeeksAgo = new Date();\ntwoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);\n\nconst recentTimestamps = msg.payload.records\n  .filter(entry => new Date(entry.timestamp) >= twoWeeksAgo)\n  .map(entry => entry.timestamp);\n  \nif (recentTimestamps.length > 0){\n  msg.success = true;\n  msg.payload = true;\n\n}\nelse{\n  msg.success = false;\n  msg.payload = false;\n\n}\nvar try_times = flow.get(`${msg.user}_check`);\ntry_times += 1;\n\nmsg.try_time = try_times;\n\nflow.set(`${msg.user}_check`, try_times);\n\nif (try_times >= 60){\n  msg.reset = true;\n  flow.set(`${msg.user}_check`, undefined);\n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1850,
+        "y": 1600,
+        "wires": [
+            [
+                "45f6b0d95fd1b332",
+                "7b32b560c5dfb2d8",
+                "b74e79b3607b0386"
+            ]
+        ]
+    },
+    {
+        "id": "45f6b0d95fd1b332",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "name": "debug 42",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1840,
+        "y": 1640,
+        "wires": []
+    },
+    {
+        "id": "7b32b560c5dfb2d8",
+        "type": "trigger",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "op1": "",
+        "op2": "0",
+        "op1type": "nul",
+        "op2type": "str",
+        "duration": "10",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "s",
+        "reset": "true",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 1720,
+        "y": 1520,
+        "wires": [
+            [
+                "c4bc58b10b09bd27"
+            ]
+        ]
+    },
+    {
+        "id": "825aef1708a5ea1f",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "挑選user",
+        "func": "const missions = msg.payload.data\n\nconst aggregateByNotificationDay = (missions) => {\n    return missions.reduce((acc, mission) => {\n        const day = parseInt(mission.notification_day) - 30;\n\n        if (!acc[day]) {\n            acc[day] = [];\n        }\n        acc[day].push(mission);\n        return acc;\n    }, {});\n};\n\nconst aggregatedMissions = aggregateByNotificationDay(missions);\n\nconst tasks = aggregatedMissions;\n\nmsg.tasks = tasks;\n\n// ------------------------\n\nvar qualified_user = [];\n\nvar debug = {};\n\nfor (var i = 0, item; item = msg.babys.data[i]; i++) {\n\n    const user = item.discord_id;\n    const startDateStr = item.birth_date;\n    const startDate = new Date(startDateStr.replace(/\\./g, '-'));\n    const today = new Date();\n\n    // 取得兩個日期的時間戳（以毫秒為單位）\n    const timeDifference = today.getTime() - startDate.getTime();\n    \n    // 將毫秒轉換為天數\n    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24)) - 30;\n    debug = {user:daysDifference};\n\n    if (daysDifference < 0 || daysDifference > 120 || typeof tasks[daysDifference] == 'undefined') {\n        // msg.payload = 165;\n        // qualified_user.push([user, \"165\"])\n        ;\n    }\n    else {\n        // msg.payload = daysDifference;\n        qualified_user.push([user, daysDifference])\n\n    }\n\n}\n\nmsg.qualified_user = qualified_user;\nmsg.debug = debug;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1160,
+        "y": 80,
+        "wires": [
+            [
+                "79d0add718013d3f",
+                "245f0717b6fdca23"
+            ]
+        ]
+    },
+    {
+        "id": "245f0717b6fdca23",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "13b9b877d3385daf",
+        "name": "debug 43",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1180,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "88c4c6b3daa86d97",
+        "type": "discordInteraction",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "selectMenu",
+        "custom_id": "rec_menu",
+        "commandResponse": "",
+        "interactionObject": true,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 900,
+        "y": 580,
+        "wires": [
+            [
+                "47916baccda553fe"
+            ]
+        ]
+    },
+    {
+        "id": "47916baccda553fe",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 25",
+        "func": "msg.user = msg.payload.user.id;\nmsg.mission_id = `${msg.payload.values.join(\", \")}`;\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1090,
+        "y": 580,
+        "wires": [
+            [
+                "ee08b7f5f8efaeed"
+            ]
+        ]
+    },
+    {
+        "id": "58de9ad96734c4c7",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 46",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1800,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "b74e79b3607b0386",
+        "type": "switch",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "property": "success",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 2030,
+        "y": 1600,
+        "wires": [
+            [
+                "b57a4b8600af536b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "b57a4b8600af536b",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "完成訊息",
+        "func": "\nmsg.payload = \"🎉 恭喜完成任務，獲得🪙20金幣🎉\";\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2180,
+        "y": 1600,
+        "wires": [
+            [
+                "301b70f847c89b43"
+            ]
+        ]
+    },
+    {
+        "id": "c59b0928322ed7ef",
+        "type": "inject",
+        "z": "7d70a7613877ca33",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 1370,
+        "y": 560,
+        "wires": [
+            [
+                "599bdec68fb0e8cf"
+            ]
+        ]
+    },
+    {
+        "id": "599bdec68fb0e8cf",
+        "type": "function",
+        "z": "7d70a7613877ca33",
+        "name": "function 26",
+        "func": "msg = { \n    // \"payload\": \"https://drive.google.com/file/d/1mEsfdA9CWXw13lmS2E91hnztxyACoD5g/preview\",\n    // \"payload\" : \"https://media.toyota.com.ar/ca2fd98c-025f-4c9f-8d12-3f07fe75483c.png\", \n    \"user_id\": \"353477306674839552\", \n    \"responseUrl\": \"http://140.119.164.70:8000/api/update_student_mission_status\", \n    \"redirectList\": [], \"retry\": 0, \"components\": [{ \"type\": 1, \"components\": [{ \"type\": 2, \"label\": \"完成\", \"style\": 3, \"custom_id\": \"click_opt1\" }] }], \n    \"user\": \"353477306674839552\", \n    \"url\": \"https://drive.google.com/uc?export=download&id=1mEsfdA9CWXw13lmS2E91hnztxyACoD5g\" }\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1550,
+        "y": 560,
+        "wires": [
+            [
+                "eea5d6c8c626c119"
+            ]
+        ]
+    },
+    {
+        "id": "1a1d3726bb3462d1",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 47",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "28b9ab84b5c3133f",
+        "type": "debug",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "debug 48",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1880,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "23689ea318033014",
+        "type": "exec",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "command": "cd /data;./resize_img.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "120",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 1590,
+        "y": 720,
+        "wires": [
+            [
+                "3017e2395e349bea"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "c1528fb3121aff99",
+        "type": "file",
+        "z": "7d70a7613877ca33",
+        "g": "b4a805abca00d443",
+        "name": "",
+        "filename": "/data/input.jpg",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1360,
+        "y": 720,
+        "wires": [
+            [
+                "23689ea318033014"
+            ]
+        ]
+    },
+    {
+        "id": "e2e8b84b4c2888d3",
+        "type": "discordMessageManager",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 990,
+        "y": 440,
+        "wires": [
+            [
+                "644d832076a1b4df"
+            ]
+        ]
+    },
+    {
+        "id": "898ae628b4296992",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "Edit original message",
+        "func": "let newMessage = {};\nnewMessage.payload = `Thanks for clicking option *${msg.payload.customId}*, <#1165875139553021995>`;\nnewMessage.action = \"edit\";\nnewMessage.message = msg.payload.message.id;\nnewMessage.channel = msg.payload.message.channelId;\n\nreturn newMessage;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 400,
+        "wires": [
+            [
+                "e2e8b84b4c2888d3"
+            ]
+        ]
+    },
+    {
+        "id": "644d832076a1b4df",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1230,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "153571b3cd04ff78",
+        "type": "discordInteraction",
+        "z": "368332cd9fdfa425",
+        "name": "Menu Selected Interaction",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "selectMenu",
+        "custom_id": "class_select_1",
+        "commandResponse": "",
+        "interactionObject": false,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 450,
+        "y": 460,
+        "wires": [
+            [
+                "edd5bfac50a6e20b"
+            ]
+        ]
+    },
+    {
+        "id": "edd5bfac50a6e20b",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "Edit original message",
+        "func": "let newMessage = {};\nnewMessage.payload = `milestone_id : ${msg.payload.values.join(\", \")}`;\nnewMessage.action = \"edit\";\nnewMessage.message = msg.payload.message.id;\nnewMessage.channel = msg.payload.message.channelId;\n\nreturn newMessage;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 460,
+        "wires": [
+            [
+                "e2e8b84b4c2888d3"
+            ]
+        ]
+    },
+    {
+        "id": "5bc45799f6c36255",
+        "type": "discordInteraction",
+        "z": "368332cd9fdfa425",
+        "name": "Button Interaction",
+        "token": "a87a3cf5afd85fab",
+        "interactionType": "button",
+        "custom_id": "click_opt123,click_opt456",
+        "commandResponse": "",
+        "interactionObject": false,
+        "ephemeral": false,
+        "responseType": "update",
+        "commandResponseType": "defersReply",
+        "x": 460,
+        "y": 400,
+        "wires": [
+            [
+                "898ae628b4296992"
+            ]
+        ]
+    },
+    {
+        "id": "79ed38ee433c1da7",
+        "type": "discordMessageManager",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 990,
+        "y": 660,
+        "wires": [
+            [
+                "5f78ed9d5208fc9d"
+            ]
+        ]
+    },
+    {
+        "id": "5f78ed9d5208fc9d",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1190,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "243f616e9c249f70",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "Add Button Components",
+        "func": "\n// msg.payload = \"-- Take a decision --\";\nmsg.payload = `Thanks for clicking option <@!1165875139553021995>`;\n\n\nmsg.components = [\n    {\n        \"type\": 1,\n        \"components\": [\n            {\n                \"type\": 2,\n                \"label\": \"Jump to Channel\",\n                \"style\": 5,  // Style 5 makes it a link button\n                \"url\": \"https://discord.com/channels/1166487593492418591/1166487593492418594\",\n                // \"custom_id\": \"click_opt123\"\n\n            }\n        ]\n    }\n];\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 640,
+        "wires": [
+            [
+                "79ed38ee433c1da7"
+            ]
+        ]
+    },
+    {
+        "id": "7ac2d6065bb625c0",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "Add Menu Interaction",
+        "func": "const data = msg.payload.data;\nmsg.payload = \"Select an option\";\nvar components = [];\nfor (let index = 0; index < data.length; index++) {\n    const element = data[index];\n    components.push(\n        {\n            \"label\": element.mission_title,\n            \"value\": `${element.mission_id}`,\n            \"description\": element.mission_type\n        }\n    )\n    \n}\nmsg.components =  \n    [\n        {\n            \"type\": 1,\n            \"components\": [\n                {\n                    \"type\": 3,\n                    \"custom_id\": \"class_select_1\",\n                    \"options\": components,\n                    \"placeholder\": \"Choose a class\",\n                    \"min_values\": 1,\n                    \"max_values\": 1\n                }\n            ]\n        }\n    ];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 700,
+        "wires": [
+            [
+                "2e1411fd911dc285",
+                "79ed38ee433c1da7"
+            ]
+        ]
+    },
+    {
+        "id": "1d2411688f4d1e68",
+        "type": "inject",
+        "z": "368332cd9fdfa425",
+        "name": "Inject message in channel",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 150,
+        "y": 760,
+        "wires": [
+            [
+                "179e1ac5a5ae65dc"
+            ]
+        ]
+    },
+    {
+        "id": "7a12dcc5f36c7b0d",
+        "type": "inject",
+        "z": "368332cd9fdfa425",
+        "name": "Inject message in channel",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 450,
+        "y": 640,
+        "wires": [
+            [
+                "243f616e9c249f70"
+            ]
+        ]
+    },
+    {
+        "id": "179e1ac5a5ae65dc",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "function 24",
+        "func": "msg.payload = {\n    \"discord_id\":\"353477306674839552\"\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 760,
+        "wires": [
+            [
+                "f3dd4c5b11d3227d"
+            ]
+        ]
+    },
+    {
+        "id": "f3dd4c5b11d3227d",
+        "type": "http request",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_student_incompleted_mission_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 520,
+        "y": 760,
+        "wires": [
+            [
+                "8d4920b0080294bb",
+                "7ac2d6065bb625c0"
+            ]
+        ]
+    },
+    {
+        "id": "8d4920b0080294bb",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "debug 44",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 480,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "2e1411fd911dc285",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "debug 45",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "a8b5cbcb94a0f141",
+        "type": "inject",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "Inject message in channel",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            },
+            {
+                "p": "msg.requestTimeout",
+                "v": "10000",
+                "vt": "num"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 370,
+        "y": 1080,
+        "wires": [
+            [
+                "d612a768b4c19572"
+            ]
+        ]
+    },
+    {
+        "id": "d612a768b4c19572",
+        "type": "http request",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "Dowload Image",
+        "method": "GET",
+        "ret": "bin",
+        "paytoqs": "ignore",
+        "url": "https://drive.google.com/uc?export=download&id=1mEsfdA9CWXw13lmS2E91hnztxyACoD5g",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": true,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 600,
+        "y": 1080,
+        "wires": [
+            [
+                "d29b386fb067f9fe"
+            ]
+        ]
+    },
+    {
+        "id": "1f28a89ef31414cc",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "Embed attachment from buffer",
+        "func": "\nmsg.embed = {\n    \"title\": `Toyota Etios`,\n      \"description\": `Compact Car`,\n      \"color\": 0x00FFFF,\n      \"fields\": [\n        {\n          \"name\": `Type`,\n          \"value\": `Hatch`\n        }\n      ],\n      \"image\": {\n        \"url\": \"attachment://etios2.jpg\"\n      }\n};\nmsg.attachments = { buffer: msg.payload, name: \"etios2.jpg\"};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 1140,
+        "wires": [
+            [
+                "fccf59b2afcf0462"
+            ]
+        ]
+    },
+    {
+        "id": "fccf59b2afcf0462",
+        "type": "discordMessageManager",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 750,
+        "y": 1140,
+        "wires": [
+            [
+                "cdae812f895a89c7"
+            ]
+        ]
+    },
+    {
+        "id": "cdae812f895a89c7",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1010,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "d29b386fb067f9fe",
+        "type": "file",
+        "z": "368332cd9fdfa425",
+        "g": "728529627694b3f4",
+        "name": "",
+        "filename": "/data/tmp.png",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": false,
+        "overwriteFile": "true",
+        "encoding": "none",
+        "x": 800,
+        "y": 1080,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "c17775032be1301a",
+        "type": "file in",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "filename": "/data/tmp.png",
+        "filenameType": "str",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 420,
+        "y": 1280,
+        "wires": [
+            [
+                "1f28a89ef31414cc",
+                "60f8a9cd97c9a6eb"
+            ]
+        ]
+    },
+    {
+        "id": "df023d46a0ba8cdd",
+        "type": "inject",
+        "z": "368332cd9fdfa425",
+        "name": "Inject message in channel",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            },
+            {
+                "p": "msg.requestTimeout",
+                "v": "10000",
+                "vt": "num"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 1280,
+        "wires": [
+            [
+                "c17775032be1301a"
+            ]
+        ]
+    },
+    {
+        "id": "60f8a9cd97c9a6eb",
+        "type": "image",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "width": 160,
+        "data": "payload",
+        "dataType": "msg",
+        "thumbnail": false,
+        "active": true,
+        "pass": false,
+        "outputs": 0,
+        "x": 620,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "35f24000c90ca1c2",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "debug 49",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 360,
+        "y": 1340,
+        "wires": []
+    },
+    {
+        "id": "6a00fa254a2fdd33",
+        "type": "http request",
+        "z": "368332cd9fdfa425",
+        "name": "Dowload Image",
+        "method": "GET",
+        "ret": "bin",
+        "paytoqs": "ignore",
+        "url": "https://drive.google.com/uc?export=download&id=1mEsfdA9CWXw13lmS2E91hnztxyACoD5g",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 1520,
+        "wires": [
+            [
+                "b2c0fece572d2330"
+            ]
+        ]
+    },
+    {
+        "id": "b2c0fece572d2330",
+        "type": "file",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "filename": "/data/input.jpg",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 520,
+        "y": 1520,
+        "wires": [
+            [
+                "8780bfc888e7ca9e"
+            ]
+        ]
+    },
+    {
+        "id": "d71036c153293414",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "Embed attachment from storage",
+        "func": "msg.embed = {\n    \"title\": `Toyota Etios`,\n      \"description\": `Compact Car`,\n      \"color\": 0x00FFFF,\n      \"fields\": [\n        {\n          \"name\": `Type`,\n          \"value\": `Hatch`\n        }\n      ],\n      \"image\": {\n        \"url\": \"attachment://output.jpg\"\n      }\n};\nmsg.attachments = '/data/output.jpg';\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 1520,
+        "wires": [
+            [
+                "84694451198e17c5",
+                "a1ebbf52dc2cba01"
+            ]
+        ]
+    },
+    {
+        "id": "84694451198e17c5",
+        "type": "discordMessageManager",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "channel": "",
+        "token": "a87a3cf5afd85fab",
+        "x": 1090,
+        "y": 1440,
+        "wires": [
+            [
+                "88c14bb69aded602"
+            ]
+        ]
+    },
+    {
+        "id": "88c14bb69aded602",
+        "type": "debug",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
+        "y": 1440,
+        "wires": []
+    },
+    {
+        "id": "a2ebb8dc6623d2ac",
+        "type": "image",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "width": 160,
+        "data": "payload",
+        "dataType": "msg",
+        "thumbnail": true,
+        "active": true,
+        "pass": true,
+        "outputs": 1,
+        "x": 1220,
+        "y": 1600,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a1ebbf52dc2cba01",
+        "type": "file in",
+        "z": "368332cd9fdfa425",
+        "name": "",
+        "filename": "attachments",
+        "filenameType": "msg",
+        "format": "",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 1040,
+        "y": 1600,
+        "wires": [
+            [
+                "a2ebb8dc6623d2ac"
+            ]
+        ]
+    },
+    {
+        "id": "abf0ed8a44ffa6c9",
+        "type": "inject",
+        "z": "368332cd9fdfa425",
+        "name": "Inject message in channel",
+        "props": [
+            {
+                "p": "user",
+                "v": "353477306674839552",
+                "vt": "str"
+            },
+            {
+                "p": "msg.requestTimeout",
+                "v": "10000",
+                "vt": "num"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 130,
+        "y": 1520,
+        "wires": [
+            [
+                "6a00fa254a2fdd33"
+            ]
+        ]
+    },
+    {
+        "id": "8780bfc888e7ca9e",
+        "type": "exec",
+        "z": "368332cd9fdfa425",
+        "command": "cd /data;./resize_img.sh",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "120",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 630,
+        "y": 1620,
+        "wires": [
+            [
+                "d71036c153293414"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "9a7bf4ea2d987acc",
+        "type": "function",
+        "z": "368332cd9fdfa425",
+        "name": "function 27",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 110,
+        "y": 1660,
+        "wires": [
+            []
+        ]
+    }
+]
