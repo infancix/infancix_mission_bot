@@ -2866,7 +2866,7 @@
         "filenameType": "str",
         "appendNewline": true,
         "createDir": false,
-        "overwriteFile": "false",
+        "overwriteFile": "true",
         "encoding": "none",
         "x": 1360,
         "y": 720,
@@ -3336,8 +3336,7 @@
         "y": 1280,
         "wires": [
             [
-                "1f28a89ef31414cc",
-                "60f8a9cd97c9a6eb"
+                "1f28a89ef31414cc"
             ]
         ]
     },
@@ -3370,22 +3369,6 @@
                 "c17775032be1301a"
             ]
         ]
-    },
-    {
-        "id": "60f8a9cd97c9a6eb",
-        "type": "image",
-        "z": "368332cd9fdfa425",
-        "name": "",
-        "width": 160,
-        "data": "payload",
-        "dataType": "msg",
-        "thumbnail": false,
-        "active": true,
-        "pass": false,
-        "outputs": 0,
-        "x": 620,
-        "y": 1280,
-        "wires": []
     },
     {
         "id": "35f24000c90ca1c2",
