@@ -16,6 +16,22 @@
         "env": []
     },
     {
+        "id": "fa0422cb4fc63cf9",
+        "type": "tab",
+        "label": "UI",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "3a41748162d7267f",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
         "id": "13b9b877d3385daf",
         "type": "group",
         "z": "7d70a7613877ca33",
@@ -115,9 +131,9 @@
             "23689ea318033014",
             "c1528fb3121aff99"
         ],
-        "x": 4,
+        "x": 14,
         "y": 639,
-        "w": 2322,
+        "w": 2312,
         "h": 802
     },
     {
@@ -200,9 +216,9 @@
             "dd956abcd6fda581",
             "0f5ff39df35ae1ac"
         ],
-        "x": 24,
+        "x": 34,
         "y": 479,
-        "w": 782,
+        "w": 772,
         "h": 142
     },
     {
@@ -417,7 +433,7 @@
         "z": "7d70a7613877ca33",
         "g": "b4a805abca00d443",
         "name": "Embed attachment from buffer",
-        "func": "msg.embed = {\n\n      \"image\": {\n        \"url\": \"attachment:/data/output.jpg\"\n      }\n}; \n\n// msg.attachments = { buffer: msg.payload, name: \"output.jpg\"};\nmsg.attachments = '/data/output.jpg';\nreturn msg;",
+        "func": "msg.embed = {\n\n      \"image\": {\n        \"url\": \"attachment://output.jpg\"\n      }\n}; \n\n// msg.attachments = { buffer: msg.payload, name: \"output.jpg\"};\nmsg.attachments = '/data/output.jpg';\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -1276,9 +1292,7 @@
         "x": 340,
         "y": 1500,
         "wires": [
-            [
-                "f8cc844e9412c00d"
-            ]
+            []
         ]
     },
     {
@@ -3592,6 +3606,350 @@
         "y": 1660,
         "wires": [
             []
+        ]
+    },
+    {
+        "id": "5c129c5e358de53f",
+        "type": "http in",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "url": "/ui_send_task",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 330,
+        "y": 140,
+        "wires": [
+            [
+                "2f5ee517893a7ee1"
+            ]
+        ]
+    },
+    {
+        "id": "056756c5f9832faf",
+        "type": "template",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Task Push</title>\n</head>\n<body>\n    <form id=\"taskForm\">\n        <label for=\"user_id\">Discord ID:</label>\n        <input type=\"text\" id=\"user_id\" name=\"user_id\" required><br><br>\n\n        <label for=\"mission_type\">Mission Type:</label>\n        <select id=\"mission_type\" name=\"mission_type\" required></select><br><br>\n\n        <button type=\"button\" onclick=\"sendTask()\">Send Task</button>\n    </form>\n\n    <script>\n        let missionData = [];\n\n        // Fetch mission list from the backend proxy\n        async function fetchMissionList() {\n            try {\n                const response = await fetch(\"http://140.119.164.71:1880/get_mission_list\");\n                missionData = await response.json()\n                missionData = missionData.data;\n\n                const missionSelect = document.getElementById('mission_type');\n                \n                missionData.forEach(mission => {\n                    const option = document.createElement('option');\n                    option.value = mission.mission_id;\n                    option.text = `(${mission.mission_id}) `+ mission.mission_type+\" - \"+mission.mission_title;;\n                    missionSelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching mission list:', error);\n            }\n        }\n\n        // Call fetchMissionList when the page loads\n        window.onload = fetchMissionList;\n\n        function sendTask() {\n            const user_id = document.getElementById('user_id').value;\n            const mission_id = document.getElementById('mission_type').value;  // Get mission_id from dropdown\n\n            fetch('http://140.119.164.71:1880/push_task', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json',\n                },\n                body: JSON.stringify({ user_id, mission_id }),\n            })\n            .then(response => response.json())\n            .then(data => {\n                console.log('Success:', data);\n            })\n            .catch((error) => {\n                console.error('Error:', error);\n            });\n        }\n    </script>\n</body>\n</html>",
+        "output": "str",
+        "x": 570,
+        "y": 140,
+        "wires": [
+            [
+                "3f599202ef96f63e"
+            ]
+        ]
+    },
+    {
+        "id": "3f599202ef96f63e",
+        "type": "http response",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 710,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "0b423db47197205a",
+        "type": "http in",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "url": "/get_mission_list",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 320,
+        "y": 360,
+        "wires": [
+            [
+                "e6075e372cd54b26"
+            ]
+        ]
+    },
+    {
+        "id": "e6075e372cd54b26",
+        "type": "http request",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_mission_list ",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 560,
+        "y": 360,
+        "wires": [
+            [
+                "f28f603cfc2325d0",
+                "609b80b5bbb1de7d"
+            ]
+        ]
+    },
+    {
+        "id": "f28f603cfc2325d0",
+        "type": "http response",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 750,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "609b80b5bbb1de7d",
+        "type": "debug",
+        "z": "fa0422cb4fc63cf9",
+        "name": "debug 50",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "5c86ca04902b1613",
+        "type": "http in",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "url": "/get_baby_list",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 310,
+        "y": 540,
+        "wires": [
+            [
+                "3c303a216bc26d96"
+            ]
+        ]
+    },
+    {
+        "id": "3c303a216bc26d96",
+        "type": "http request",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_baby_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 560,
+        "y": 540,
+        "wires": [
+            [
+                "4b60bacc2a8858c5",
+                "15d432d2665efc47"
+            ]
+        ]
+    },
+    {
+        "id": "4b60bacc2a8858c5",
+        "type": "http response",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 750,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "15d432d2665efc47",
+        "type": "debug",
+        "z": "fa0422cb4fc63cf9",
+        "name": "debug 51",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "2f5ee517893a7ee1",
+        "type": "template",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Task Push</title>\n</head>\n<body>\n    <form id=\"taskForm\">\n        <label for=\"user_id\">Select Baby (Discord ID):</label>\n        <select id=\"user_id\" name=\"user_id\" required></select><br><br>\n\n        <label for=\"mission_type\">Mission Type:</label>\n        <select id=\"mission_type\" name=\"mission_type\" required></select><br><br>\n\n        <button type=\"button\" onclick=\"sendTask()\">Send Task</button>\n    </form>\n    \n    <p id=\"statusMessage\"></p>\n\n\n    <script>\n        let missionData = [];\n        let babyData = [];\n\n\n        // Fetch mission list and populate the dropdown\n        async function fetchMissionList() {\n            try {\n                const response = await fetch(\"http://140.119.164.71:1880/get_mission_list\");\n                missionData = await response.json()\n                missionData = missionData.data;\n\n                const missionSelect = document.getElementById('mission_type');\n                \n                missionData.forEach(mission => {\n                    const option = document.createElement('option');\n                    option.value = mission.mission_id;\n                    option.text = `(${mission.mission_id}) `+ mission.mission_type+\" - \"+mission.mission_title;;\n                    missionSelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching mission list:', error);\n            }\n        }\n\n        // Fetch baby list and populate the dropdown\n        async function fetchBabyList() {\n            try {\n                const response = await fetch('http://140.119.164.71:1880/get_baby_list');\n                babyData = await response.json();\n                const babySelect = document.getElementById('user_id');\n                \n                babyData.data.forEach(baby => {\n                    const option = document.createElement('option');\n                    option.value = baby.discord_id;\n                    option.text = `${baby.baby_name} (${baby.discord_id})`;\n                    babySelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching baby list:', error);\n            }\n        }\n\n        // Call fetch functions when the page loads\n        window.onload = function() {\n            fetchMissionList();\n            fetchBabyList();\n        };\n\n        function sendTask() {\n            const user_id = document.getElementById('user_id').value;\n            const mission_id = document.getElementById('mission_type').value;  // Get mission_id from dropdown\n            const statusMessage = document.getElementById('statusMessage');\n\n            fetch('http://140.119.164.71:1880/push_task', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json',\n                },\n                body: JSON.stringify({ user_id, mission_id }),\n            })\n            .then(response => response.json())\n            .then(data => {\n                statusMessage.textContent = \"Task sent successfully!\";\n                statusMessage.style.color = \"green\";\n            })\n            .catch((error) => {\n                console.error('Error:', error);\n                statusMessage.textContent = \"Failed to send the task.\";\n                statusMessage.style.color = \"red\";\n            });\n\n            \n        }\n    </script>\n</body>\n</html>",
+        "output": "str",
+        "x": 550,
+        "y": 260,
+        "wires": [
+            [
+                "d71a6fc7bc3674f6"
+            ]
+        ]
+    },
+    {
+        "id": "7946a9fb68f3ec55",
+        "type": "http in",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "url": "/ui_send_task_dev",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 340,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d71a6fc7bc3674f6",
+        "type": "http response",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 730,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "1bf1878653fc051b",
+        "type": "inject",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 230,
+        "y": 80,
+        "wires": [
+            [
+                "5c5495f112e5bee7"
+            ]
+        ]
+    },
+    {
+        "id": "5c5495f112e5bee7",
+        "type": "debug",
+        "z": "fa0422cb4fc63cf9",
+        "name": "debug 52",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "d7308779f24b90cd",
+        "type": "inject",
+        "z": "3a41748162d7267f",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 120,
+        "wires": [
+            [
+                "109cad4c9cfd7fdf"
+            ]
+        ]
+    },
+    {
+        "id": "6e854321b01ce4f0",
+        "type": "debug",
+        "z": "3a41748162d7267f",
+        "name": "debug 53",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "109cad4c9cfd7fdf",
+        "type": "http request",
+        "z": "3a41748162d7267f",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://140.119.164.70:8000/api/get_baby_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 290,
+        "y": 200,
+        "wires": [
+            [
+                "6e854321b01ce4f0"
+            ]
         ]
     }
 ]

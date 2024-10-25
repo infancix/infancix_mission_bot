@@ -1,4 +1,7 @@
 # Logs
+.git_history
+
+*.jpg
 logs
 *.log
 npm-debug.log*

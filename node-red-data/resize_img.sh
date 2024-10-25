@@ -9,8 +9,10 @@ height=$(identify -format "%h" "$input_image")
 new_width=$((width / 2))
 new_height=$((height / 2))
 
+
 # Output image
 output_image="output.jpg"
+rm -f $output_image 
 
 # Resize image to 50%
 convert "$input_image" -resize "${new_width}x${new_height}" "$output_image"
