@@ -20,8 +20,27 @@ cd infancix_mission_bot/
 
 
 2. launch the application by docker
+
 ```bash
-docker run -it -d --privileged=true --restart=unless-stopped  --user root -p 1880:1880 -v ./node-red-data:/data --name nodered --entrypoint bash nodered/node-red:latest -c "cd /data && bash prerequisite.sh && cd /usr/src/node-red/ && bash entrypoint.sh"
+docker run -it -d \
+  --privileged=true \
+  --restart=unless-stopped \
+  --user root \
+  -p 1880:1880 \
+  -v ./node-red-data:/data \
+  --name nodered \
+  --entrypoint bash \
+  nodered/node-red:latest \
+  -c "cd /data && bash prerequisite.sh && cd /usr/src/node-red/ && npm install node-red-contrib-discord-advanced && bash entrypoint.sh"
 ```
+
+3. Monitor the log
+
+```bash
+docker logs -f nodered
+```
+
+if you see nodered have started flow, then it success !
+
 
 
