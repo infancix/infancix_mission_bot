@@ -10,8 +10,18 @@ This repo using [node-red](https://flows.nodered.org/) to handle the infancix_mi
 
 prepare docker and follow below steps
 
+
+1. git clone this repo
+
 ```bash
-docker run -it -d --privileged=true --restart=unless-stopped --user root -p 1880:1880 -v ./node-red-data:/data --name nodered nodered/node-red:latest
+git clone https://github.com/infancix/infancix_mission_bot.git
+cd infancix_mission_bot/
+```
+
+
+2. launch the application by docker
+```bash
+docker run -it -d --privileged=true --restart=unless-stopped  --user root -p 1880:1880 -v ./node-red-data:/data --name nodered --entrypoint bash nodered/node-red:latest -c "cd /data && bash prerequisite.sh && cd /usr/src/node-red/ && bash entrypoint.sh"
 ```
 
 
