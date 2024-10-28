@@ -20,6 +20,10 @@
  *
  **/
 
+
+const dotenv = require('dotenv');
+dotenv.config();
+
 module.exports = {
 
 /*******************************************************************************
@@ -59,6 +63,9 @@ module.exports = {
      * The following property can be used to specify an additional directory to scan.
      */
     //nodesDir: '/home/nol/.node-red/nodes',
+
+    env: process.env,
+	
 
 /*******************************************************************************
  * Security
