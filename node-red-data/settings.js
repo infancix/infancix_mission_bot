@@ -20,6 +20,18 @@
  *
  **/
 
+const dotenv = require('dotenv');
+const path = require('path');
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+console.log('Environment variables:', {
+    BUTLER_BOT_API_HOST: process.env.BUTLER_BOT_API_HOST,
+    BUTLER_BOT_API_PORT: process.env.BUTLER_BOT_API_PORT,
+    API_HOST: process.env.API_HOST,
+    API_PORT: process.env.API_PORT
+});
+
 module.exports = {
 
 /*******************************************************************************
@@ -59,6 +71,8 @@ module.exports = {
      * The following property can be used to specify an additional directory to scan.
      */
     //nodesDir: '/home/nol/.node-red/nodes',
+
+    env: process.env,
 
 /*******************************************************************************
  * Security
@@ -351,7 +365,7 @@ module.exports = {
      * By default, the property is set to false to avoid accidental exposure of
      * their values. Setting this to true will cause the keys to be listed.
      */
-    exportGlobalContextKeys: false,
+    exportGlobalContextKeys: true,
 
     /** Configure how the runtime will handle external npm modules.
      * This covers:
@@ -511,6 +525,7 @@ module.exports = {
      */
     functionGlobalContext: {
         // os:require('os'),
+        env: process.env,
     },
 
     /** The maximum number of messages nodes will buffer internally as part of their
