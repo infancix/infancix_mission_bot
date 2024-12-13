@@ -4,6 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
+        "dotenv": "~16.4.5",
         "@node-red-contrib-themes/theme-collection": "~4.0.8",
         "discord.js": "^14.16.3",
         "node-red-contrib-discord-advanced": "~3.6.0",

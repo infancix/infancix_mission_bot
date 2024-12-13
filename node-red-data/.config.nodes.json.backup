@@ -426,5 +426,178 @@
                 "file": "/usr/src/node-red/node_modules/@node-red/nodes/core/storage/23-watch.js"
             }
         }
+    },
+    "node-red-contrib-discord-advanced": {
+        "name": "node-red-contrib-discord-advanced",
+        "version": "3.6.0",
+        "local": false,
+        "user": false,
+        "nodes": {
+            "discord-token": {
+                "name": "discord-token",
+                "types": [
+                    "discord-token"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discord-token.js"
+            },
+            "discordMessage": {
+                "name": "discordMessage",
+                "types": [
+                    "discordMessage"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMessage.js"
+            },
+            "discordMessageManager": {
+                "name": "discordMessageManager",
+                "types": [
+                    "discordMessageManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMessageManager.js"
+            },
+            "discordPermissions": {
+                "name": "discordPermissions",
+                "types": [
+                    "discordPermissions"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordPermissions.js"
+            },
+            "discordReactionManager": {
+                "name": "discordReactionManager",
+                "types": [
+                    "discordReactionManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordReactionManager.js"
+            },
+            "discordChannelName": {
+                "name": "discordChannelName",
+                "types": [
+                    "discordChannelName"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordChannelName.js"
+            },
+            "discordMember": {
+                "name": "discordMember",
+                "types": [
+                    "discordMember"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMember.js"
+            },
+            "discordActivity": {
+                "name": "discordActivity",
+                "types": [
+                    "discordActivity"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordActivity.js"
+            },
+            "discordClient": {
+                "name": "discordClient",
+                "types": [
+                    "discordClient"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordClient.js"
+            },
+            "discordInteraction": {
+                "name": "discordInteraction",
+                "types": [
+                    "discordInteraction"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordInteraction.js"
+            },
+            "discordInteractionManager": {
+                "name": "discordInteractionManager",
+                "types": [
+                    "discordInteractionManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordInteractionManager.js"
+            },
+            "discordTyping": {
+                "name": "discordTyping",
+                "types": [
+                    "discordTyping"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordTyping.js"
+            },
+            "discordGuildManager": {
+                "name": "discordGuildManager",
+                "types": [
+                    "discordGuildManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordGuildManager.js"
+            },
+            "discordEventManager": {
+                "name": "discordEventManager",
+                "types": [
+                    "discordEventManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordEventManager.js"
+            },
+            "discordCommandManager": {
+                "name": "discordCommandManager",
+                "types": [
+                    "discordCommandManager"
+                ],
+                "enabled": true,
+                "local": false,
+                "user": false,
+                "module": "node-red-contrib-discord-advanced",
+                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordCommandManager.js"
+            }
+        }
     }
 }

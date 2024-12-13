@@ -430,8 +430,8 @@
     "node-red-contrib-discord-advanced": {
         "name": "node-red-contrib-discord-advanced",
         "version": "3.6.0",
-        "local": false,
-        "user": false,
+        "local": true,
+        "user": true,
         "nodes": {
             "discord-token": {
                 "name": "discord-token",
@@ -439,10 +439,10 @@
                     "discord-token"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discord-token.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discord-token.js"
             },
             "discordMessage": {
                 "name": "discordMessage",
@@ -450,10 +450,10 @@
                     "discordMessage"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMessage.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordMessage.js"
             },
             "discordMessageManager": {
                 "name": "discordMessageManager",
@@ -461,10 +461,10 @@
                     "discordMessageManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMessageManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordMessageManager.js"
             },
             "discordPermissions": {
                 "name": "discordPermissions",
@@ -472,10 +472,10 @@
                     "discordPermissions"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordPermissions.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordPermissions.js"
             },
             "discordReactionManager": {
                 "name": "discordReactionManager",
@@ -483,10 +483,10 @@
                     "discordReactionManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordReactionManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordReactionManager.js"
             },
             "discordChannelName": {
                 "name": "discordChannelName",
@@ -494,10 +494,10 @@
                     "discordChannelName"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordChannelName.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordChannelName.js"
             },
             "discordMember": {
                 "name": "discordMember",
@@ -505,10 +505,10 @@
                     "discordMember"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordMember.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordMember.js"
             },
             "discordActivity": {
                 "name": "discordActivity",
@@ -516,10 +516,10 @@
                     "discordActivity"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordActivity.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordActivity.js"
             },
             "discordClient": {
                 "name": "discordClient",
@@ -527,10 +527,10 @@
                     "discordClient"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordClient.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordClient.js"
             },
             "discordInteraction": {
                 "name": "discordInteraction",
@@ -538,10 +538,10 @@
                     "discordInteraction"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordInteraction.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordInteraction.js"
             },
             "discordInteractionManager": {
                 "name": "discordInteractionManager",
@@ -549,10 +549,10 @@
                     "discordInteractionManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordInteractionManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordInteractionManager.js"
             },
             "discordTyping": {
                 "name": "discordTyping",
@@ -560,10 +560,10 @@
                     "discordTyping"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordTyping.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordTyping.js"
             },
             "discordGuildManager": {
                 "name": "discordGuildManager",
@@ -571,10 +571,10 @@
                     "discordGuildManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordGuildManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordGuildManager.js"
             },
             "discordEventManager": {
                 "name": "discordEventManager",
@@ -582,10 +582,10 @@
                     "discordEventManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordEventManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordEventManager.js"
             },
             "discordCommandManager": {
                 "name": "discordCommandManager",
@@ -593,10 +593,107 @@
                     "discordCommandManager"
                 ],
                 "enabled": true,
-                "local": false,
+                "local": true,
                 "user": false,
                 "module": "node-red-contrib-discord-advanced",
-                "file": "/usr/src/node-red/node_modules/node-red-contrib-discord-advanced/discord/discordCommandManager.js"
+                "file": "/data/node_modules/node-red-contrib-discord-advanced/discord/discordCommandManager.js"
+            }
+        }
+    },
+    "node-red-contrib-google-sheets": {
+        "name": "node-red-contrib-google-sheets",
+        "version": "1.1.2",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "gsheet": {
+                "name": "gsheet",
+                "types": [
+                    "GSheet",
+                    "gauth"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-google-sheets",
+                "file": "/data/node_modules/node-red-contrib-google-sheets/gsheet.js"
+            }
+        }
+    },
+    "node-red-contrib-image-output": {
+        "name": "node-red-contrib-image-output",
+        "version": "0.6.4",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "image": {
+                "name": "image",
+                "types": [
+                    "image"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-image-output",
+                "file": "/data/node_modules/node-red-contrib-image-output/image/image.js"
+            }
+        }
+    },
+    "node-red-contrib-loop": {
+        "name": "node-red-contrib-loop",
+        "version": "1.0.1",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "loop": {
+                "name": "loop",
+                "types": [
+                    "loop"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-loop",
+                "file": "/data/node_modules/node-red-contrib-loop/loop.js"
+            }
+        }
+    },
+    "node-red-contrib-mongodb4": {
+        "name": "node-red-contrib-mongodb4",
+        "version": "2.5.2",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "mongodb4": {
+                "name": "mongodb4",
+                "types": [
+                    "mongodb4-client",
+                    "mongodb4"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-mongodb4",
+                "file": "/data/node_modules/node-red-contrib-mongodb4/src/mongodb4.js"
+            }
+        }
+    },
+    "node-red-node-base64": {
+        "name": "node-red-node-base64",
+        "version": "0.3.0",
+        "local": true,
+        "user": true,
+        "nodes": {
+            "base64": {
+                "name": "base64",
+                "types": [
+                    "base64"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-node-base64",
+                "file": "/data/node_modules/node-red-node-base64/70-base64.js"
             }
         }
     }
