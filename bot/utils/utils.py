@@ -120,7 +120,7 @@ async def get_baby_record(discord_id):
         baby_list = []
 
     baby = next(
-        (baby for baby in baby_list if baby['discord_id'] == str(discord_id)), None
+        (baby for baby in baby_list if baby['student_id'] == str(discord_id)), None
     )
 
     if baby is None:

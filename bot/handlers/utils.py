@@ -63,7 +63,8 @@ async def handle_start_mission(client, user_id, mission_id):
     await update_student_mission_status(user_id, mission_id, total_steps, current_step, thread_id, assistant_id)
 
     # Create quizzes for speed up mission
-    QUIZZES[user_id] = client.gpt_client.generate_quiz(MISSIONS[mission_id])
+    QUIZZES[str(user_id)] = client.gpt_client.generate_quiz(MISSIONS[mission_id])
+    print(QUIZZES)
 
     hello_response = client.gpt_client.get_greeting_message(assistant_id, thread_id, additional_info)
     # Store assistant message
@@ -96,7 +97,7 @@ async def handle_start_mission(client, user_id, mission_id):
                     'total_steps': str(total_steps),
                     'current_step': str(current_step)
                 }
-                await handle_reply_option_message(client, message, selected_reply, user_data)
+                await handle_interaction_response(client, message, selected_reply, user_data)
                 return
 
     except Forbidden as e:
@@ -144,7 +145,7 @@ async def handle_dm(client, message):
 
 async def handle_response(client, message, response, user_data):
     user_id = str(message.author.id)
-
+    current_step = int(user_data['current_step'])
     if response['class_state'] in ['hello', 'in_class']:
         if response.get('reply_options', None):
             view = ReplyOptionView(response['reply_options'])
@@ -153,21 +154,22 @@ async def handle_response(client, message, response, user_data):
             await view.wait()
             if view.selected_option is not None:
                 selected_reply = response['reply_options'][view.selected_option]
-                await handle_reply_option_message(client, message, selected_reply, user_data)
+                await handle_interaction_response(client, message, selected_reply, user_data)
         else:
             await message.channel.send(response['message'])
             await store_message(user_id, 'assistant', datetime.now().isoformat(), response['message'])
 
     elif response['class_state'] == 'quiz':
-        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], 1) # finish class
+        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], current_step+1) # finish class
         await handle_quiz(client, message, user_data, response)
 
     elif response['class_state'] == 'image':
-        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], 2) # finish quiz
-        await handle_image(client, message, user_data, response)
+        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], current_step+1) # finish quiz
+        await message.channel.send(response['message'])
+        await store_message(user_id, 'assistant', datetime.now().isoformat(), response['message'])
 
     elif response['class_state'] == 'class_done':
-        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], 3) # finish quiz or image
+        await update_student_mission_status(user_id, user_data['mission_id'], user_data['total_steps'], current_step+1) # finish quiz or image
         await handle_terminate_button(client, message, response, user_data)
 
     else:
@@ -183,7 +185,7 @@ def image_check(m):
         and any(m.attachments[0].filename.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif'])
     )
 
-async def handle_reply_option_message(client, message, user_reply, user_data):
+async def handle_interaction_response(client, message, user_reply, user_data):
     user_id = str(message.author.id)
 
     await store_message(user_id, 'user', datetime.now().isoformat(), user_reply)
@@ -226,16 +228,9 @@ async def handle_quiz(client, message, user_data, response):
             explanation = quiz['options'][view.selected_option]['explanation']
             await message.channel.send(explanation)
 
-    quiz_summary = f"測驗結束！總題數: {total};\n回答正確題數: {correct} 🎓"
-
-    # get gpt response after quiz
-    quiz_response = client.gpt_client.get_reply_message(user_data['assistant_id'], user_data['thread_id'], quiz_summary)
-
-    # send bot response
-    await message.channel.send(quiz_summary + '\n\n' + quiz_response['message'])
-
+    quiz_summary = f"測驗結束！🎉 \n答對 {correct}/{total} 題！🎓"
     await store_message(user_id, 'assistant', datetime.now().isoformat(), quiz_summary)
-    await store_message(user_id, 'assistant', datetime.now().isoformat(), quiz_response['message'])
+    await handle_interaction_response(client, message, quiz_summary, user_data)
 
 async def handle_terminate_button(client, message, response, user_data):
     user_id = str(message.author.id)
@@ -243,7 +238,6 @@ async def handle_terminate_button(client, message, response, user_data):
     view.add_item(
         TerminateButton(client, "結束諮詢", "諮詢結束，謝謝您的使用", user_data)
     )
-
     # send bot response
     await message.channel.send(response['message'], view=view)
     await store_message(user_id, 'assistant', datetime.now().isoformat(), response['message'])
