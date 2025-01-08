@@ -4,6 +4,7 @@ import json
 import os
 from openai import OpenAI
 
+from bot.utils.utils import update_mission_assistant
 from bot.logger import setup_logger
 
 class OpenAIUtils:
@@ -20,40 +21,29 @@ class OpenAIUtils:
         file_path = os.path.join('audio', f'{message.author.id}.ogg')
         await message.attachments[0].save(file_path)
         audio = AudioSegment.from_file(file_path)
-        output_path = file_path.rsplit('.', 1)[0] + '.mp3'
+        file_path = file_path.rsplit('.', 1)[0] + '.mp3'
+        audio.export(file_path, format='mp3')
+
         transcription = self.client.audio.transcriptions.create(
             model="whisper-1",
-            file=Path(output_path),
+            file=Path(file_path),
             prompt='請以台灣繁體中文',
             language='zh',
         )
         if transcription.text:
-            return transcription.text
+            return {"result": transcription.text}
         else:
             self.logger.error(f"Failed to parse audo message from {message.author.id}")
             return None
 
-    def load_assistant(self, mission):
-        mission_id = str(mission['mission_id'])
-        with open('bot/data/mission_assistants.json', 'r') as file:
-            assistants = json.load(file)
-
-        assistant_id = assistants.get(mission_id, None)
+    async def load_assistant(self, mission):
+        mission_id = mission['mission_id']
         try:
-            mission_assistant = self.client.beta.assistants.retrieve(assistant_id)
-            return mission_assistant.id
+            if not mission['assistant_id']:
+                return self.client.beta.assistants.retrieve(mission['assistant_id'])
         except Exception as e:
-            self.logger.error(f"Failed to retrieve mission assistant {str(e)}")
-            mission_assistant = None
+            self.logger.error(f"Failed to load assistant: {mission_id} {mission['assistant_id']}: {str(e)}")
 
-        if not mission_assistant:
-            new_assistant_id = self.create_assistant(mission)
-            assistants[mission_id] = new_assistant_id
-            with open('bot/data/mission_assistants.json', 'w') as outfile:
-                json.dump(assistants, outfile, ensure_ascii=False, indent=2)
-            return new_assistant_id
-
-    def create_assistant(self, mission):
         if mission['reward'] == 100:
             assistant_prompt = self.generate_assistant_with_image_task_prompt(mission)
         else:
@@ -68,13 +58,17 @@ class OpenAIUtils:
         )
 
         self.logger.info(f"Creating a new mission assistant: 任務里程碑課程_{mission['mission_id']}({mission_assistant.id})")
+        await update_mission_assistant(mission_id, mission_assistant.id)
 
         return mission_assistant.id
 
     def load_thread(self):
         return self.client.beta.threads.create().id
 
-    def generate_quiz(self, mission):
+    def generate_quiz(self, mission, retry_count=1):
+        if retry_count <= 0:
+            return []
+
         quiz_prompt = self.generate_quiz_prompt(mission)
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
@@ -82,60 +76,103 @@ class OpenAIUtils:
             temperature=0.7
         )
         response = response.choices[0].message.content.strip()
-        quiz = self.post_process(response).get("quiz", [])
-        return quiz
+        process_result = self.post_process(response)
+        if 'error' in process_result:
+            self.logger.error(f"Error generating quiz: {process_result['message']} (Retry: {retry_count})")
+            self.generate_quiz(mission, retry_count-1)
+        else:
+            quiz = process_result['result'].get('quiz', [])
+            return quiz
 
     def get_greeting_message(self, assistant_id, thread_id, additional_info):
-        _ = self.client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=f"以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n```{additional_info}```\n，class_state='hello'。",
-        )
-        return self.run(assistant_id, thread_id)
+        message_content = f"以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n{additional_info}\nclass_state=hello"
+        return self.run(message_content, assistant_id, thread_id)
 
     def get_reply_message(self, assistant_id, thread_id, user_message):
+        return self.run(user_message, assistant_id, thread_id)
+
+    def run(self, message_content, assistant_id, thread_id, retry_count=2):
+        if retry_count <= 0:
+            return {
+                'class_state': 'class_done',
+                'message': "抱歉，加一不太懂你的意思，請聯絡管理員協助喔。",
+            }
+
         _ = self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
-            content=user_message,
+            content=message_content,
         )
-        return self.run(assistant_id, thread_id)
 
-    def run(self, assistant_id, thread_id):
         run = self.client.beta.threads.runs.create_and_poll(
             thread_id=thread_id,
             assistant_id=assistant_id
         )
 
-        #if run.status == 'completed':
         messages = self.client.beta.threads.messages.list(thread_id=thread_id)
-        return self.post_process(messages.data[0].content[0].text.value)
+        if not messages.data:
+            self.logger.error("Message list is empty.")
+            return {
+                'class_state': 'class_done',
+                'message': (
+                    "嗚嗚～加一跟你說，第三方AI系統…嗯，壞掉惹！😭\n"
+                    "現在紀錄功能暫時不能用啦～拜託你稍微等一下下～真的抱歉捏！🐾🥹\n"
+                    "請聯絡管理員協助喔。"
+                ),
+            }
+
+        process_result = self.post_process(messages.data[0].content[0].text.value)
+        if 'error' in process_result:
+            self.logger.error(f"Error Type: {process_result['error']}, Raw Response: {process_result['raw_response']}")
+            message_content += f"\n\n注意：{process_result['message']}，請根據提示重新調整。"
+            return self.run(message_content, assistant_id, thread_id, retry_count - 1)
+        else:
+            return process_result['result']
 
     def post_process(self, response):
         """Process GPT response to parse JSON and clean the message."""
+        response = self.clean_message(response)
+        start_index = response.find('{')
+        end_index = response.rfind('}')
+        if start_index == -1 or end_index == -1:
+            self.logger.error(f"Wrong format in response: {response}")
+            return {
+                'error': 'format_error',
+                'message': 'Response does not contain valid JSON format.',
+                'raw_response': response
+            }
 
-        if response.startswith("```json") and response.endswith("```"):
-            response = response[7:-3].strip()
-        elif response.startswith("```") and response.endswith("```"):
-            response = response[3:-3].strip()
+        # clean message
+        response = response[start_index:end_index + 1]
 
         # Attempt to parse JSON
         try:
             parsed = json.loads(response)
         except json.JSONDecodeError as e:
-            self.logger.info(f"GPT: {response}")
             self.logger.error(f"JSON decode error: {e}")
-            parsed = {
-                'message': response,
-                'class_state': 'unknown'
+            return {
+                'error': 'json_decode_error',
+                'message': str(e),
+                'raw_response': response
             }
         except Exception as e:
             self.logger.error(f"Receive unknown error: {e}")
+            return {
+                'error': 'unknown_error',
+                'message': str(e),
+                'raw_response': response
+            }
 
-        # Clean the message by removing sources
-        parsed['message'] = re.sub(r'\【.*?\】', '', parsed.get('message', '')).strip()
         self.logger.info(f"Final reuslts: {parsed}")
-        return parsed
+        return {
+            'result': parsed
+        }
+
+    def clean_message(self, message):
+        """
+        清理訊息，移除中括號內容及 HTML 標籤，並修剪空白。
+        """
+        return re.sub(r'\【.*?\】', '', message).strip().replace('<br>', '\n')
 
     def generate_quiz_prompt(self, mission):
         return f"""你是一個育兒知識專家, 請幫我完成下列任務：
@@ -221,8 +258,9 @@ class OpenAIUtils:
 ### 對話順序
 1. HELLO 階段 (class_state = "hello")
     - 親切問候媽媽今天過得好嗎，提醒可使用按鈕或語音回覆
-    - 準備 1 個回覆選項 (eg. 「準備好了！」)
-    → 收到媽媽回覆後進入 IN_CLASS 階段
+    - 給予 2 個回覆選項 (eg. 「快速瀏覽文字重點」「影片播放」)
+    → 收到媽媽回覆「文字重點」後進入 IN_CLASS 階段
+    → 收到媽媽回覆「影片播放」後進入 IN_VIDEO 階段
 
 2. 課程講解階段 (class_state = "in_class")
     - 先說明課程大綱，詢問家長是否可以開始了
@@ -242,21 +280,26 @@ class OpenAIUtils:
         * 如果家長想複習，則重新說明課程重點
     → 確認家長準備好後才進入 QUIZ 階段
 
-3. 測驗階段 (class_state = "quiz")
+3. 影片播放階段 (class_state = "in_video")
+    - 給予影片播放連結 {mission['mission_video_contents']}
+    - 給予 1 個回覆選項 (eg.「我看完了，進入小測驗」)
+    → 收到回覆「我看完了，進入小測驗」後才進入QUIZ 階段
+
+4. 測驗階段 (class_state = "quiz")
     - 等待系統回覆家長的測驗成績
     → 收到測驗結果後根據正確率給予回饋，進入 IMAGE 階段
 
-4. 照片分享階段 (class_state = "image")
+5. 照片分享階段 (class_state = "image")
     - 請家長根據課程內容設計一個分享照片的任務
     - 收到「已收到任務照片」時：
         * 稱讚照片
         * 強調這是寶寶珍貴的回憶💖
-        * 最後提供課程圖片和影片連結
+        * 最後提供課程圖片和影片連結(如果有經過 in_video 階段只要給圖片連結)
         * 圖片連結: {mission['mission_image_contents']} (圖片會有 0 至 2 張，沒有可以不提供)
         * 影片連結: {mission['mission_video_contents']}
     → 必須在收到「已收到任務照片」後才進入 CLASS_DONE 階段
 
-5. 課程結束階段 (class_state = "class_done")
+6. 課程結束階段 (class_state = "class_done")
     - 跟家長說有任何疑問都可以問我喔
 
 ###
@@ -274,7 +317,7 @@ class OpenAIUtils:
 ### 回覆格式
 - 輸出需為 JSON 格式，並包含以下結構：
 {{
-    "class_state": "hello" | "in_class" | "quiz" | "image" | "class_done",
+    "class_state": "hello" | "in_class" | "in_video" | "quiz" | "image" | "class_done",
     "message": "GPT 訊息",
     "reply_options": ["option1", "option2", ...]
 }}
@@ -346,8 +389,9 @@ class OpenAIUtils:
 ### 對話順序
 1. HELLO 階段 (class_state = "hello")
     - 親切問候媽媽今天過得好嗎，提醒可使用按鈕或語音回覆
-    - 準備 1 個回覆選項 (eg. 「準備好了！」)
-    → 收到媽媽回覆後進入 IN_CLASS 階段
+    - 給予 2 個回覆選項 (eg. 「快速瀏覽文字重點」「影片播放」)
+    → 收到媽媽回覆「文字重點」後進入 IN_CLASS 階段
+    → 收到媽媽回覆「影片播放」後進入 IN_VIDEO 階段
 
 2. 課程講解階段 (class_state = "in_class")
     - 先說明課程大綱，詢問家長是否可以開始了
@@ -367,16 +411,21 @@ class OpenAIUtils:
         * 如果家長想複習，則重新說明課程重點
     → 確認家長準備好後才進入 QUIZ 階段
 
-3. 測驗階段 (class_state = "quiz")
+3. 影片播放階段 (class_state = "in_video")
+    - 給予影片播放連結 {mission['mission_video_contents']}
+    - 給予 1 個回覆選項 (eg.「我看完了，進入小測驗」)
+    → 收到回覆「我看完了，進入小測驗」後才進入QUIZ 階段
+
+4. 測驗階段 (class_state = "quiz")
     - 等待系統回覆家長的測驗成績
     - 當收到測驗結果時：
         * 根據正確率給予適當的回饋
-        * 提供課程圖片和影片連結
+        * 提供課程圖片和影片連結 (如果有經過 in_video階段只要給圖片連結)
         * 圖片連結: {mission['mission_image_contents']} (圖片會有 0 至 2 張，沒有可以不提供)
         * 影片連結: {mission['mission_video_contents']}
     → 並須在收到測驗結果後根據正確率給予回饋，才進入 CLASS_DONE 階段
 
-4. 課程結束階段 (class_state = "class_done")
+5. 課程結束階段 (class_state = "class_done")
     - 跟家長說有任何疑問都可以問我喔
 
 ###
@@ -392,7 +441,7 @@ class OpenAIUtils:
 ### 回覆格式
 - 輸出需為 JSON 格式，並包含以下結構：
 {{
-    "class_state": "hello" | "in_class" | "quiz" | "class_done",
+    "class_state": "hello" | "in_class" | "in_video" | "quiz" | "class_done",
     "message": "GPT 訊息",
     "reply_options": ["option1", "option2", ...]
 }}
