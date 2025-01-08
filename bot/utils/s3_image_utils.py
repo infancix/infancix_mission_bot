@@ -16,7 +16,7 @@ class ImageProcessor:
         self.QUALITY = 85  # JPEG 壓縮品質
         self.MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
         self.ALLOWED_TYPES = ['image/jpeg', 'image/png']
-        self.ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png']
+        self.ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
         self.logger = logger
 
     def rotate_image(self, image: Union[bytes, io.BytesIO, str]) -> Optional[io.BytesIO]:
@@ -65,6 +65,12 @@ class ImageProcessor:
         except Exception as e:
             self.logger.error(f"Image compression error: {str(e)}")
             return None
+
+    def convert_heif_to_jpeg(image: Union[bytes, io.BytesIO, str]):
+        image = Image.open(image)
+        output = io.BytesIO()
+        image.save(output, format="JPEG")
+        return output.getvalue()
 
 class S3Handler:
     def __init__(self, bucket_name: str, logger):
@@ -144,7 +150,10 @@ class S3ImageUtils:
                 return None
 
             # 打開圖片進行處理
-            image = Image.open(image_data)
+            if file_ext in ['.heic', '.heif']:
+                image = self.image_processor.convert_heif_to_jpeg(image_data)
+            else:
+                image = Image.open(image_data)
 
             rotated_image = self.image_processor.rotate_image(image)
             if not rotated_image:
