@@ -123,10 +123,10 @@ async def handle_video_mission(client, user_id, mission_id):
     await update_student_mission_status(user_id, mission_id, total_steps, current_step, thread_id, assistant_id)
 
     # Create quizzes for speed up mission
-    QUIZZES[str(user_id)] = client.gpt_client.generate_quiz(mission)
+    QUIZZES[str(user_id)] = await client.gpt_client.generate_quiz(mission)
     print(QUIZZES)
 
-    hello_response = client.gpt_client.get_greeting_message(assistant_id, thread_id, additional_info)
+    hello_response = await client.gpt_client.get_greeting_message(assistant_id, thread_id, additional_info)
     hello_message = f"""🎖育兒學習🎖
 
 📑任務： {mission['mission_title']}
@@ -221,7 +221,7 @@ async def handle_dm(client, message):
     await store_message(user_id, 'user', datetime.now().isoformat(), user_message)
 
     async with message.channel.typing():
-        response = client.gpt_client.get_reply_message(user_data['assistant_id'], user_data['thread_id'], user_message)
+        response = await client.gpt_client.get_reply_message(user_data['assistant_id'], user_data['thread_id'], user_message)
     await handle_response(client, message, response, user_data)
 
 async def handle_response(client, message, response, user_data):
@@ -272,7 +272,7 @@ async def handle_interaction_response(client, message, user_reply, user_data):
     await store_message(user_id, 'user', datetime.now().isoformat(), user_reply)
 
     async with message.channel.typing():
-        response = client.gpt_client.get_reply_message(
+        response = await client.gpt_client.get_reply_message(
             user_data['assistant_id'],
             user_data['thread_id'],
             user_reply
@@ -287,7 +287,7 @@ async def handle_quiz(client, message, user_data, response):
     if not quizzes:
         mission = await get_mission_info(mission_id)
         async with message.channel.typing():
-            quizzes = client.gpt_client.generate_quiz(mission)
+            quizzes = await client.gpt_client.generate_quiz(mission)
 
     print(f"{len(quizzes)}\n{quizzes}")
     total, correct = len(quizzes), 0

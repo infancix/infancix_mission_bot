@@ -8,7 +8,6 @@ from bot.utils.utils import update_mission_assistant
 from bot.logger import setup_logger
 
 class OpenAIUtils:
-
     def __init__(self, api_key: str):
         self.client = OpenAI(api_key=api_key)
         self.logger = setup_logger('OpenAIUtils')
@@ -65,7 +64,7 @@ class OpenAIUtils:
     def load_thread(self):
         return self.client.beta.threads.create().id
 
-    def generate_quiz(self, mission, retry_count=1):
+    async def generate_quiz(self, mission, retry_count=1):
         if retry_count <= 0:
             return []
 
@@ -79,19 +78,19 @@ class OpenAIUtils:
         process_result = self.post_process(response)
         if 'error' in process_result:
             self.logger.error(f"Error generating quiz: {process_result['message']} (Retry: {retry_count})")
-            self.generate_quiz(mission, retry_count-1)
+            await self.generate_quiz(mission, retry_count-1)
         else:
             quiz = process_result['result'].get('quiz', [])
             return quiz
 
-    def get_greeting_message(self, assistant_id, thread_id, additional_info):
+    async def get_greeting_message(self, assistant_id, thread_id, additional_info):
         message_content = f"以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n{additional_info}\nclass_state=hello"
-        return self.run(message_content, assistant_id, thread_id)
+        return await self.run(message_content, assistant_id, thread_id)
 
-    def get_reply_message(self, assistant_id, thread_id, user_message):
-        return self.run(user_message, assistant_id, thread_id)
+    async def get_reply_message(self, assistant_id, thread_id, user_message):
+        return await self.run(user_message, assistant_id, thread_id)
 
-    def run(self, message_content, assistant_id, thread_id, retry_count=2):
+    async def run(self, message_content, assistant_id, thread_id, retry_count=2):
         if retry_count <= 0:
             return {
                 'class_state': 'class_done',
@@ -110,6 +109,7 @@ class OpenAIUtils:
         )
 
         messages = self.client.beta.threads.messages.list(thread_id=thread_id)
+
         if not messages.data:
             self.logger.error("Message list is empty.")
             return {
@@ -125,7 +125,7 @@ class OpenAIUtils:
         if 'error' in process_result:
             self.logger.error(f"Error Type: {process_result['error']}, Raw Response: {process_result['raw_response']}")
             message_content += f"\n\n注意：{process_result['message']}，請根據提示重新調整。"
-            return self.run(message_content, assistant_id, thread_id, retry_count - 1)
+            return await self.run(message_content, assistant_id, thread_id, retry_count - 1)
         else:
             return process_result['result']
 
