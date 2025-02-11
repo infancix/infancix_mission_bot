@@ -33,6 +33,7 @@ class MilestoneSelect(discord.ui.Select):
         # Stop View to prevent duplicate interactions
         self.view.stop()
         await interaction.message.edit(view=None)
+        await interaction.response.send_message(f"汪～請交給我，讓加一馬上幫你準備新課程🐾\n會需要一點時間喔，請耐心等候😊")
 
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
         if channel is None or not isinstance(channel, discord.TextChannel):
@@ -41,5 +42,4 @@ class MilestoneSelect(discord.ui.Select):
         start_task_msg = f"START_MISSION_{selected_mission_id} <@{interaction.user.id}>"
         await channel.send(start_task_msg)
 
-        await interaction.channel.send(f"汪～請交給我，讓加一馬上幫你準備新課程🐾")
 
