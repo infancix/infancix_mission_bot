@@ -32,3 +32,29 @@ class ReplyOptionView(discord.ui.View):
         return callback
 
 
+class SingleReplyButtonView(discord.ui.View):
+    def __init__(self,
+        label
+    ):
+        super().__init__(timeout=None)
+        self.selected = False
+
+        button = discord.ui.Button(
+            label=label,
+            style=discord.ButtonStyle.primary
+        )
+
+        button.callback = self.button_callback
+        self.add_item(button)
+
+    async def button_callback(self, interaction: discord.Interaction):
+        try:
+            self.selected = True
+            for item in self.children:
+                item.disabled = True
+            await interaction.response.edit_message(view=self)
+            self.stop()
+        except Exception as e:
+            await interaction.response.defer()
+            raise e
+
