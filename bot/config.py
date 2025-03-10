@@ -14,6 +14,8 @@ class Config:
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
         self.BABY_API_PORT = os.getenv('BABY_API_PORT')
+        self.MISSION_BOT_ASSISTANT = 'asst_DlqSJaUKd9K118tbYvB4EbfD'
+        self.PHOTO_TASK_ASSISTANT = 'asst_NKABptwzFlKB9kZnm2f8QbAa'
 
         self.channel_map = {
             '1166487593492418594': '社團大廳',
@@ -42,14 +44,14 @@ class Config:
         ]
 
         self.record_mission_list = [32, 39, 45, 54, 67]
+        self.photo_mission_list = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
 
         self.class_step = {
             0: '未發送',
             1: 'Hello 階段',
             2: '課程講解階段',
             3: '測驗階段',
-            4: '照片分享階段',
-            5: '課程後重點整理階段',
+            4: '課程結束'
         }
 
 config = Config()

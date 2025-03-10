@@ -2,14 +2,16 @@ import discord
 from bot.config import config
 
 class ReplyOptionView(discord.ui.View):
-    def __init__(self, options):
-        super().__init__(timeout=None)
+    def __init__(self, options, timeout=86400):
+        super().__init__(timeout=timeout)
         self.selected_option = None
+        self.options = options
+        self.message = None
 
         for idx, option in enumerate(options):
             button = discord.ui.Button(
                 label=option,
-                style=discord.ButtonStyle.secondary
+                style=discord.ButtonStyle.primary
             )
             button.callback = self.create_callback(idx)
             self.add_item(button)
@@ -17,44 +19,27 @@ class ReplyOptionView(discord.ui.View):
     def create_callback(self, idx):
         async def callback(interaction: discord.Interaction):
             try:
-                self.selected_option = idx
+                self.selected_option = self.options[idx]
                 for item in self.children:
                     item.disabled = True
                 await interaction.response.edit_message(view=self)
-
                 self.stop()
-
             except Exception as e:
-                # 如果有錯誤，延遲回應避免 Discord API 報錯
                 await interaction.response.defer()
                 raise e
 
         return callback
 
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
 
-class SingleReplyButtonView(discord.ui.View):
-    def __init__(self,
-        label
-    ):
-        super().__init__(timeout=None)
-        self.selected = False
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+                print("✅ 24 小時後按鈕已自動 disable")
+            except discord.NotFound:
+                print("❌ 訊息已刪除，無法更新")
 
-        button = discord.ui.Button(
-            label=label,
-            style=discord.ButtonStyle.primary
-        )
-
-        button.callback = self.button_callback
-        self.add_item(button)
-
-    async def button_callback(self, interaction: discord.Interaction):
-        try:
-            self.selected = True
-            for item in self.children:
-                item.disabled = True
-            await interaction.response.edit_message(view=self)
-            self.stop()
-        except Exception as e:
-            await interaction.response.defer()
-            raise e
+        self.stop()
 

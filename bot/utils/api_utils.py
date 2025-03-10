@@ -51,7 +51,7 @@ class APIUtils:
                         else:
                             return response_data.get('message')
                     else:
-                        self.logger.error(f"API request failed /api/{endpoint} with status {response.status}")
+                        self.logger.error(f"API request failed /api/{endpoint} with status {response.status}, {response.text}")
                         return None
         except Exception as e:
             self.logger.error(f"API request failed: {str(e)}")
@@ -75,39 +75,44 @@ class APIUtils:
         response = await self._post_request('optin_class', data)
         return bool(response)
 
-    async def update_mission_assistant(self, mission_id, assistant_id):
-        data = {
-            'mission_id': int(mission_id),
-            'assistant_id': assistant_id
-        }
-        response = await self._post_request('update_mission_assistant', data)
-        return bool(response)
-
     async def get_student_is_in_mission(self, user_id):
         return await self._post_request('get_student_is_in_mission', {'discord_id': str(user_id)})
 
-    async def update_student_mission_status(self, user_id, mission_id, total_steps=6, current_step=0, thread_id=None, assistant_id=None):
+    async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
         # thread_id is none only if the status is complete
-        if current_step == 0 and not isinstance(thread_id, str) and not isinstance(assistant_id, str):
+        if current_step == 0 and not isinstance(thread_id, str):
             raise Exception('thread_id is required for status Start')
 
         data = {
             'discord_id': str(user_id),
             'mission_id': mission_id,
-            'total_steps': str(total_steps),
-            'current_step': str(current_step)
+            'total_steps': total_steps,
+            'current_step': current_step,
+            'is_paused': is_paused,
         }
         if thread_id:
             data['thread_id'] = thread_id
-        if assistant_id:
-            data['assistant_id'] = assistant_id
+        if score:
+            data['score'] = score
+
+        print(data)
 
         response = await self._post_request('update_student_mission_status', data)
         return bool(response)
 
-    async def upload_baby_image(self, user_id, milestone, image_url):
+    async def update_student_current_mission(self, user_id, mission_id):
         data = {
             'discord_id': str(user_id),
+            'channel_id': '照護教室',
+            'class_id': mission_id,
+        }
+        response = await self._post_request('update_student_current_class', data)
+        return bool(response)
+
+    async def upload_baby_image(self, user_id, mission_id, milestone, image_url):
+        data = {
+            'discord_id': str(user_id),
+            'mission_id': mission_id,
             'milestone': milestone,
             'image_url': image_url,
             'image_date': str(datetime.now().date())
@@ -115,44 +120,56 @@ class APIUtils:
         response = await self._post_request('upload_baby_image', data)
         return bool(response)
 
-    async def get_student_mission_notification_list(self):
+    async def get_all_students_mission_notifications(self):
         return await self._get_request('get_student_mission_notification_list')
+
+    async def get_student_mission_notifications_by_id(self, user_id):
+        response = await self._get_request(f'get_student_mission_notification_list?discord_id={user_id}')
+        if bool(response) == False:
+            return None
+        return response[user_id]
 
     async def get_student_incompleted_mission_list(self, user_id):
         return await self._post_request('get_student_incompleted_mission_list', {'discord_id': str(user_id)})
 
-    async def get_student_profile(self, discord_id):
-        response = await self._post_request('get_student_profile', {'discord_id': str(discord_id)})
+    async def get_student_milestones(self, user_id):
+        return await self._get_request(f'get_student_milestones?discord_id={user_id}')
+
+    async def get_student_profile(self, user_id):
+        response = await self._post_request('get_student_profile', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
         return response
 
-    async def get_baby_profile(self, discord_id):
-        response = await self._post_request('get_baby_profile', {'discord_id': str(discord_id)})
+    async def get_baby_profile(self, user_id):
+        response = await self._post_request('get_baby_profile', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
         return response
 
-    async def get_baby_additional_info(self, discord_id):
-        baby = await self.get_baby_profile(discord_id)
+    async def get_baby_additional_info(self, user_id):
+        additional_info = "另外以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n"
+
+        baby = await self.get_baby_profile(user_id)
         if not baby:
-            return '寶寶未登記資料，需要提醒家長用“寶寶檔案室”登記寶寶資料！'
+            additional_info += '寶寶未登記資料，需要提醒家長用“寶寶檔案室”登記寶寶資料！'
+            return additional_info
 
-        birth_date = datetime.strptime(baby['birthdate'], '%Y.%m.%d').date()
+        birth_date = datetime.strptime(baby['birthdate'], '%Y-%m-%d').date()
         day_age = (datetime.today().date() - birth_date).days
         baby_name = baby['baby_name']
         baby_gender = '男' if baby['gender'] == 'm' else '女'
 
-        record_str = f'今天日期: {datetime.today().date()}'
-        record_str += f'\n寶寶姓名: {baby_name}'
-        record_str += f'\n寶寶性別: {baby_gender}'
-        record_str += f'\n寶寶生日: {birth_date}'
-        record_str += f'\n寶寶日齡: {day_age}天'
-        return record_str
+        additional_info += f'今天日期: {datetime.today().date()}'
+        additional_info += f'\n寶寶姓名: {baby_name}'
+        additional_info += f'\n寶寶性別: {baby_gender}'
+        additional_info += f'\n寶寶生日: {birth_date}'
+        additional_info += f'\n寶寶日齡: {day_age}天'
+        return additional_info
 
-    async def check_student_mission_eligible(self, discord_id):
-        student = await self.get_student_profile(discord_id)
-        baby = await self.get_baby_profile(discord_id)
+    async def check_student_mission_eligible(self, user_id):
+        student = await self.get_student_profile(user_id)
+        baby = await self.get_baby_profile(user_id)
         if not student and not baby:
             return -1
         elif not baby and student.get('due_date', None) is not None:
@@ -165,8 +182,8 @@ class APIUtils:
             else:
                 return 'pregnancy_or_newborn_stage'
 
-    async def check_baby_records_in_two_weeks(self, discord_id):
-        response = await self._post_request('get_baby_records', {'discord_id': discord_id})
+    async def check_baby_records_in_two_weeks(self, user_id):
+        response = await self._post_request('get_baby_records', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
@@ -181,7 +198,21 @@ class APIUtils:
         else:
             return False
 
-    async def store_message(self, user_id, role, message):
+    async def get_student_mission_status(self, user_id, mission_id):
+        response = await self._post_request('get_student_mission_status', {'discord_id': str(user_id), 'mission_id': mission_id})
+        if bool(response) == False:
+            return None
+
+        return response[0]
+
+    async def check_user_photo_mission_status(self, user_id, mission_id):
+        response = await self._post_request('get_student_photo_mission_status', {'discord_id': str(user_id), 'mission_id': mission_id})
+        if bool(response) == False:
+            return None
+
+        return response.get('mission_status', 'Incompleted') == 'Completed'
+
+    async def store_message(self, user_id, role, message, message_id=None):
         data = {
             'discord_id': str(user_id),
             'channel_id': '任務佈告欄',
@@ -189,6 +220,8 @@ class APIUtils:
             'message_author': role,
             'message_content': message,
         }
+        if message_id:
+            data['message_id'] = str(message_id)
         response = await self._post_request('add_student_chat_data', data)
         return bool(response)
 
@@ -213,4 +246,22 @@ class APIUtils:
         }
         response = await self._post_request('update_community_record', data)
         return bool(response)
+
+    async def add_gold(self, user_id, gold, endpoint='update_user_stats'):
+        payload = {
+            'discord_id': str(user_id),
+            'gold': gold
+        }
+        self.logger.info(f"User {user_id} call {endpoint} {payload}.")
+        return await self._post_request(endpoint, payload)
+
+    async def send_dm_message(self, user_id, message, endpoint='send_dm_message'):
+        payload = {
+            'discord_id': str(user_id),
+            'message': message
+        }
+        return await self._post_request(endpoint, payload)
+
+    async def get_active_control_panel(self, endpoint='get_active_mission_control_panel'):
+        return await self._get_request(endpoint)
 

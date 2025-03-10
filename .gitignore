@@ -1,6 +1,10 @@
 # Logs
 .git_history
 
+__pycache__/
+
+node-red-data/.*.json
+
 *.jpg
 logs
 *.log

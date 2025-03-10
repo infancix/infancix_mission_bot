@@ -2,79 +2,19 @@ import discord
 import os
 import re
 
-from discord.ui import View
 from discord.errors import Forbidden
 from types import SimpleNamespace
-from bot.views.buttons import TerminateButton
 from bot.views.quiz import QuizView
-from bot.views.reply_options import ReplyOptionView, SingleReplyButtonView
-from bot.handlers.utils import image_check, convert_image_to_preview, send_assistant_reply, send_assistant_reply_with_button
+from bot.views.reply_options import ReplyOptionView
+from bot.views.terminate_class import TerminateClassView
+from bot.views.photo_task import OpenPhotoTaskView
+from bot.handlers.photo_mission_handler import handle_photo_mission
+from bot.handlers.utils import image_check, convert_image_to_preview
 from bot.config import config
-
-QUIZZES = {}
-
-async def handle_video_mission(client, user_id, mission_id):
-    user_id = str(user_id)
-    client.logger.info(f"Start mission-{mission_id} (video) for user {user_id}.")
-    # Get mission info
-    mission = await client.api_utils.get_mission_info(mission_id)
-    QUIZZES[user_id] = await client.openai_utils.generate_quiz(mission)
-
-    # Load openai assistant and thread
-    assistant_id = await client.openai_utils.load_assistant(mission)
-    await client.api_utils.update_mission_assistant(mission_id, assistant_id)
-    thread_id = client.openai_utils.load_thread()
-    student_mission_info = mission
-    student_mission_info['assistant_id'] = assistant_id
-    student_mission_info['thread_id'] = thread_id
-    student_mission_info['current_step'] = 1
-    await client.api_utils.update_student_mission_status(
-        user_id, mission_id, current_step=student_mission_info['current_step'], thread_id=student_mission_info['thread_id']
-    )
-
-    # Get baby info
-    additional_info = await client.api_utils.get_baby_additional_info(user_id)
-    await client.api_utils.store_message(user_id, 'assistant', additional_info)
-
-    # Get greeting message
-    hello_response = await client.openai_utils.get_greeting_message(assistant_id, thread_id, additional_info)
-    hello_message = (
-        "🎖育兒學習🎖\n"
-        f"📑任務： {mission['mission_title']}\n"
-        f"{mission['mission_type']}\n\n"
-        f"{hello_response['message']}"
-    )
-    options = ["快速瀏覽文字重點", "影片播放"]
-
-    # Send greeting message to user
-    user = await client.fetch_user(user_id)
-    view = ReplyOptionView(options)
-    await user.send(hello_message, view=view)
-    await client.api_utils.store_message(user_id, 'user', hello_message)
-    await client.api_utils.update_student_mission_status(
-        user_id, mission_id, current_step=student_mission_info['current_step']
-    )
-
-    # Wait for user reply
-    await view.wait()
-    if view.selected_option is not None:
-        await client.api_utils.store_message(user_id, 'user', view.selected_option)
-        student_mission_info['current_step'] += 1
-        await client.api_utils.update_student_mission_status(
-            user_id, mission_id, current_step=student_mission_info['current_step']
-        )
-
-        # Proceed to the next interaction
-        selected_option = options[view.selected_option]
-        message = SimpleNamespace(
-            author=user,
-            content=selected_option,
-            channel=user.dm_channel
-        )
-        await handle_interaction_response(client, message, student_mission_info)
 
 async def handle_video_mission_dm(client, message, student_mission_info):
     user_id = str(message.author.id)
+    student_mission_info['user_id'] = user_id
 
     # 檢查是否為語音訊息 (ogg)
     if message.attachments and message.attachments[0].filename.endswith('ogg'):
@@ -93,15 +33,8 @@ async def handle_video_mission_dm(client, message, student_mission_info):
 
     # 檢查是否為圖片檔案
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.heif')):
-        try:
-            photo_url = await client.s3_client.process_discord_attachment(message.attachments[0])
-            mission = await client.api_utils.get_mission_info(student_mission_info['mission_id'])
-            await client.api_utils.upload_baby_image(user_id, mission['mission_title'], photo_url)
-            message.content = f"已收到任務照片"
-        except Exception as e:
-            client.logger.error(f"Failed to uplodad baby image: {str(e)}")
-            await message.channel.send("上傳照片失敗，麻煩再試一次")
-            return
+        await handle_photo_mission(client, message, student_mission_info)
+        return
 
     # 檢查是否為影片檔案
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
@@ -121,38 +54,69 @@ async def handle_video_mission_dm(client, message, student_mission_info):
 async def handle_interaction_response(client, message, student_mission_info):
     user_id = str(message.author.id)
     current_step = student_mission_info['current_step']
-    assistant_id = student_mission_info['assistant_id']
-    thread_id = student_mission_info['thread_id']
-
     if current_step <= 2:
-        student_mission_info['class_state'] = 'in_class'
         if message.content == "影片播放":
             await handle_video_played(client, message, student_mission_info)
         else:
             await handle_course_explanation(client, message, student_mission_info)
-    elif (current_step == 3) or (student_mission_info.get('class_state') == 'quiz'):
+    elif current_step == 3:
         await handle_quiz(client, message, student_mission_info)
-    elif (current_step == 4) or (student_mission_info['class_state'] == 'image'):
-        await handle_photo_mission(client, message, student_mission_info)
-    elif (current_step >= 5) or (student_mission_info['class_state'] == 'class_done'):
-        await handle_follow_up(client, message, student_mission_info)
-        return
     else:
         await handle_follow_up(client, message, student_mission_info)
-        return
 
-async def handle_course_explanation(client, message, student_mission_info):
+async def handle_video_mission_start(client, user_id, mission_id):
+    user_id = str(user_id)
+    mission = await client.api_utils.get_mission_info(mission_id)
+    mission_instructions = f"""
+    這是這次課程的主題和課程影片字幕：
+    ## 課程內容：{mission['mission_title']}
+    ## 影片字幕:
+    {mission['transcription']}
+    """
+
+    thread_id = client.openai_utils.load_thread()
+    client.openai_utils.add_task_instruction(thread_id, mission_instructions)
+
+    # Get baby info
+    baby_info = await client.api_utils.get_baby_additional_info(user_id)
+    client.openai_utils.add_task_instruction(thread_id, baby_info)
+
+    # Mission start
+    student_mission_info = {
+        **mission,
+        'user_id': user_id,
+        'assistant_id': config.MISSION_BOT_ASSISTANT,
+        'thread_id': thread_id,
+        'current_step': 1
+    }
+    await client.api_utils.update_student_mission_status(**student_mission_info)
+
+    user = await client.fetch_user(user_id)
+    if user.dm_channel is None:
+        await user.create_dm()
+    message = SimpleNamespace(author=user, channel=user.dm_channel, content=None)
+
+    hello_request = "現在是「Hello階段」，請親切的問候使用者"
+    selected_option = await send_assistant_reply_with_button(client, message, student_mission_info, hello_request, reply_options=["文字互動學習", "影片播放"])
+    if selected_option:
+        await client.api_utils.store_message(user_id, 'user', selected_option)
+        student_mission_info['current_step'] += 1
+        await client.api_utils.update_student_mission_status(**student_mission_info)
+
+        if selected_option == "影片播放":
+            await handle_video_played(client, message, student_mission_info)
+        else:
+            message.content = selected_option
+            await handle_course_explanation(client, message, student_mission_info)
+
+async def handle_course_explanation(client, message, student_mission_info, options=['下一步', '不太懂欸？']):
     user_id = str(message.author.id)
     guidance_message = f"現在是「課程講解階段」，使用者的回答是：{message.content}"
-    selected_option = await send_assistant_reply_with_button(client, message, student_mission_info, guidance_message)
+    selected_option = await send_assistant_reply_with_button(client, message, student_mission_info, guidance_message, reply_options=options)
 
     if student_mission_info['class_state'] == 'quiz' or (selected_option and '測驗' in selected_option):
-        # Update mission stage
-        student_mission_info['current_step'] += 1
-        student_mission_info['class_state'] = 'quiz'
-        await client.api_utils.update_student_mission_status(
-            user_id, student_mission_info['mission_id'], current_step=student_mission_info['current_step']
-        )
+        student_mission_info['current_step'] = 3
+        await client.api_utils.update_student_mission_status(**student_mission_info)
         await handle_interaction_response(client, message, student_mission_info)
     elif selected_option:
         message.content = selected_option
@@ -165,23 +129,21 @@ async def handle_video_played(client, message, student_mission_info, option="我
         mission_video_contents = mission['mission_video_contents']
     else:
         mission_video_contents = student_mission_info['mission_video_contents']
-    msg = (
+
+    reply_message = (
         f"好的，來看看吧！這是教學影片的連結: {mission_video_contents}\n"
         "看完後記得告訴我喔~ 我們再進行小測驗！🙌"
     )
-    view = SingleReplyButtonView(option)
-    await message.channel.send(msg, view=view)
-    await client.api_utils.store_message(user_id, 'assistant', msg)
+    view = ReplyOptionView([option])
+    view.message = await message.channel.send(reply_message, view=view)
+    await client.api_utils.store_message(user_id, 'assistant', reply_message)
     await view.wait()
 
-    if view.selected is not None:
-        student_mission_info['current_step'] += 1
-        student_mission_info['class_state'] = 'quiz'
+    if view.selected_option is not None:
+        student_mission_info['current_step'] = 3
         client.user_viewed_video[(user_id, int(student_mission_info['mission_id']))] = 1
-        await client.api_utils.store_message(user_id, 'user', option)
-        await client.api_utils.update_student_mission_status(
-            user_id, student_mission_info['mission_id'], current_step=student_mission_info['current_step']
-        )
+        await client.api_utils.store_message(user_id, 'user', view.selected_option)
+        await client.api_utils.update_student_mission_status(**student_mission_info)
         await handle_interaction_response(client, message, student_mission_info)
 
 async def handle_quiz(client, message, student_mission_info):
@@ -189,38 +151,38 @@ async def handle_quiz(client, message, student_mission_info):
     mission_id = int(student_mission_info['mission_id'])
 
     # Get quiz
-    if user_id not in QUIZZES:
-        quizzes = client.openai_utils.mission_quiz[str(mission_id)]
-    else:
-        quizzes = QUIZZES[user_id]
+    quizzes = client.openai_utils.mission_quiz[str(mission_id)]
 
     # Start quiz
-    msg = f"準備進行小測驗囉！讓我來看看你對「{student_mission_info['mission_title']}」的知識掌握得怎麼樣呢 🐾✨"
-    await message.channel.send(msg)
-    await client.api_utils.store_message(user_id, 'assistant', msg)
+    quiz_message = f"準備進行小測驗囉！讓我來看看你對「{student_mission_info['mission_title']}」的知識掌握得怎麼樣呢 🐾✨"
+    await message.channel.send(quiz_message)
+    await client.api_utils.store_message(user_id, 'assistant', quiz_message)
 
     print(f"{quizzes}")
     total, correct = len(quizzes), 0
     for quiz in quizzes:
-        correct += await process_quiz_question(client, message, quiz)
+        is_correct = await process_quiz_question(client, message, quiz)
+        if is_correct in [0, 1]:
+            correct += is_correct
+        else:
+            timeout_msg = f"⏰挑戰時間已到！\n下次再努力喔"
+            await user.send(timeout_msg)
+            await client.api_utils.store_message(user_id, 'assistant', timeout_msg)
+            await client.api_utils.update_student_mission_status(user_id, student_mission_info['mission_id'], is_paused=True)
+            return
 
     quiz_summary = f"測驗結束！🎉  答對 {correct}/{total} 題！🎓"
     await message.channel.send(quiz_summary)
     await client.api_utils.store_message(user_id, 'assistant', quiz_summary)
+    student_mission_info['current_step'] = 4
+    student_mission_info['score'] = float(correct) / float(total)
+    await client.api_utils.update_student_mission_status(**student_mission_info)
 
     # Get assistant response
-    quiz_summary_message = f"現在是「測驗階段」，{quiz_summary}"
-    await send_assistant_reply(client, message, student_mission_info, quiz_summary_message)
+    quiz_summary_message = f"{quiz_summary}"
+    await send_assistant_reply_with_button(client, message, student_mission_info, quiz_summary_message, reply_options=None)
 
-    # Update mission stage
-    student_mission_info['current_step'] += 1
-    student_mission_info['class_state'] = 'image'
-    await client.api_utils.update_student_mission_status(
-        user_id, mission_id, current_step=student_mission_info['current_step']
-    )
-
-    # Proceed to the next interaction
-    await handle_photo_mission(client, message, student_mission_info)
+    await handle_mission_end(client, message, student_mission_info)
 
 async def process_quiz_question(client, message, quiz):
     question = quiz['question'].replace('？', ':grey_question:')
@@ -230,63 +192,22 @@ async def process_quiz_question(client, message, quiz):
         color=discord.Color.blue()
     )
 
-    view = QuizView(quiz['options'], timeout=None)
-    await message.channel.send(embed=embed, view=view)
+    view = QuizView(quiz['options'], quiz['answer'])
+    view.message = await message.channel.send(embed=embed, view=view)
 
     # wait user's response
     await view.wait()
-    if quiz['options'][view.selected_option]['option'][0] == quiz['answer']:
-        await message.channel.send("回答正確！ 🎉\n\n")
-        return 1
-    else:
-        explanation = quiz['options'][view.selected_option]['explanation']
-        msg = f"正確答案是：{quiz['answer']}\n{explanation}\n\n"
-        await message.channel.send(msg)
-        return 0
-
-async def handle_photo_mission_start(client, message, student_mission_info):
-    user_id = str(message.author.id)
-    if student_mission_info['reward'] == 20:
-        # Skip photo mission if reward is 20
-        student_mission_info['current_step'] += 1
-        student_mission_info['class_state'] = 'class_done'
-        await client.api_utils.update_student_mission_status(
-            user_id, student_mission_info['mission_id'], current_step=student_mission_info['current_step']
-        )
-        # Proceed to the next interaction
-        await handle_mission_end(client, message, student_mission_info)
-    else:
-        # Request assistant to create a photo task
-        photo_task_request = "現在是「上傳照片階段」，請幫根據課程內容設計一個分享照片的任務"
-        await send_assistant_reply(client, message, student_mission_info, photo_task_request)
-
-async def handle_photo_mission(client, message, student_mission_info):
-    user_id = str(message.author.id)
-    if student_mission_info['reward'] == 20:
-        # Skip photo mission if reward is 20
-        student_mission_info['current_step'] += 1
-        student_mission_info['class_state'] = 'class_done'
-        await client.api_utils.update_student_mission_status(
-            user_id, student_mission_info['mission_id'], current_step=student_mission_info['current_step']
-        )
-        await handle_mission_end(client, message, student_mission_info)
-        return
-
-    if message.content == "已收到任務照片":
-        photo_task_feedback = "現在是「上傳照片階段」，已收到任務照片"
-        await send_assistant_reply(client, message, student_mission_info, photo_task_feedback)
-
-        student_mission_info['current_step'] += 1
-        student_mission_info['class_state'] = 'class_done'
-        await client.api_utils.update_student_mission_status(
-            user_id, student_mission_info['mission_id'], current_step=student_mission_info['current_step']
-        )
-
-        # Proceed to the next interaction
-        await handle_mission_end(client, message, student_mission_info)
-    else:
-        guidance_message = "目前是上傳照片階段哦！請上傳寶寶的照片，這樣我們可以一起完成這次任務！💪"
-        await send_assistant_reply(client, message, student_mission_info, guidance_message)
+    if view.selected_option:
+        if view.is_correct:
+            await message.channel.send("回答正確！ 🎉\n\n")
+            return 1
+        else:
+            explanation = view.selected_option['explanation']
+            msg = f"正確答案是：{quiz['answer']}\n{explanation}\n\n"
+            await message.channel.send(msg)
+            return 0
+    else: # timeout
+        return -1
 
 async def handle_mission_end(client, message, student_mission_info):
     user_id = str(message.author.id)
@@ -304,25 +225,68 @@ async def handle_mission_end(client, message, student_mission_info):
                 ending_msg += f"教學圖片: {convert_image_to_preview(url)}\n"
         if not viewed_video:
             ending_msg += f"影片 👉 {student_mission_info['mission_video_contents']}\n\n"
+        ending_msg += "請問你對今天的課程還有疑問嗎？不要害羞，跟加一說喔🐾\n\n"
 
-    ending_msg += "請問你對今天的課程還有疑問嗎？不要害羞，跟加一說喔🐾"
-    view = View(timeout=None)
-    view.add_item(
-        TerminateButton(client, "結束課程", "結束課程，謝謝您的使用", student_mission_info)
-    )
-    await message.channel.send(ending_msg, view=view)
+    if student_mission_info['mission_id'] in config.photo_mission_list:
+        ending_msg += "這堂課的最後一步很特別，我們有個超可愛的照片任務，你一定不能錯過！"
+        view = OpenPhotoTaskView(client, student_mission_info)
+    else:
+        view = TerminateClassView(client, student_mission_info)
+
+    view.message = await message.channel.send(ending_msg, view=view)
     await client.api_utils.store_message(user_id, 'assistant', ending_msg)
 
 async def handle_follow_up(client, message, student_mission_info):
     user_id = str(message.author.id)
     guidance_message = f"目前是課程輔導階段，使用者的回答是：{message.content}"
-    await send_assistant_reply(client, message, student_mission_info, guidance_message)
+    await send_assistant_reply_with_button(client, message, student_mission_info, guidance_message, reply_options=None)
 
-    view = View(timeout=None)
-    view.add_item(
-        TerminateButton(client, "結束課程", "結束課程，謝謝您的使用", student_mission_info)
-    )
-    # send bot response
-    await message.channel.send(view=view)
+    view = TerminateClassView(client, student_mission_info)
+    view.message = await message.channel.send(view=view)
 
+async def send_assistant_reply_with_button(client, message, student_mission_info, content, reply_options=None):
+    """
+    Sends a reply from the assistant with interactive buttons and stores the response.
+    """
+    thread_id = student_mission_info['thread_id']
+    assistant_id = student_mission_info.get('assistant_id') if student_mission_info.get('assistant_id') else config.MISSION_BOT_ASSISTANT
+    class_state = config.class_step[student_mission_info['current_step']] if student_mission_info['current_step'] in config.class_step else "課程結束階段"
+    client.logger.info(f"(Mission-{student_mission_info['mission_id']}/User-{message.author.id}): [{class_state}] {content}")
+    try:
+        async with message.channel.typing():
+            response = await client.openai_utils.get_reply_message(assistant_id, thread_id, content)
+            client.logger.info(f"Assitant response: {response}")
+
+        if 'message' in response:
+            if reply_options is None:
+                await message.channel.send(response['message'])
+                await client.api_utils.store_message(str(message.author.id), 'assistant', response['message'])
+            else:
+                if 'reply_options' in response and len(response['reply_options']) > 0:
+                    reply_options = response['reply_options']
+
+                if 'class_state' in response:
+                    student_mission_info['class_state'] = response['class_state']
+                    if response['class_state'] == 'quiz':
+                        student_mission_info['current_step'] = 3
+                        reply_options = ['進入小測驗']
+
+                view = ReplyOptionView(reply_options)
+                view.message = await message.channel.send(response['message'], view=view)
+                await client.api_utils.store_message(str(message.author.id), 'assistant', response['message'])
+
+                # Wait for user interaction
+                await view.wait()
+
+                # Handle user selection
+                if view.selected_option is not None:
+                    return view.selected_option
+                else:
+                    client.logger.info(f"User did not select any option: {message.author.id}")
+        else:
+            await message.channel.send("加一不太懂，可以再試一次嗎？或是管理員協助處理。")
+
+    except Exception as e:
+        client.logger.error(f"Failed to get assistant reply with button: {str(e)}")
+        await message.channel.send("加一不太懂，可以再試一次嗎？或是管理員協助處理。")
 
