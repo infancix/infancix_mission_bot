@@ -57,9 +57,11 @@ class TerminateButton(discord.ui.Button):
         self.mission_id = user_data['mission_id']
         self.total_steps = 6
         self.current_step = 6
+        self.reward = int(user_data['reward'])
         self.ending_message = f"🎉 恭喜完成任務，獲得🪙{user_data['reward']}金幣🎉"
 
     async def callback(self, interaction: discord.Interaction):
+        user_id = str(interaction.user.id)
         self.disabled = True
         if interaction.message is None:
             return
@@ -68,25 +70,38 @@ class TerminateButton(discord.ui.Button):
         await interaction.message.edit(view=self.view)
         await interaction.response.send_message(self.msg)
         await interaction.user.send(self.ending_message)
+        await self.client.api_utils.add_gold(
+            user_id,
+            gold=self.reward
+        )
+        await self.client.api_utils.send_dm_message(
+            user_id,
+            self.ending_message
+        )
 
         # Update mission status
         await self.client.api_utils.update_student_mission_status(
-            interaction.user.id, self.mission_id, self.total_steps, self.current_step
+            user_id, self.mission_id, self.total_steps, self.current_step
         )
 
         # Send ending message to 背景紀錄
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
         if channel is None or not isinstance(channel, discord.TextChannel):
             raise Exception('Invalid channel')
-        msg_task = f"MISSION_{self.mission_id}_FINISHED <@{interaction.user.id}>"
+        msg_task = f"MISSION_{self.mission_id}_FINISHED <@{user_id}>"
         await channel.send(msg_task)
 
-        # Provide unfinish mission lists
-        unfinished_missions = await self.client.api_utils.get_student_incompleted_mission_list(interaction.user.id)
-        if unfinished_missions:
-            milestone_view = MilestoneSelectView(self.client, interaction.user.id, unfinished_missions)
-            await interaction.channel.send(
-                "🔍 *以下是您尚未完成的里程碑任務，按下方按鈕開始任務* 🔍",
-                view=milestone_view
-            )
+        if user_id in self.client.user_today_class and self.client.user_today_class[user_id]:
+            await interaction.user.send("您還有下一堂課喔，讓加一幫你準備一下")
+            mission_id = self.client.user_today_class[user_id].popleft()
+            await channel.send(f"START_MISSION_{mission_id} <@{user_id}>")
+        else:
+            # Provide unfinish mission lists
+            unfinished_missions = await self.client.api_utils.get_student_incompleted_mission_list(interaction.user.id)
+            if unfinished_missions:
+                milestone_view = MilestoneSelectView(self.client, interaction.user.id, unfinished_missions)
+                await interaction.channel.send(
+                    "🔍 *以下是您尚未完成的里程碑任務，按下方按鈕開始任務* 🔍",
+                    view=milestone_view
+                )
 

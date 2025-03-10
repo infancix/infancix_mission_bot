@@ -3,9 +3,9 @@ import discord
 from discord.ui import View
 
 from bot.config import config
-from bot.handlers.record_mission_handler import handle_record_mission, handle_record_mission_dm
-from bot.handlers.video_mission_handler import handle_video_mission, handle_video_mission_dm
-from bot.views.buttons import OptinClassButton
+from bot.handlers.record_mission_handler import handle_record_mission_start, handle_record_mission_dm
+from bot.handlers.video_mission_handler import handle_video_mission_start, handle_video_mission_dm
+from bot.views.optin_class import OptinClassView
 
 async def handle_dm(client, message):
     if (
@@ -73,17 +73,13 @@ async def handle_greeting_job(client, user_id = None):
     else:
         student_list = [{'discord_id': user_id}]
 
-    view = View(timeout=None)
-    view.add_item(
-        OptinClassButton(client, user_id, "登記課程")
-    )
-
+    view = OptinClassView(client, user_id)
     # start greeting
     client.logger.info(f"Start greeting job: {len(student_list)} student")
     for user in student_list:
         user_id = user['discord_id']
         user = await client.fetch_user(user_id)
-        await user.send(hello_message, view=view, files=files)
+        view.message = await user.send(hello_message, view=view, files=files)
         client.logger.info(f"Send hello message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', hello_message)
     return
@@ -91,8 +87,8 @@ async def handle_greeting_job(client, user_id = None):
 async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
     if mission_id in config.record_mission_list:
-        await handle_record_mission(client, user_id, mission_id)
+        await handle_record_mission_start(client, user_id, mission_id)
     else:
-        await handle_video_mission(client, user_id, mission_id)
+        await handle_video_mission_start(client, user_id, mission_id)
 
 
