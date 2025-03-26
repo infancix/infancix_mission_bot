@@ -6,7 +6,7 @@ import asyncio
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_dm
-from bot.handlers.utils import job, run_scheduler, load_active_control_panel
+from bot.handlers.utils import job, run_scheduler, load_active_control_panel, load_control_panel_by_id
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -64,15 +64,30 @@ class MissionBot(discord.Client):
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            course_info = await self.api_utils.get_student_mission_notifications_by_id(str(interaction.user.id))
-            control_panel_view = ControlPanelView(self, str(interaction.user.id), course_info)
-            embed = discord.Embed(
-                title=f"📅 照護課表",
-                description=control_panel_view.embed_content,
-                color=discord.Color.blue()
-            )
-            message = await interaction.channel.send(embed=embed, view=control_panel_view)
-            await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
+            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT, '1258435233989132459', '1309524374512205986']
+
+            if not is_in_mission_room:
+                target_channel = await self.fetch_user(interaction.user.id)
+                await interaction.response.send_message(
+                    f"📢 *你的課表已更新，請到 <@{interaction.channel.id}> 查看！*",
+                    ephemeral=True
+                )
+            else:
+                target_channel = interaction.channel
+
+            old_control_message, control_panel_view, control_panel_embed = await load_control_panel_by_id(self, str(interaction.user.id), target_channel)
+            if old_control_message:
+                await old_control_message.delete()
+                self.logger.info(f"Remove out-dated control panel of user ({interaction.user.id}).")
+
+            if is_in_mission_room:
+                await interaction.response.send_message(embed=control_panel_embed, view=control_panel_view)
+                message = await interaction.original_response()
+                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
+            else:
+                message = await target_channel.send(embed=control_panel_embed, view=control_panel_view)
+                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
+
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
@@ -119,6 +134,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    schedule.every().day.at("11:00").do(lambda: asyncio.create_task(job(client)))
+    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(job(client)))
 
     client.run(config.DISCORD_TOKEN)

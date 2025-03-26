@@ -56,7 +56,8 @@ async def handle_check_baby_records(client, user, student_mission_info):
     if exists_baby_records:
         # Mission Completed
         student_mission_info.update({
-            'current_step': 4
+            'current_step': 4,
+            'score': 1
         })
         await client.api_utils.update_student_mission_status(**student_mission_info)
         view = TerminateClassView(client, student_mission_info)

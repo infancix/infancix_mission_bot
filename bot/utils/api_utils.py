@@ -3,6 +3,8 @@ import os
 import requests
 import aiohttp
 import discord
+import inspect
+import traceback
 from datetime import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional, Any, Union
@@ -27,7 +29,7 @@ class APIUtils:
                         response_data = await response.json()
                         return response_data.get('data')
                     else:
-                        self.logger.error(f"API request failed with status {response.status}")
+                        self.logger.error(f"API request failed with status (/api/{endpoint}): {response.status}")
                         return None
         except Exception as e:
             self.logger.error(f"API request failed - /api/{endpoint}: {str(e)}")
@@ -49,12 +51,18 @@ class APIUtils:
                         elif endpoint.startswith('get_'):
                             return response_data.get('data') or response_data.get('records')
                         else:
-                            return response_data.get('message')
+                            return response_data
                     else:
                         self.logger.error(f"API request failed /api/{endpoint} with status {response.status}, {response.text}")
                         return None
         except Exception as e:
+            error_traceback = traceback.format_exc()
+            caller_info = inspect.stack()[1]
+            caller_function = caller_info.function
+            caller_line = caller_info.lineno
             self.logger.error(f"API request failed: {str(e)}")
+            self.logger.error(f"Error Traceback: {error_traceback}")
+            self.logger.error(f"Caller Function: {caller_function}, Line: {caller_line}")
             return None
 
     async def fetch_student_list(self):
@@ -175,7 +183,7 @@ class APIUtils:
         elif not baby and student.get('due_date', None) is not None:
             return 'pregnancy_or_newborn_stage'
         else:
-            birth_date = datetime.strptime(baby['birthdate'], '%Y.%m.%d').date()
+            birth_date = datetime.strptime(baby['birthdate'], '%Y-%m-%d').date()
             day_age = (datetime.today().date() - birth_date).days
             if day_age >= 31:
                 return 'over_31_days'

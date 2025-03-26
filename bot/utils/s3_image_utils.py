@@ -3,6 +3,7 @@ import aiohttp
 import io
 import os
 import boto3
+import pyheif
 from PIL import Image, ExifTags
 from datetime import datetime, timedelta
 from typing import Optional, Union
@@ -19,58 +20,152 @@ class ImageProcessor:
         self.ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
         self.logger = logger
 
-    def rotate_image(self, image: Union[bytes, io.BytesIO, str]) -> Optional[io.BytesIO]:
-        try:
-            for orientation in ExifTags.TAGS.keys():
-                if ExifTags.TAGS[orientation] == 'Orientation':
-                    break
+    def _ensure_bytesio(self, image_data: Union[bytes, io.BytesIO, Image.Image]) -> io.BytesIO:
+        """確保輸入被轉換為 BytesIO 對象"""
+        # 如果是 PIL Image，轉換為 BytesIO
+        if isinstance(image_data, Image.Image):
+            output = io.BytesIO()
+            image_data.save(output, format='JPEG', quality=self.QUALITY)
+            output.seek(0)
+            return output
 
-            exif = image._getexif()
-            if exif is not None:
-                # 根據 EXIF 方向信息旋轉圖片
-                if orientation in exif:
-                    if exif[orientation] == 3:
-                        image = image.rotate(180, expand=True)
-                    elif exif[orientation] == 6:
-                        image = image.rotate(270, expand=True)
-                    elif exif[orientation] == 8:
-                        image = image.rotate(90, expand=True)
-            return image
-        except (AttributeError, KeyError, IndexError):
-            # 處理沒有 EXIF 數據的情況
+        # 如果是 bytes，轉換為 BytesIO
+        elif isinstance(image_data, bytes):
+            return io.BytesIO(image_data)
+
+        # 如果已經是 BytesIO，確保指標在開頭
+        elif isinstance(image_data, io.BytesIO):
+            image_data.seek(0)
+            return image_data
+
+        # 不支援的類型
+        else:
+            self.logger.error(f"不支援的輸入類型: {type(image_data)}")
+            raise TypeError(f"不支援的輸入類型: {type(image_data)}")
+
+    def _bytesio_to_pil(self, bytesio: io.BytesIO) -> Optional[Image.Image]:
+        """將 BytesIO 轉換為 PIL Image"""
+        try:
+            bytesio.seek(0)
+            return Image.open(bytesio)
+        except Exception as e:
+            self.logger.error(f"無法將 BytesIO 轉換為 PIL Image: {str(e)}")
             return None
 
-    def compress_image(self, image: Union[bytes, io.BytesIO, str]) -> Optional[io.BytesIO]:
+    def convert_heic_to_jpeg(self, image_data: Union[bytes, io.BytesIO]) -> Optional[io.BytesIO]:
         """
-        壓縮圖片並返回 BytesIO 對象
+        將 HEIC 圖像轉換為 JPEG
+        輸入: bytes 或 BytesIO 對象
+        輸出: BytesIO 對象，包含 JPEG 數據
         """
-
         try:
+            # 確保輸入是 BytesIO
+            bytesio = self._ensure_bytesio(image_data)
+
+            # 從 BytesIO 讀取 bytes
+            bytesio.seek(0)
+            image_bytes = bytesio.read()
+
+            # 使用 pyheif 讀取 HEIC 文件
+            heif_file = pyheif.read(image_bytes)
+
+            # 轉換為 PIL Image
+            image = Image.frombytes(heif_file.mode,
+                heif_file.size,
+                heif_file.data,
+                "raw",
+                heif_file.mode,
+                heif_file.stride,
+            )
+
+            # 轉換為 JPEG BytesIO
+            output = io.BytesIO()
+            image.save(output, format='JPEG', quality=self.QUALITY)
+            output.seek(0)
+            self.logger.info(f"HEIC 轉換成功: size={len(output.getvalue())}")
+            return output
+        except Exception as e:
+            self.logger.error(f"HEIC 轉換失敗: {str(e)}")
+            return None
+
+    def rotate_image(self, image_data: Union[io.BytesIO, Image.Image]) -> Optional[io.BytesIO]:
+        try:
+            bytesio = self._ensure_bytesio(image_data)
+            pil_image = self._bytesio_to_pil(bytesio)
+            if not pil_image:
+                self.logger.warning("無法轉換為 PIL Image，返回原始數據")
+                bytesio.seek(0)
+                return bytesio
+
+            # 處理 EXIF 旋轉
+            try:
+                for orientation in ExifTags.TAGS.keys():
+                    if ExifTags.TAGS[orientation] == 'Orientation':
+                        break
+                exif = pil_image._getexif()
+                if exif is not None and orientation in exif:
+                    if exif[orientation] == 3:
+                        pil_image = pil_image.rotate(180, expand=True)
+                    elif exif[orientation] == 6:
+                        pil_image = pil_image.rotate(270, expand=True)
+                    elif exif[orientation] == 8:
+                        pil_image = pil_image.rotate(90, expand=True)
+            except (AttributeError, KeyError, IndexError, TypeError) as e:
+                self.logger.warning(f"讀取 EXIF 數據時出錯: {str(e)}")
+                # 繼續執行，不要因為 EXIF 讀取失敗就中斷
+
+            # 轉換回 BytesIO
+            output = io.BytesIO()
+            pil_image.save(output, format='JPEG', quality=self.QUALITY)
+            output.seek(0)
+            return output
+
+        except Exception as e:
+            self.logger.error(f"旋轉圖片時出錯: {str(e)}")
+            # 嘗試返回原始數據
+            if isinstance(image_data, io.BytesIO):
+                image_data.seek(0)
+                return image_data
+            return None
+
+    def compress_image(self, image_data: Union[io.BytesIO, Image.Image]) -> Optional[io.BytesIO]:
+        try:
+            bytesio = self._ensure_bytesio(image_data)
+
+            # 檢查是否需要壓縮
+            bytesio.seek(0)
+            current_size = len(bytesio.getvalue())
+            if current_size <= self.MAX_FILE_SIZE:
+                self.logger.info(f"圖片已經足夠小 ({current_size} bytes)，不需要壓縮")
+                bytesio.seek(0)
+                return bytesio
+
+            # 轉換為 PIL Image 進行處理
+            pil_image = self._bytesio_to_pil(bytesio)
+            if not pil_image:
+                self.logger.warning("無法轉換為 PIL Image，返回原始數據")
+                bytesio.seek(0)
+                return bytesio
+
             # 轉換為 RGB 模式（如果是 RGBA）
-            if image.mode == 'RGBA':
-                image = image.convert('RGB')
+            if pil_image.mode == 'RGBA':
+                pil_image = pil_image.convert('RGB')
 
             # 調整圖片大小，保持比例
-            image.thumbnail(self.MAX_SIZE)
+            pil_image.thumbnail(self.MAX_SIZE)
 
             # 保存為 JPEG 格式的 BytesIO 對象
             output = io.BytesIO()
-            image.save(output,
-                      format='JPEG',
-                      quality=self.QUALITY,
-                      optimize=True)
+            pil_image.save(output, format='JPEG', quality=self.QUALITY, optimize=True)
             output.seek(0)
             return output
 
         except Exception as e:
             self.logger.error(f"Image compression error: {str(e)}")
+            if isinstance(image_data, io.BytesIO):
+                image_data.seek(0)
+                return image_data
             return None
-
-    def convert_heif_to_jpeg(image: Union[bytes, io.BytesIO, str]):
-        image = Image.open(image)
-        output = io.BytesIO()
-        image.save(output, format="JPEG")
-        return output.getvalue()
 
 class S3Handler:
     def __init__(self, bucket_name: str, logger):
@@ -82,6 +177,8 @@ class S3Handler:
     def _generate_unique_filename(self, original_filename: str) -> str:
         """生成唯一的檔案名稱"""
         ext = os.path.splitext(original_filename)[1].lower()
+        if ext.lower() in ['.heic', '.heif']:
+            ext = '.jpg'
         return f"{self.ALLOWED_FOLDER}{uuid.uuid4()}{ext}"
 
     def upload_image(self, image_data: io.BytesIO, original_filename: str) -> Optional[str]:
@@ -90,8 +187,15 @@ class S3Handler:
         返回: 成功時返回 URL，失敗時返回 None
         """
         try:
+            if not isinstance(image_data, io.BytesIO):
+                self.logger.error(f"upload_image: 輸入不是 BytesIO 物件，而是 {type(image_data)}")
+                return None
+
             # 生成唯一檔案名稱
             unique_filename = self._generate_unique_filename(original_filename)
+
+            # 確保指標在開頭
+            image_data.seek(0)
 
             # 上傳到 S3
             self.s3_client.upload_fileobj(image_data,
@@ -149,25 +253,33 @@ class S3ImageUtils:
                 self.logger.error("Image download failed")
                 return None
 
-            # 打開圖片進行處理
-            if file_ext in ['.heic', '.heif']:
-                image = self.image_processor.convert_heif_to_jpeg(image_data)
-            else:
-                image = Image.open(image_data)
+            self.logger.info(f"處理文件: {attachment.filename}, 類型: {file_ext}")
 
-            rotated_image = self.image_processor.rotate_image(image)
-            if not rotated_image:
+            # 處理 HEIC/HEIF 格式
+            if file_ext in ['.heic', '.heif']:
+                image_data = self.image_processor.convert_heic_to_jpeg(image_data)
+                if not image_data:
+                    self.logger.error("HEIC 轉換失敗")
+                    return None
+
+                filename = os.path.splitext(attachment.filename)[0] + ".jpg"
+            else:
+                filename = attachment.filename
+
+            # 旋轉圖片
+            image_data = self.image_processor.rotate_image(image_data)
+            if not image_data:
                 self.logger.error("Image rotate failed")
                 return None
 
             # 壓縮圖片
-            compressed_image = self.image_processor.compress_image(rotated_image)
-            if not compressed_image:
+            image_data = self.image_processor.compress_image(image_data)
+            if not image_data:
                 self.logger.error("Image compression failed")
                 return None
 
             # 使用現有的 S3Handler 上傳圖片
-            return self.s3_handler.upload_image(compressed_image, attachment.filename)
+            return self.s3_handler.upload_image(image_data, filename)
 
         except Exception as e:
             self.logger.error(f"Processing error: {str(e)}")

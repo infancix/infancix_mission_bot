@@ -4,15 +4,16 @@ from datetime import datetime
 
 from bot.config import config
 from bot.views.milestones import MilestoneSelectView
+from bot.views.phototask_milestones import PhotoTaskSelectView
 
 class ControlPanelView(discord.ui.View):
     def __init__(self, client, user_id, course_info, timeout=None):
         super().__init__(timeout=None)
         self.client = client
         self.user_id = user_id
-        self.todays_course = course_info.get('todays_course')
-        self.continue_course = course_info.get('incomplete_course')
-        self.incomplete_photo_tasks = course_info.get('incomplete_photo_tasks')
+        self.todays_course = course_info.get('todays_course') if course_info else None
+        self.continue_course = course_info.get('incomplete_course') if course_info else None
+        self.incomplete_photo_tasks = course_info.get('incomplete_photo_tasks') if course_info else None
         self.embed_content = self.create_control_panel_embed()
 
         self.button_index = 0
@@ -67,6 +68,8 @@ class ControlPanelView(discord.ui.View):
         if self.todays_course:
             if self.todays_course['mission_status'] == 'Completed':
                 embed_content.append(f"📘 **今日新課程**: 恭喜你已完成🎉\n")
+            elif self.todays_course['mission_id'] in config.photo_mission_list:
+                embed_content.append(f"📘 **今日新課程**：{self.todays_course['mission_title']}\n({self.todays_course['mission_type']})\n💡 今天是特別任務喔，完成可獲得100金幣！\n")
             else:
                 embed_content.append(f"📘 **今日新課程**：{self.todays_course['mission_title']}\n({self.todays_course['mission_type']})\n")
 
@@ -97,19 +100,24 @@ class ControlPanelView(discord.ui.View):
 
     async def photo_task_callback(self, interaction):
         if len(self.incomplete_photo_tasks) > 1:
-            photo_task_view = MilestoneSelectView(self.client, interaction.user.id, self.incomplete_photo_tasks, mission_type='photo_task')
+            photo_task_view = PhotoTaskSelectView(self.client, interaction.user.id, self.incomplete_photo_tasks)
             await interaction.response.send_message(
                 "🔍 *📸 請選擇要補交的照片：* 🔍",
                 view=photo_task_view,
                 ephemeral=True
             )
-        elif (self.incomplete_photo_tasks) == 1:
+        elif len(self.incomplete_photo_tasks) == 1:
+            await interaction.response.send_message(
+                "請稍等，加一馬上幫你準備任務📸",
+                ephemeral=True
+            )
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
+            self.client.logger.info(f"User {interaction.user.id} starts photo mission {self.incomplete_photo_tasks[0]['mission_id']}")
             await handle_photo_mission_start(self.client, interaction.user.id, self.incomplete_photo_tasks[0]['mission_id'])
 
     async def milestones_callback(self, interaction):
         student_milestones = await self.client.api_utils.get_student_milestones(str(interaction.user.id))
-        milestone_view = MilestoneSelectView(self.client, interaction.user.id, student_milestones, mission_type='video_task')
+        milestone_view = MilestoneSelectView(self.client, interaction.user.id, student_milestones)
         await interaction.response.send_message(
             "🔍 *以下是您課程進度，按下方按鈕開始課程* 🔍",
             view=milestone_view,
@@ -118,15 +126,10 @@ class ControlPanelView(discord.ui.View):
 
     async def start_or_resume_course(self, course_status):
         mission_id = course_status['mission_id']
-        if int(mission_id) in config.record_mission_list:
-            from bot.handlers.record_mission_handler import handle_record_mission_start
-            await handle_record_mission_start(self.client, self.user_id, mission_id)
-            return
-        else:
-            #resume class
-            from bot.handlers.video_mission_handler import handle_video_mission_start
-            await handle_video_mission_start(self.client, self.user_id, mission_id)
-            return
 
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
 
+        await channel.send(f"START_MISSION_{mission_id} <@{self.user_id}>")
 

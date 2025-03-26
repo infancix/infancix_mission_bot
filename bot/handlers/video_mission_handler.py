@@ -103,10 +103,10 @@ async def handle_video_mission_start(client, user_id, mission_id):
         student_mission_info['current_step'] += 1
         await client.api_utils.update_student_mission_status(**student_mission_info)
 
-        if selected_option == "影片播放":
+        if "影片" in selected_option:
             await handle_video_played(client, message, student_mission_info)
         else:
-            message.content = selected_option
+            message.content = "文字互動學習"
             await handle_course_explanation(client, message, student_mission_info)
 
 async def handle_course_explanation(client, message, student_mission_info, options=['下一步', '不太懂欸？']):
