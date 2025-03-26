@@ -3,6 +3,7 @@ import os
 import re
 import schedule
 import asyncio
+import time
 from pathlib import Path
 from collections import deque
 from loguru import logger
@@ -23,6 +24,19 @@ async def job(client):
     if channel is None or not isinstance(channel, discord.TextChannel):
         raise Exception('Invalid channel')
 
+    # Remove message
+    control_info = await client.api_utils.get_active_control_panel()
+    for message in control_info:
+        try:
+            user_id = message['discord_id']
+            user = await client.fetch_user(int(user_id))
+            message_id = message['message_id']
+            message = await user.fetch_message(message_id)
+            await message.delete()
+            client.logger.info(f"Remove out-dated control panel of user ({user_id}).")
+        except Exception as e:
+            client.logger.error(f"Failed to remove out-dated control panel: {str(e)}")
+
     student_list = await client.api_utils.get_all_students_mission_notifications()
     for user_id in student_list:
         try:
@@ -42,7 +56,7 @@ async def job(client):
             time.sleep(5)
 
         except Exception as e:
-            client.logger.error("Failed to send control panel to user: {user_id}, {str(e)}")
+            client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
 
 async def load_active_control_panel(client):
     try:
@@ -64,6 +78,27 @@ async def load_active_control_panel(client):
                 await client.api_utils.store_message(user_id, 'assistant', view.embed_content, message_id=message.id)
     except Exception as e:
         client.logger.error(f"Error loading active control panel: {e}")
+
+async def load_control_panel_by_id(client, user_id, target_channel):
+    try:
+        ative_control_panel = await client.api_utils.get_active_control_panel()
+        for message in ative_control_panel:
+            if message['discord_id'] == user_id:
+                message_id = message['message_id']
+                message = await target_channel.fetch_message(message_id)
+                break
+
+        course_info = await client.api_utils.get_student_mission_notifications_by_id(user_id)
+        view = ControlPanelView(client, user_id, course_info)
+        embed = discord.Embed(
+            title=f"📅 照護課表",
+            description=view.embed_content,
+            color=discord.Color.blue()
+        )
+        return message, view, embed
+
+    except Exception as e:
+        client.logger.error(f"Error loading control panel: {e}")
 
 def image_check(m):
     # Ensure the message is in the same DM and has an attachment

@@ -46,8 +46,6 @@ class TerminateButton(discord.ui.Button):
         # Send the ending message to the user
         await interaction.message.edit(view=self.view)
         await interaction.response.send_message(self.msg)
-
-        await interaction.user.send(f"🎉 恭喜完成任務，獲得🪙{self.reward}金幣🎉")
         await self.client.api_utils.add_gold(
             user_id,
             gold=self.reward

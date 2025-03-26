@@ -39,11 +39,15 @@ async def handle_photo_mission_start(client, user_id, mission_id):
     client.openai_utils.add_task_instruction(thread_id, mission_instructions)
 
     user = await client.fetch_user(user_id)
+    photo_reminder = (
+        "💡 拍照小提醒：記得自己也要入鏡，你是寶寶最珍貴的人，少了你，這份回憶就不完整。\n"
+        if '你' in student_mission_info['photo_mission'] else ""
+    )
     photo_task_request = (
         f"📸 請上傳「**{student_mission_info['photo_mission']}**」的照片！\n"
         f"💡 這是最後一步，上傳即可完成本次課程！🎉\n"
-        f"💡 記得把自己也拍進去嘛～這可是你和寶寶的共同回憶哦💖" if '你' in student_mission_info['photo_mission'] else ""
-        "📎 **點擊對話框左側「+」上傳**"
+        f"{photo_reminder}"
+        f"📎 **點擊對話框左側「+」上傳**"
     )
 
     message = await user.send(photo_task_request)

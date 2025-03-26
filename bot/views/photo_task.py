@@ -44,21 +44,14 @@ class OpenPhotoTaskButton(discord.ui.Button):
 
         await interaction.message.edit(view=self.view)
         await interaction.response.send_message(self.msg)
-
-        await interaction.user.send(
-            f"🎉 恭喜完成{self.student_mission_info['mission_type']} - {self.student_mission_info['mission_title']} 第一階段的任務\n"
-            f"獲得🪙{self.reward}金幣🎉\n"
-            f"🐾不要忘了還有第二階段的照片任務喔💪"
-        )
         await self.client.api_utils.add_gold(
             user_id,
             gold=self.reward
         )
         await self.client.api_utils.send_dm_message(
             user_id,
-            f"🎉 恭喜完成{self.student_mission_info['mission_type']} - {self.student_mission_info['mission_title']} 第一階段的任務\n"
-            f"獲得🪙{self.reward}金幣🎉\n"
-            f"🐾不要忘了還有第二階段的照片任務喔💪"
+            f"🎉 恭喜完成{self.student_mission_info['mission_type']} - {self.student_mission_info['mission_title']} 任務\n"
+            f"獲得🪙{self.reward}金幣🎉，🐾不要忘了還有照片任務喔💪\n"
         )
 
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
