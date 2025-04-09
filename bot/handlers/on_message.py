@@ -1,5 +1,6 @@
 import re
 import discord
+import asyncio
 from discord.ui import View
 
 from bot.config import config
@@ -61,27 +62,28 @@ async def handle_greeting_job(client, user_id = None):
         "四個月大以上的寶寶也可以登記喔！"
     )
 
-    files = [
-        discord.File("bot/resource/mission_bot_1.png"),
-        discord.File("bot/resource/mission_bot_2.png"),
-        discord.File("bot/resource/mission_bot_3.png"),
-        discord.File("bot/resource/mission_bot_4.png")
-    ]
-
     if user_id == None:
         student_list = await client.api_utils.fetch_student_list()
     else:
         student_list = [{'discord_id': user_id}]
 
-    view = OptinClassView(client, user_id)
     # start greeting
     client.logger.info(f"Start greeting job: {len(student_list)} student")
     for user in student_list:
+        files = [
+            discord.File("bot/resource/mission_bot_1.png"),
+            discord.File("bot/resource/mission_bot_2.png"),
+            discord.File("bot/resource/mission_bot_3.png"),
+            discord.File("bot/resource/mission_bot_4.png")
+        ]
         user_id = user['discord_id']
         user = await client.fetch_user(user_id)
+        view = OptinClassView(client, user_id)
         view.message = await user.send(hello_message, view=view, files=files)
         client.logger.info(f"Send hello message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', hello_message)
+        await asyncio.sleep(10)
+
     return
 
 async def handle_start_mission(client, user_id, mission_id):

@@ -270,6 +270,6 @@ class APIUtils:
         }
         return await self._post_request(endpoint, payload)
 
-    async def get_active_control_panel(self, endpoint='get_active_mission_control_panel'):
+    async def get_active_control_panel(self, endpoint='get_active_mission_control_panel?channel_id=任務佈告欄'):
         return await self._get_request(endpoint)
 

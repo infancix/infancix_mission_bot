@@ -40,32 +40,11 @@
             "label": true,
             "fill": "#bfdbef"
         },
-        "nodes": [
-            "abf8b9abf223b305",
-            "f205d117ae709ba7",
-            "b917d6586087e24f",
-            "f2085bb00bd83705",
-            "9faaad73e029812b",
-            "daaa8554c2bd34a4",
-            "43612b207fba6991",
-            "44d3f2ac1ea4bfc5",
-            "79d0add718013d3f",
-            "716e3f5352fbdda1",
-            "06c6f3c0297a64cd",
-            "6607430d9025428c",
-            "ac601e6d4444ba04",
-            "2da763adb5e70f88",
-            "d19effadf66e3324",
-            "1b3f12b94077be15",
-            "3dd64590f4286942",
-            "26356e869db80c54",
-            "825aef1708a5ea1f",
-            "245f0717b6fdca23"
-        ],
+        "nodes": [],
         "x": 194,
         "y": -1,
-        "w": 1492,
-        "h": 262
+        "w": 141,
+        "h": 40
     },
     {
         "id": "b4a805abca00d443",
@@ -225,11 +204,6 @@
         "id": "a87a3cf5afd85fab",
         "type": "discord-token",
         "name": "baby"
-    },
-    {
-        "id": "fe10964486a662de",
-        "type": "discord-token",
-        "name": "sleep_class_token"
     },
     {
         "id": "bd4b4db46e47715d",
@@ -490,7 +464,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_baby_list",
+        "url": "https://infancixbaby120.com/api/get_baby_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -537,7 +511,7 @@
         "y": 900,
         "wires": [
             [
-                "769a3af3970a9d7f"
+                "745f8b5853c3f4d9"
             ]
         ]
     },
@@ -554,8 +528,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1300,
-        "y": 900,
+        "x": 1280,
+        "y": 860,
         "wires": [
             [
                 "cbcc207a07586dac"
@@ -571,7 +545,7 @@
         "statusCode": "",
         "headers": {},
         "x": 1450,
-        "y": 940,
+        "y": 900,
         "wires": []
     },
     {
@@ -583,7 +557,7 @@
         "method": "POST",
         "ret": "txt",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_user_stats",
+        "url": "https://infancixbaby120.com/api/update_user_stats",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -591,13 +565,12 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1460,
-        "y": 900,
+        "x": 1430,
+        "y": 860,
         "wires": [
             [
                 "f05d5d362b42ee60",
-                "cac0be6411603536",
-                "745f8b5853c3f4d9"
+                "cac0be6411603536"
             ]
         ]
     },
@@ -783,7 +756,7 @@
         "z": "7d70a7613877ca33",
         "g": "b4a805abca00d443",
         "name": "function 3",
-        "func": "msg.payload = { \"discord_id\": msg.user};\n\n// msg.payload = { \"discord_id\": \"873195793727774772\"};\n\nmsg.url = \"http://13.231.41.173:8000/api/get_baby_records\"\n\nreturn msg;",
+        "func": "msg.payload = { \"discord_id\": msg.user};\n\n// msg.payload = { \"discord_id\": \"873195793727774772\"};\n\nmsg.url = \"https://infancixbaby120.com/api/get_baby_records\"\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1000,7 +973,7 @@
         "method": "POST",
         "ret": "txt",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_user_stats",
+        "url": "https://infancixbaby120.com/api/update_user_stats",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1048,7 +1021,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_mission_list ",
+        "url": "https://infancixbaby120.com/api/get_mission_list ",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1091,7 +1064,7 @@
         "type": "debug",
         "z": "7d70a7613877ca33",
         "g": "13b9b877d3385daf",
-        "name": "",
+        "name": "zxc",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -1218,7 +1191,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_student_mission_status",
+        "url": "https://infancixbaby120.com/api/update_student_mission_status",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1279,7 +1252,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_student_mission_status",
+        "url": "https://infancixbaby120.com/api/get_student_mission_status",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1359,7 +1332,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_student_mission_status",
+        "url": "https://infancixbaby120.com/api/update_student_mission_status",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1371,8 +1344,7 @@
         "y": 200,
         "wires": [
             [
-                "1b3f12b94077be15",
-                "3dd64590f4286942"
+                "1b3f12b94077be15"
             ]
         ]
     },
@@ -1443,7 +1415,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_student_mission_status",
+        "url": "https://infancixbaby120.com/api/update_student_mission_status",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1505,7 +1477,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_baby_list",
+        "url": "https://infancixbaby120.com/api/get_baby_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1609,7 +1581,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/update_student_mission_status",
+        "url": "https://infancixbaby120.com/api/update_student_mission_status",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1684,7 +1656,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_student_current_mission",
+        "url": "https://infancixbaby120.com/api/get_student_current_mission",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1745,7 +1717,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_baby_list",
+        "url": "https://infancixbaby120.com/api/get_baby_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1873,7 +1845,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_mission_list ",
+        "url": "https://infancixbaby120.com/api/get_mission_list ",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -1982,7 +1954,7 @@
         "type": "debug",
         "z": "7d70a7613877ca33",
         "g": "13b9b877d3385daf",
-        "name": "",
+        "name": "asd",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -2103,7 +2075,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_student_incompleted_mission_list",
+        "url": "https://infancixbaby120.com/api/get_student_incompleted_mission_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -2232,8 +2204,8 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1460,
-        "y": 860,
+        "x": 1440,
+        "y": 820,
         "wires": []
     },
     {
@@ -2249,8 +2221,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1650,
-        "y": 900,
+        "x": 1630,
+        "y": 960,
         "wires": [
             [
                 "0af6bb97aac94bb0"
@@ -2266,7 +2238,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_student_incompleted_mission_list",
+        "url": "https://infancixbaby120.com/api/get_student_incompleted_mission_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -2485,7 +2457,7 @@
         "type": "function",
         "z": "7d70a7613877ca33",
         "name": "function 21",
-        "func": "// msg.payload = { \"discord_id\": msg.user};\n\nmsg.payload = { \"discord_id\": msg.user};\n\nmsg.url = \"http://13.231.41.173:8000/api/get_baby_records\"\n\nvar try_times = flow.get(`${msg.user}_check`);\nif (try_times == undefined){\n    flow.set(`${msg.user}_check`, 0);\n}\n\nreturn msg;",
+        "func": "// msg.payload = { \"discord_id\": msg.user};\n\nmsg.payload = { \"discord_id\": msg.user};\n\nmsg.url = \"https://infancixbaby120.com/api/get_baby_records\"\n\nvar try_times = flow.get(`${msg.user}_check`);\nif (try_times == undefined){\n    flow.set(`${msg.user}_check`, 0);\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2595,7 +2567,7 @@
         "z": "7d70a7613877ca33",
         "g": "13b9b877d3385daf",
         "name": "挑選user",
-        "func": "const missions = msg.payload.data\n\nconst aggregateByNotificationDay = (missions) => {\n    return missions.reduce((acc, mission) => {\n        const day = parseInt(mission.notification_day) - 30;\n\n        if (!acc[day]) {\n            acc[day] = [];\n        }\n        acc[day].push(mission);\n        return acc;\n    }, {});\n};\n\nconst aggregatedMissions = aggregateByNotificationDay(missions);\n\nconst tasks = aggregatedMissions;\n\nmsg.tasks = tasks;\n\n// ------------------------\n\nvar qualified_user = [];\n\nvar debug = {};\n\nfor (var i = 0, item; item = msg.babys.data[i]; i++) {\n\n    const user = item.discord_id;\n    const startDateStr = item.start_mission_date;\n    const startDate = new Date(startDateStr.replace(/\\./g, '-'));\n    const today = new Date();\n\n    // 取得兩個日期的時間戳（以毫秒為單位）\n    const timeDifference = today.getTime() - startDate.getTime();\n    \n    // 將毫秒轉換為天數\n    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24)) - 30;\n    debug = {user:daysDifference};\n\n    if (daysDifference < 0 || daysDifference > 120 || typeof tasks[daysDifference] == 'undefined') {\n        // msg.payload = 165;\n        // qualified_user.push([user, \"165\"])\n        ;\n    }\n    else {\n        // msg.payload = daysDifference;\n        qualified_user.push([user, daysDifference])\n\n    }\n\n}\n\nmsg.qualified_user = qualified_user;\nmsg.debug = debug;\nreturn msg;",
+        "func": "const missions = msg.payload.data\n\nconst aggregateByNotificationDay = (missions) => {\n    return missions.reduce((acc, mission) => {\n        const day = parseInt(mission.notification_day) - 30;\n\n        if (!acc[day]) {\n            acc[day] = [];\n        }\n        acc[day].push(mission);\n        return acc;\n    }, {});\n};\n\nconst aggregatedMissions = aggregateByNotificationDay(missions);\n\nconst tasks = aggregatedMissions;\n\nmsg.tasks = tasks;\n\n// ------------------------\n\nvar qualified_user = [];\n\nvar debug = {};\n\nfor (var i = 0, item; item = msg.babys.data[i]; i++) {\n\n    const user = item.student_id;\n    const startDateStr = item.start_mission_date;\n    const startDate = new Date(startDateStr.replace(/\\./g, '-'));\n    const today = new Date();\n\n    // 取得兩個日期的時間戳（以毫秒為單位）\n    const timeDifference = today.getTime() - startDate.getTime();\n    \n    // 將毫秒轉換為天數\n    const daysDifference = Math.floor(timeDifference / (1000 * 60 * 60 * 24)) - 30;\n    debug = {user:daysDifference};\n\n    if (daysDifference < 0 || daysDifference > 120 || typeof tasks[daysDifference] == 'undefined') {\n        // msg.payload = 165;\n        // qualified_user.push([user, \"165\"])\n        ;\n    }\n    else {\n        // msg.payload = daysDifference;\n        qualified_user.push([user, daysDifference])\n\n    }\n\n}\n\nmsg.qualified_user = qualified_user;\nmsg.debug = debug;\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2759,7 +2731,7 @@
         "type": "function",
         "z": "7d70a7613877ca33",
         "name": "function 26",
-        "func": "msg = { \n    // \"payload\": \"https://drive.google.com/file/d/1mEsfdA9CWXw13lmS2E91hnztxyACoD5g/preview\",\n    // \"payload\" : \"https://media.toyota.com.ar/ca2fd98c-025f-4c9f-8d12-3f07fe75483c.png\", \n    \"user_id\": \"353477306674839552\", \n    \"responseUrl\": \"http://13.231.41.173:8000/api/update_student_mission_status\", \n    \"redirectList\": [], \"retry\": 0, \"components\": [{ \"type\": 1, \"components\": [{ \"type\": 2, \"label\": \"完成\", \"style\": 3, \"custom_id\": \"click_opt1\" }] }], \n    \"user\": \"353477306674839552\", \n    \"url\": \"https://drive.google.com/uc?export=download&id=1mEsfdA9CWXw13lmS2E91hnztxyACoD5g\" }\nreturn msg;",
+        "func": "msg = { \n    // \"payload\": \"https://drive.google.com/file/d/1mEsfdA9CWXw13lmS2E91hnztxyACoD5g/preview\",\n    // \"payload\" : \"https://media.toyota.com.ar/ca2fd98c-025f-4c9f-8d12-3f07fe75483c.png\", \n    \"user_id\": \"353477306674839552\", \n    \"responseUrl\": \"http://13.230.42.230:8000/api/update_student_mission_status\", \n    \"redirectList\": [], \"retry\": 0, \"components\": [{ \"type\": 1, \"components\": [{ \"type\": 2, \"label\": \"完成\", \"style\": 3, \"custom_id\": \"click_opt1\" }] }], \n    \"user\": \"353477306674839552\", \n    \"url\": \"https://drive.google.com/uc?export=download&id=1mEsfdA9CWXw13lmS2E91hnztxyACoD5g\" }\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -3048,7 +3020,7 @@
         "props": [
             {
                 "p": "user",
-                "v": "353477306674839552",
+                "v": "1281121934536605739",
                 "vt": "str"
             }
         ],
@@ -3073,7 +3045,7 @@
         "props": [
             {
                 "p": "user",
-                "v": "353477306674839552",
+                "v": "1281121934536605739",
                 "vt": "str"
             }
         ],
@@ -3095,7 +3067,7 @@
         "type": "function",
         "z": "368332cd9fdfa425",
         "name": "function 24",
-        "func": "msg.payload = {\n    \"discord_id\":\"353477306674839552\"\n}\nreturn msg;",
+        "func": "msg.payload = {\n    \"discord_id\":\"1281121934536605739\"\n}\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -3118,7 +3090,7 @@
         "method": "POST",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_student_incompleted_mission_list",
+        "url": "http://54.178.157.238:8000/api/get_student_incompleted_mission_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -3240,7 +3212,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_mission_list ",
+        "url": "http://54.178.157.238:8000/api/get_mission_list ",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -3309,7 +3281,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_baby_list",
+        "url": "http://54.178.157.238:8000/api/get_baby_list",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -3362,13 +3334,14 @@
         "fieldType": "msg",
         "format": "handlebars",
         "syntax": "mustache",
-        "template": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Task Push</title>\n</head>\n<body>\n    <form id=\"taskForm\">\n        <label for=\"user_id\">Select Baby (Discord ID):</label>\n        <select id=\"user_id\" name=\"user_id\" required></select><br><br>\n\n        <label for=\"mission_type\">Mission Type:</label>\n        <select id=\"mission_type\" name=\"mission_type\" required></select><br><br>\n\n        <button type=\"button\" onclick=\"sendTask()\">Send Task</button>\n    </form>\n    \n    <p id=\"statusMessage\"></p>\n\n\n    <script>\n        let missionData = [];\n        let babyData = [];\n\n\n        // Fetch mission list and populate the dropdown\n        async function fetchMissionList() {\n            try {\n                const response = await fetch(\"http://127.0.0.1:1880/get_mission_list\");\n                missionData = await response.json()\n                missionData = missionData.data;\n\n                const missionSelect = document.getElementById('mission_type');\n                \n                missionData.forEach(mission => {\n                    const option = document.createElement('option');\n                    option.value = mission.mission_id;\n                    option.text = `(${mission.mission_id}) `+ mission.mission_type+\" - \"+mission.mission_title;;\n                    missionSelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching mission list:', error);\n            }\n        }\n\n        // Fetch baby list and populate the dropdown\n        async function fetchBabyList() {\n            try {\n                const response = await fetch('http://127.0.0.1:1880/get_baby_list');\n                babyData = await response.json();\n                const babySelect = document.getElementById('user_id');\n                \n                babyData.data.forEach(baby => {\n                    const option = document.createElement('option');\n                    option.value = baby.discord_id;\n                    option.text = `${baby.baby_name} (${baby.discord_id})`;\n                    babySelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching baby list:', error);\n            }\n        }\n\n        // Call fetch functions when the page loads\n        window.onload = function() {\n            fetchMissionList();\n            fetchBabyList();\n        };\n\n        function sendTask() {\n            const user_id = document.getElementById('user_id').value;\n            const mission_id = document.getElementById('mission_type').value;  // Get mission_id from dropdown\n            const statusMessage = document.getElementById('statusMessage');\n\n            fetch('http://127.0.0.1:1880/push_task', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json',\n                },\n                body: JSON.stringify({ user_id, mission_id }),\n            })\n            .then(response => response.json())\n            .then(data => {\n                statusMessage.textContent = \"Task sent successfully!\";\n                statusMessage.style.color = \"green\";\n            })\n            .catch((error) => {\n                console.error('Error:', error);\n                statusMessage.textContent = \"Failed to send the task.\";\n                statusMessage.style.color = \"red\";\n            });\n\n            \n        }\n    </script>\n</body>\n</html>",
+        "template": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Task Push</title>\n</head>\n<body>\n    <form id=\"taskForm\">\n        <label for=\"user_id\">Select Baby (Student ID):</label>\n        <select id=\"user_id\" name=\"user_id\" required></select><br><br>\n\n        <label for=\"mission_type\">Mission Type:</label>\n        <select id=\"mission_type\" name=\"mission_type\" required></select><br><br>\n\n        <button type=\"button\" onclick=\"sendTask()\">Send Task</button>\n    </form>\n    \n    <p id=\"statusMessage\"></p>\n\n\n    <script>\n        let missionData = [];\n        let babyData = [];\n\n\n        // Fetch mission list and populate the dropdown\n        async function fetchMissionList() {\n            try {\n                const response = await fetch(\"http://54.178.157.238:8000/api/get_mission_list\");\n                missionData = await response.json()\n                missionData = missionData.data;\n\n                const missionSelect = document.getElementById('mission_type');\n                \n                missionData.forEach(mission => {\n                    const option = document.createElement('option');\n                    option.value = mission.mission_id;\n                    option.text = `(${mission.mission_id}) `+ mission.mission_type+\" - \"+mission.mission_title;;\n                    missionSelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching mission list:', error);\n            }\n        }\n\n        // Fetch baby list and populate the dropdown\n        async function fetchBabyList() {\n            try {\n                const response = await fetch('http://54.178.157.238:8000/api/get_baby_list');\n                babyData = await response.json();\n                const babySelect = document.getElementById('user_id');\n                \n                babyData.data.forEach(baby => {\n                    const option = document.createElement('option');\n                    option.value = baby.student_id;\n                    option.text = `${baby.baby_name} (${baby.student_id})`;\n                    babySelect.appendChild(option);\n                });\n            } catch (error) {\n                console.error('Error fetching baby list:', error);\n            }\n        }\n\n        // Call fetch functions when the page loads\n        window.onload = function() {\n            fetchMissionList();\n            fetchBabyList();\n        };\n\n        function sendTask() {\n            const user_id = document.getElementById('user_id').value;\n            const mission_id = document.getElementById('mission_type').value;  // Get mission_id from dropdown\n            const statusMessage = document.getElementById('statusMessage');\n            fetch('http://54.178.157.238:1880/push_task', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json',\n                },\n                body: JSON.stringify({ user_id, mission_id }),\n            })\n            .then(response => response.json())\n            .then(data => {\n                statusMessage.textContent = \"Task sent successfully!\";\n                statusMessage.style.color = \"green\";\n            })\n            .catch((error) => {\n                console.error('Error:', error);\n                statusMessage.textContent = \"Failed to send the task.\";\n                statusMessage.style.color = \"red\";\n            });\n\n            \n        }\n    </script>\n</body>\n</html>",
         "output": "str",
         "x": 550,
         "y": 260,
         "wires": [
             [
-                "d71a6fc7bc3674f6"
+                "d71a6fc7bc3674f6",
+                "b2ef162836153945"
             ]
         ]
     },
@@ -3423,7 +3396,7 @@
         "y": 80,
         "wires": [
             [
-                "5c5495f112e5bee7"
+                "9b8bc1f0299e0bdf"
             ]
         ]
     },
@@ -3436,12 +3409,83 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "false",
+        "complete": "payload",
+        "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 380,
+        "x": 560,
         "y": 80,
         "wires": []
+    },
+    {
+        "id": "b2ef162836153945",
+        "type": "debug",
+        "z": "fa0422cb4fc63cf9",
+        "name": "debug 54",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "9b8bc1f0299e0bdf",
+        "type": "http request",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://127.0.0.1:1880/get_mission_list",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 400,
+        "y": 80,
+        "wires": [
+            [
+                "5c5495f112e5bee7"
+            ]
+        ]
+    },
+    {
+        "id": "ed1c840b2617407b",
+        "type": "inject",
+        "z": "fa0422cb4fc63cf9",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 300,
+        "y": 620,
+        "wires": [
+            [
+                "3c303a216bc26d96"
+            ]
+        ]
     },
     {
         "id": "d7308779f24b90cd",
@@ -3481,7 +3525,8 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "false",
+        "complete": "payload",
+        "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
         "x": 420,
@@ -3496,7 +3541,7 @@
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
-        "url": "http://13.231.41.173:8000/api/get_baby_list",
+        "url": "http://13.230.42.230:8000/api/get_baby_list",
         "tls": "",
         "persist": false,
         "proxy": "",

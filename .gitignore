@@ -1,6 +1,8 @@
 # Logs
 .git_history
 
+bot/resource/mission_quiz_bak.json
+
 __pycache__/
 
 node-red-data/.*.json

@@ -64,7 +64,7 @@ class MissionBot(discord.Client):
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT, '1258435233989132459', '1309524374512205986']
+            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT]
 
             if not is_in_mission_room:
                 target_channel = await self.fetch_user(interaction.user.id)

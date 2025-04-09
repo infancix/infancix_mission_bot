@@ -102,11 +102,9 @@
                 "41146c88c9d68502",
                 "0f5ff39df35ae1ac",
                 "cac0be6411603536",
-                "3559c8d558496a90",
                 "7251e19a2fa52ed5",
                 "9ce7fec197871410",
                 "45f6b0d95fd1b332",
-                "245f0717b6fdca23",
                 "58de9ad96734c4c7",
                 "1a1d3726bb3462d1",
                 "28b9ab84b5c3133f",
@@ -114,17 +112,19 @@
                 "b93ee67ba961999a",
                 "df48c70833f96380",
                 "64bd79682aa5f4bc",
-                "44d3f2ac1ea4bfc5",
                 "ac601e6d4444ba04",
                 "2da763adb5e70f88",
-                "d19effadf66e3324",
                 "d2afc3cce355da4d",
                 "9faaad73e029812b",
-                "f205d117ae709ba7"
+                "f205d117ae709ba7",
+                "3559c8d558496a90",
+                "d19effadf66e3324",
+                "44d3f2ac1ea4bfc5"
             ],
-            "filter": "filterSelected"
+            "filter": "filterCurrent"
         },
-        "menu-deploymenu-item-flow": true,
-        "menu-deploymenu-item-full": false
+        "menu-deploymenu-item-flow": false,
+        "menu-deploymenu-item-full": true,
+        "menu-deploymenu-item-node": false
     }
 }
