@@ -3,7 +3,7 @@ from bot.config import config
 from bot.views.control_panel import ControlPanelView
 
 class OptinClassView(discord.ui.View):
-    def __init__(self, client, user_id, timeout=86400):
+    def __init__(self, client, user_id, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
