@@ -166,7 +166,7 @@ async def handle_quiz(client, message, student_mission_info):
             correct += is_correct
         else:
             timeout_msg = f"⏰挑戰時間已到！\n下次再努力喔"
-            await user.send(timeout_msg)
+            await message.channel.send(timeout_msg)
             await client.api_utils.store_message(user_id, 'assistant', timeout_msg)
             await client.api_utils.update_student_mission_status(user_id, student_mission_info['mission_id'], is_paused=True)
             return
@@ -206,6 +206,7 @@ async def process_quiz_question(client, message, quiz):
             msg = f"正確答案是：{quiz['answer']}\n{explanation}\n\n"
             await message.channel.send(msg)
             return 0
+
     else: # timeout
         return -1
 
