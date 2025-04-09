@@ -9,7 +9,7 @@ from bot.views.reply_options import ReplyOptionView
 from bot.views.terminate_class import TerminateClassView
 from bot.views.photo_task import OpenPhotoTaskView
 from bot.handlers.photo_mission_handler import handle_photo_mission
-from bot.handlers.utils import image_check, convert_image_to_preview
+from bot.handlers.utils import convert_image_to_preview
 from bot.config import config
 
 async def handle_video_mission_dm(client, message, student_mission_info):
