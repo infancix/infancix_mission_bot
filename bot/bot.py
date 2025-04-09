@@ -6,7 +6,7 @@ import asyncio
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_dm
-from bot.handlers.utils import job, run_scheduler, load_active_control_panel, load_control_panel_by_id
+from bot.handlers.utils import job, run_scheduler, load_active_control_panel, load_control_panel_by_id, load_greeting_message
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -64,7 +64,7 @@ class MissionBot(discord.Client):
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT, '1258435233989132459', '1309524374512205986']
+            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT]
 
             if not is_in_mission_room:
                 target_channel = await self.fetch_user(interaction.user.id)
@@ -94,6 +94,9 @@ class MissionBot(discord.Client):
     async def setup_hook(self):
         await load_active_control_panel(self)
         self.logger.info("Finished loading control panel")
+
+        await load_greeting_message(self)
+        self.logger.info("Finished loading greeting message")
 
         self.tree.add_command(
             app_commands.Command(
