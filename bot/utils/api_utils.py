@@ -66,7 +66,7 @@ class APIUtils:
             return None
 
     async def fetch_student_list(self):
-        return await self._get_request('get_student_list')
+        return await self._get_request('mission/greeting_student_list')
 
     async def fetch_baby_list(self):
         return await self._get_request('get_baby_list')
