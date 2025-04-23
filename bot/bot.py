@@ -5,8 +5,9 @@ import asyncio
 
 from bot.config import config
 from bot.logger import setup_logger
-from bot.handlers.on_message import handle_dm
-from bot.handlers.utils import job, run_scheduler, load_active_control_panel, load_control_panel_by_id, load_greeting_message
+from bot.handlers.on_message import handle_background_message, handle_direct_message
+from bot.handlers.utils import run_scheduler, scheduled_job, load_messages
+from bot.utils.message_tracker import save_control_panel_record
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -29,38 +30,6 @@ class MissionBot(discord.Client):
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
-        self.user_viewed_video = {}
-
-        if not config.MISSION_BOT_ASSISTANT:
-            config.MISSION_BOT_ASSISTANT = self.openai_utils.load_assistant('video_task')
-
-        if not config.PHOTO_TASK_ASSISTANT:
-            config.PHOTO_TASK_ASSISTANT = self.openai_utils.load_assistant('photo_task')
-
-    async def whisper_comment(self, interaction: discord.Interaction, message: str):
-        print(f"Interaction received: {interaction.channel}, {interaction.user.id}, {interaction.channel.id}")
-        try:
-            if isinstance(interaction.channel, discord.Thread):
-                if str(interaction.channel.parent_id) not in config.channel_map:
-                    return
-
-                channel_id = str(interaction.channel.parent_id)
-                await interaction.channel.send(message)
-                await interaction.response.send_message(f"訊息已成功發送到貼文: {interaction.channel.name}", ephemeral=True)
-
-            else: # TextChannel
-                if str(interaction.channel.id) not in config.channel_map:
-                    return
-
-                channel_id = str(interaction.channel.id)
-                await interaction.channel.send(message)
-                await interaction.response.send_message(f"訊息已成功發送到頻道: {interaction.channel.name}", ephemeral=True)
-
-            # Store message
-            await self.api_utils.store_comment(str(interaction.user.id), config.channel_map[channel_id], str(interaction.channel.id), message)
-
-        except Exception as e:
-            print(f"Error while sending message: {e}")
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
@@ -69,48 +38,40 @@ class MissionBot(discord.Client):
             if not is_in_mission_room:
                 target_channel = await self.fetch_user(interaction.user.id)
                 await interaction.response.send_message(
-                    f"📢 *你的課表已更新，請到 <@{interaction.channel.id}> 查看！*",
+                    f"📢 *你的任務儀表板已更新，請到 <@{interaction.channel.id}> 查看！*",
                     ephemeral=True
                 )
             else:
                 target_channel = interaction.channel
 
-            old_control_message, control_panel_view, control_panel_embed = await load_control_panel_by_id(self, str(interaction.user.id), target_channel)
-            if old_control_message:
-                await old_control_message.delete()
-                self.logger.info(f"Remove out-dated control panel of user ({interaction.user.id}).")
-
+            course_info = await self.api_utils.get_student_mission_notifications_by_id(interaction.user.id)
+            view = ControlPanelView(self, str(interaction.user.id), course_info)
+            embed = discord.Embed(
+                title=f"📅 任務佈告欄",
+                description=view.embed_content,
+                color=discord.Color.blue()
+            )
             if is_in_mission_room:
-                await interaction.response.send_message(embed=control_panel_embed, view=control_panel_view)
+                await interaction.response.send_message(embed=embed, view=view)
                 message = await interaction.original_response()
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
             else:
-                message = await target_channel.send(embed=control_panel_embed, view=control_panel_view)
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
+                message = await target_channel.send(embed=embed, view=view)
+
+            # Store the message ID in the database
+            await self.api_utils.store_message(str(interaction.user.id), 'assistant', view.embed_content)
+            save_control_panel_record(str(interaction.user.id), str(message.id))
 
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
     async def setup_hook(self):
-        await load_active_control_panel(self)
-        self.logger.info("Finished loading control panel")
-
-        await load_greeting_message(self)
-        self.logger.info("Finished loading greeting message")
+        await load_messages(self)
+        self.logger.info("Finished loading all messages")
 
         self.tree.add_command(
             app_commands.Command(
-                name="加一說",
-                description="將訊息以加一的身份發送到指定的貼文中",
-                callback=self.whisper_comment
-            ),
-            guild=discord.Object(id=self.guild_id)
-        )
-
-        self.tree.add_command(
-            app_commands.Command(
-                name="照護課表",
-                description="顯示照護課表",
+                name="任務佈告欄",
+                description="顯示任務佈告欄",
                 callback=self.call_mission_start
             )
         )
@@ -129,7 +90,18 @@ class MissionBot(discord.Client):
             await self.api_utils.store_reaction(str(user.id), reaction.emoji)
 
     async def on_message(self, message):
-        await handle_dm(self, message)
+        if (
+            message.author == self.user
+            and message.channel.id != config.BACKGROUND_LOG_CHANNEL_ID
+        ):
+            return
+
+        if message.channel.id == config.BACKGROUND_LOG_CHANNEL_ID:
+            await handle_background_message(self, message)
+        elif isinstance(message.channel, discord.channel.DMChannel):
+            if str(message.author.id) != '1281121934536605739':
+                return
+            await handle_direct_message(self, message)
 
 def run_bot():
     if not isinstance(config.DISCORD_TOKEN, str):
@@ -137,6 +109,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(job(client)))
+    #schedule.every().day.at("10:00").do(lambda: asyncio.create_task(scheduled_job(client)))
 
-    client.run(config.DISCORD_TOKEN)
+    client.run(config.DISCORD_DEV_TOKEN)

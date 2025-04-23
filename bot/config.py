@@ -9,6 +9,7 @@ class Config:
 
         self.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
         self.DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+        self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
         self.MY_GUILD_ID = int(os.getenv('MY_GUILD_ID'))
         self.BACKGROUND_LOG_CHANNEL_ID = int(os.getenv('BACKGROUND_LOG_CHANNEL_ID'))
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))

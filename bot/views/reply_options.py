@@ -2,7 +2,7 @@ import discord
 from bot.config import config
 
 class ReplyOptionView(discord.ui.View):
-    def __init__(self, options, timeout=86400):
+    def __init__(self, options, timeout=None):
         super().__init__(timeout=timeout)
         self.selected_option = None
         self.options = options

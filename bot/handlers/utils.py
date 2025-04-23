@@ -1,107 +1,50 @@
 import discord
-import os
-import re
 import schedule
 import asyncio
 import time
-from pathlib import Path
-from collections import deque
-from loguru import logger
-from discord.ui import View
-from discord.errors import Forbidden
+import datetime
 
 from bot.config import config
-from bot.utils.message_tracker import load_message_records, save_message_record
+from bot.utils.message_tracker import (
+    save_greeting_message_record,
+    load_greeting_message_records,
+    load_control_panel_records,
+    load_quiz_message_records,
+    load_reply_option_records
+)
 from bot.views.control_panel import ControlPanelView
 from bot.views.optin_class import OptinClassView
+from bot.views.quiz import QuizView
+from bot.views.reply_options import ReplyOptionView
 
 async def run_scheduler():
     while True:
         schedule.run_pending()
         await asyncio.sleep(10)
 
-async def job(client):
+def scheduled_job(client):
+    today = datetime.datetime.now()
+
+    # Daily job
+    asyncio.create_task(daily_job(client))
+
+async def daily_job(client):
     client.logger.debug('Running job now...')
 
-    channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
-    if channel is None or not isinstance(channel, discord.TextChannel):
+    target_channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+    if target_channel is None or not isinstance(target_channel, discord.TextChannel):
         raise Exception('Invalid channel')
-
-    # Remove message
-    control_info = await client.api_utils.get_active_control_panel()
-    for message in control_info:
-        try:
-            user_id = message['discord_id']
-            user = await client.fetch_user(int(user_id))
-            message_id = message['message_id']
-            message = await user.fetch_message(message_id)
-            await message.delete()
-            client.logger.info(f"Remove out-dated control panel of user ({user_id}).")
-        except Exception as e:
-            client.logger.error(f"Failed to remove out-dated control panel: {str(e)}")
 
     student_list = await client.api_utils.get_all_students_mission_notifications()
     for user_id in student_list:
         try:
-            user = await client.fetch_user(int(user_id))
-            if user.dm_channel is None:
-                await user.create_dm()
-            couser_info = student_list[user_id]
-            view = ControlPanelView(client, user_id, couser_info)
-            embed = discord.Embed(
-                title=f"📅 照護課表",
-                description=view.embed_content,
-                color=discord.Color.blue()
-            )
-            message = await user.send(embed=embed, view=view)
-            await client.api_utils.store_message(user_id, 'assistant', view.embed_content, message_id=message.id)
-            client.logger.info(f"Send hello message to user {user_id}")
-            time.sleep(5)
-
+            couser_info = student_list[user_id].get('todays_course', {})
+            if couser_info and couser_info['mission_status'] != 'Completed':
+                mission_id = couser_info['mission_id']
+                await target_channel.send(f"START_MISSION_{mission_id} <@{user_id}>")
+            time.sleep(2)
         except Exception as e:
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
-
-async def load_active_control_panel(client):
-    try:
-        control_info = await client.api_utils.get_active_control_panel()
-        student_mission_info = await client.api_utils.get_all_students_mission_notifications()
-        for message in control_info:
-            user_id = message['discord_id']
-            user = await client.fetch_user(int(user_id))
-            message_id = message['message_id']
-            if student_mission_info.get(user_id):
-                view = ControlPanelView(client, user_id, student_mission_info[user_id])
-                embed = discord.Embed(
-                    title=f"📅 照護課表",
-                    description=view.embed_content,
-                    color=discord.Color.blue()
-                )
-                message = await user.fetch_message(message_id)
-                await message.edit(embed=embed, view=view)
-                await client.api_utils.store_message(user_id, 'assistant', view.embed_content, message_id=message.id)
-    except Exception as e:
-        client.logger.error(f"Error loading active control panel: {e}")
-
-async def load_control_panel_by_id(client, user_id, target_channel):
-    try:
-        ative_control_panel = await client.api_utils.get_active_control_panel()
-        for message in ative_control_panel:
-            if message['discord_id'] == user_id:
-                message_id = message['message_id']
-                message = await target_channel.fetch_message(message_id)
-                break
-
-        course_info = await client.api_utils.get_student_mission_notifications_by_id(user_id)
-        view = ControlPanelView(client, user_id, course_info)
-        embed = discord.Embed(
-            title=f"📅 照護課表",
-            description=view.embed_content,
-            color=discord.Color.blue()
-        )
-        return message, view, embed
-
-    except Exception as e:
-        client.logger.error(f"Error loading control panel: {e}")
 
 async def handle_greeting_job(client, user_id = None):
     hello_message = (
@@ -137,33 +80,112 @@ async def handle_greeting_job(client, user_id = None):
         view.message = await user.send(hello_message, view=view, files=files)
         client.logger.info(f"Send hello message to user {user_id}")
 
-        save_message_record(str(user_id), str(view.message.id))
+        save_greeting_message_record(str(user_id), str(view.message.id))
         await client.api_utils.store_message(user_id, 'assistant', hello_message)
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
+
+    return
+
+async def load_messages(client):
+    #await load_greeting_message(client)
+    #client.logger.info("Finished loading greeting messages")
+
+    #await load_control_panel_message(client)
+    #client.logger.info("Finished loading control panel messages")
+
+    await load_reply_option_message(client)
+    client.logger.info("Finished loading reply option messages")
+
+    await load_quiz_message(client)
+    client.logger.info("Finished loading quiz messages")
 
     return
 
 async def load_greeting_message(client):
-    records = load_message_records()
+    records = load_greeting_message_records()
     for user_id, message_id in records.items():
         try:
             channel = await client.fetch_user(user_id)
             message = await channel.fetch_message(int(message_id))
             view = OptinClassView(client, user_id)
             await message.edit(view=view)
-            client.logger.info(f"✅ Restored view for user {user_id}")
+            client.logger.info(f"✅ Restored optin-view for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
-def convert_image_to_preview(google_drive_url):
-    match = re.search(r"https://drive\.google\.com/file/d/([^/]+)/preview", google_drive_url)
-    if match:
-        file_id = match.group(1)
-        direct_url = f"https://drive.google.com/uc?id={file_id}"
-        return direct_url
-    else:
-        return google_drive_url
+async def load_control_panel_message(client):
+    records = load_control_panel_records()
+    for user_id, message_id in records.items():
+        channel = await client.fetch_user(user_id)
+        try:
+            message = await channel.fetch_message(int(message_id))
+            course_info = await client.api_utils.get_student_mission_notifications_by_id(user_id)
+            view = ControlPanelView(client, user_id, course_info)
+            embed = discord.Embed(
+                title=f"📅 任務佈告欄",
+                description=view.embed_content,
+                color=discord.Color.blue()
+            )
+            await message.edit(embed=embed, view=view)
+            client.logger.info(f"✅ Restored control-panel for user {user_id}")
+        except Exception as e:
+            channel.send("儀表板過期囉！ 輸入\"/任務佈告欄\" 重新呼叫喔！")
+            client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
+async def load_reply_option_message(client):
+    records = load_reply_option_records()
+    for user_id, (message_id, options) in records.items():
+        channel = await client.fetch_user(user_id)
+        try:
+            message = await channel.fetch_message(int(message_id))
+            view = ReplyOptionView(client, user_id, options)
+            await message.edit(view=view)
+            client.logger.info(f"✅ Restored reply-option for user {user_id}")
+        except Exception as e:
+            channel.send("任務已過期囉！ 輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
+            client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
+async def load_quiz_message(client):
+    records = load_quiz_message_records()
+    for user_id, (message_id, quiz_options, quiz_answer) in records.items():
+        channel = await client.fetch_user(user_id)
+        try:
+            message = await channel.fetch_message(int(message_id))
+            view = QuizView(quiz_options, quiz_answer)
+            await message.edit(view=view)
+            client.logger.info(f"✅ Restored quiz for user {user_id}")
+        except Exception as e:
+            channel.send("⏰挑戰時間已到！下次再努力喔\n輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
+            client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
+async def send_reward_and_log(client, user_id, mission_id, reward):
+    target_channel = await client.fetch_user(user_id)
+    is_photo_mission = mission_id in config.photo_mission_list
+
+    # Send the ending message to the user
+    ending_msg = (
+        "🎉 恭喜你完成今日任務！\n"
+        "🎁 你獲得了以下獎勵：\n"
+        f"> 🪙 金幣 Coin：+{reward}\n"
+    )
+    if is_photo_mission:
+        mission = await client.api_utils.get_mission_info(int(mission_id))
+        ending_msg += f"> 🧩 回憶碎片：1 片《{mission['photo_mission']}》\n"
+
+    await target_channel.send(ending_msg)
+    await client.api_utils.store_message(user_id, 'assistant', ending_msg)
+
+    # Add gold to user
+    await client.api_utils.add_gold(
+        user_id,
+        gold=int(reward)
+    )
+
+    # Send log to Background channel
+    channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+    if channel is None or not isinstance(channel, discord.TextChannel):
+        raise Exception('Invalid channel')
+
+    msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
+    await channel.send(msg_task)

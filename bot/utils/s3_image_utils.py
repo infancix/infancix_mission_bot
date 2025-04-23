@@ -8,6 +8,7 @@ from PIL import Image, ExifTags
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from pathlib import Path
+from urllib.parse import urlparse
 
 from bot.logger import setup_logger
 
@@ -182,10 +183,6 @@ class S3Handler:
         return f"{self.ALLOWED_FOLDER}{uuid.uuid4()}{ext}"
 
     def upload_image(self, image_data: io.BytesIO, original_filename: str) -> Optional[str]:
-        """
-        上傳圖片到 S3
-        返回: 成功時返回 URL，失敗時返回 None
-        """
         try:
             if not isinstance(image_data, io.BytesIO):
                 self.logger.error(f"upload_image: 輸入不是 BytesIO 物件，而是 {type(image_data)}")
@@ -210,7 +207,6 @@ class S3Handler:
                 }
             )
 
-            # 返回公開 URL
             url = f"https://{self.bucket_name}.s3.amazonaws.com/{unique_filename}"
             self.logger.info(f"Successfully uploaded image: {url}")
             return url
@@ -239,21 +235,30 @@ class S3ImageUtils:
             self.logger.error(f"Download error: {str(e)}")
             return None
 
-    async def process_discord_attachment(self, attachment) -> Optional[str]:
-        try:
-            # 檢查是否為有效的圖片類型
-            file_ext = os.path.splitext(attachment.filename)[1].lower()
-            if file_ext not in self.image_processor.ALLOWED_EXTENSIONS:
-                self.logger.error(f"Invalid file type: {file_ext}")
-                return None
+    async def get_filename_and_extension_from_url(self, url):
+        parsed_url = urlparse(url)
+        path = parsed_url.path  # e.g. /attachments/.../IMG_1564.jpg
+        filename = os.path.basename(path)  # e.g. IMG_1564.jpg
+        name, ext = os.path.splitext(filename)
+        return filename, ext.lower()
 
-            # 下載圖片
-            image_data = await self.download_discord_attachment(attachment.url)
+    async def check_discord_attachment(self, attachment) -> bool:
+        file_ext = os.path.splitext(attachment.filename)[1].lower()
+        self.logger.info(f"處理文件: {attachment.filename}, 類型: {file_ext}")
+        if file_ext not in self.image_processor.ALLOWED_EXTENSIONS:
+            self.logger.error(f"Invalid file type: {file_ext}")
+            return False
+        else:
+            return True
+
+    async def process_discord_attachment(self, attachment_url) -> Optional[str]:
+        try:
+            image_data = await self.download_discord_attachment(attachment_url)
             if not image_data:
                 self.logger.error("Image download failed")
                 return None
-
-            self.logger.info(f"處理文件: {attachment.filename}, 類型: {file_ext}")
+            
+            filename, file_ext = await self.get_filename_and_extension_from_url(attachment_url)
 
             # 處理 HEIC/HEIF 格式
             if file_ext in ['.heic', '.heif']:
@@ -261,10 +266,7 @@ class S3ImageUtils:
                 if not image_data:
                     self.logger.error("HEIC 轉換失敗")
                     return None
-
-                filename = os.path.splitext(attachment.filename)[0] + ".jpg"
-            else:
-                filename = attachment.filename
+                filename = os.path.splitext(filename)[0] + ".jpg"
 
             # 旋轉圖片
             image_data = self.image_processor.rotate_image(image_data)
@@ -284,12 +286,3 @@ class S3ImageUtils:
         except Exception as e:
             self.logger.error(f"Processing error: {str(e)}")
             return None
-
-async def handle_discord_image(attachment):
-    handler = S3ImageHandler("infancix-app-storage-jp")
-    url = await handler.process_discord_attachment(attachment)
-    if url:
-        print(f"Successfully uploaded to: {url}")
-    else:
-        print("Upload failed")
-

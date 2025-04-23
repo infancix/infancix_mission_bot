@@ -3,7 +3,7 @@ from bot.config import config
 from bot.views.control_panel import ControlPanelView
 
 class TerminateClassView(discord.ui.View):
-    def __init__(self, client, student_mission_info, reward=20, timeout=86400):
+    def __init__(self, client, student_mission_info, reward=20, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.student_mission_info = student_mission_info

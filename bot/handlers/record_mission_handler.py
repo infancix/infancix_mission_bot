@@ -4,23 +4,10 @@ import discord
 from datetime import datetime
 from discord.ui import View
 from discord.errors import Forbidden
+from types import SimpleNamespace
 
-from bot.views.terminate_class import TerminateClassView
-from bot.views.reply_options import ReplyOptionView
 from bot.config import config
-
-async def handle_record_mission_dm(client, message, student_mission_info):
-    user_id = str(message.author.id)
-    student_mission_info['user_id'] = user_id
-    await client.api_utils.store_message(user_id, 'user', message.content)
-
-    await handle_check_baby_records(client, message.author, student_mission_info)
-
-    student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
-    if bool(student_mission_info) == False:
-        msg = "加一現在不方便回答問題喔，可以找 <@1287675308388126762>"
-        await message.channel.send(msg)
-        await client.api_utils.store_message(str(user_id), 'assistant', msg)
+from bot.handlers.utils import send_reward_and_log
 
 async def handle_record_mission_start(client, user_id, mission_id):
     user_id = str(user_id)
@@ -48,10 +35,11 @@ async def handle_record_mission_start(client, user_id, mission_id):
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
     # Next step
-    await handle_check_baby_records(client, user, student_mission_info)
+    message = SimpleNamespace(author=user, channel=user.dm_channel, content=None)
+    await handle_check_baby_records(client, message, student_mission_info)
 
-async def handle_check_baby_records(client, user, student_mission_info):
-    user_id = str(user.id)
+async def handle_check_baby_records(client, message, student_mission_info):
+    user_id = str(message.author.id)
     exists_baby_records = await client.api_utils.check_baby_records_in_two_weeks(user_id)
     if exists_baby_records:
         # Mission Completed
@@ -60,31 +48,15 @@ async def handle_check_baby_records(client, user, student_mission_info):
             'score': 1
         })
         await client.api_utils.update_student_mission_status(**student_mission_info)
-        view = TerminateClassView(client, student_mission_info)
-        msg = "很棒！過去兩週已有作息紀錄，繼續保持 !"
-        view.message = await user.send(msg, view=view)
-        await client.api_utils.store_message(user_id, 'assistant', msg)
+        ending_msg = f"很棒！過去兩週已有作息紀錄，繼續保持 !"
+        await message.channel.send(ending_msg)
+        await client.api_utils.store_message(user_id, 'assistant', ending_msg)
+
+        # Send reward
+        await send_reward_and_log(client, user_id, student_mission_info['mission_id'], 20)
         return
+
     else:
         msg = "過去兩週未見寶寶作息紀錄，請至<@!1165875139553021995> 補上紀錄以完成任務。"
-        selected_option = await send_reply_with_single_button(user, msg, label="我完成了")
-        if selected_option:
-            # Recursively check again
-            await handle_check_baby_records(client, user, student_mission_info)
-        else:
-            # Handle case where no button was clicked (e.g., timeout)
-            student_mission_info['is_paused'] = True
-            timeout_msg = "操作逾時，請至補上紀錄以完成任務。補上紀錄以完成任務。"
-            await user.send(timeout_msg)
-            await client.api_utils.store_message(user_id, 'assistant', timeout_msg)
-            await client.api_utils.update_student_mission_status(**student_mission_info)
-
-async def send_reply_with_single_button(user, msg, label="我完成了"):
-    view = ReplyOptionView([label])
-    view.message = await user.send(msg, view=view)
-    await view.wait()
-    if view.selected_option:
-        return view.selected_option
-    else:
-        return None
-
+        await message.channel.send(msg)
+        return

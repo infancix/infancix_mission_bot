@@ -1,12 +1,11 @@
+import asyncio
 import discord
 import os
 import re
 import traceback
 
-from bot.views.reply_options import ReplyOptionView
 from bot.config import config
-from bot.views.terminate_class import TerminateClassView
-import asyncio
+from bot.handlers.utils import send_reward_and_log
 
 photo_timers = {}
 
@@ -14,30 +13,19 @@ async def handle_photo_mission_start(client, user_id, mission_id):
     user_id = str(user_id)
     student_mission_info = await client.api_utils.get_student_mission_status(user_id, mission_id)
     await client.api_utils.update_student_current_mission(user_id, mission_id)
-    mission_instructions = f"""
-        這是這次課程的主題和照片任務，請跟親切的提醒使用者，如果拍照的時候不要忘記把自己拍進去，這是你們共同的回憶喔!
-        ## 課程內容：{student_mission_info['mission_title']}
-        ## 照片任務: {student_mission_info['photo_mission']}
-
-        f"📸 請上傳「**{student_mission_info['photo_mission']}**」的照片！\n"
-        f"💡 這是最後一步，上傳即可完成本次課程！🎉\n"
-        "📎 **點擊對話框左側「+」上傳**"
-    """
-
     student_mission_info = {
         **student_mission_info,
         'user_id': user_id,
-        'assistant_id': config.PHOTO_TASK_ASSISTANT,
+        'assistant_id': config.MISSION_BOT_ASSISTANT,
         'current_step': 4,
     }
+
     if not student_mission_info.get('thread_id'):
         student_mission_info['thread_id'] = client.openai_utils.load_thread()
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
     thread_id = student_mission_info['thread_id']
     assistant_id = student_mission_info['assistant_id']
-    client.openai_utils.add_task_instruction(thread_id, mission_instructions)
-
     user = await client.fetch_user(user_id)
     photo_reminder = (
         "💡 拍照小提醒：記得自己也要入鏡，你是寶寶最珍貴的人，少了你，這份回憶就不完整。\n"
@@ -80,16 +68,13 @@ async def handle_photo_mission(client, message, student_mission_info):
         await client.api_utils.upload_baby_image(user_id, mission_id, student_mission_info['mission_title'], photo_url)
         await client.api_utils.store_message(user_id, 'user', f"收到任務照片: {photo_url}")
 
-        assistant_id = config.PHOTO_TASK_ASSISTANT
+        assistant_id = config.MISSION_BOT_ASSISTANT
         thread_id = student_mission_info['thread_id']
         response = await client.openai_utils.get_reply_message(assistant_id, thread_id, "已收到任務照片")
         client.logger.info(f"Assitant response: {response}")
 
-        if 'message' in response:
-            view = TerminateClassView(client, student_mission_info, reward=100)
-            view.message = await message.channel.send(response['message'], view=view)
-            await client.api_utils.store_message(user_id, 'assistant', response['message'])
-
+        # Mission Completed
+        await send_reward_and_log(client, user_id, mission_id, 100)
         # Remove timer
         if (user_id, str(mission_id)) in photo_timers:
             photo_timers[(user_id, str(mission_id))].cancel()

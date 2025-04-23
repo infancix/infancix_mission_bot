@@ -1,13 +1,19 @@
 import discord
 from bot.config import config
-from bot.views.control_panel import ControlPanelView
 
 class OpenPhotoTaskView(discord.ui.View):
-    def __init__(self, client, student_mission_info, reward=20, timeout=86400):
+    def __init__(self, client, user_id, mission_id, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
-        self.student_mission_info = student_mission_info
-        self.terminate_button = OpenPhotoTaskButton(client, student_mission_info, reward, label="進入照片任務", msg="稍等我一下喔")
+        self.user_id = user_id
+        self.mission_id = mission_id
+        self.terminate_button = OpenPhotoTaskButton(
+            client,
+            user_id,
+            mission_id,
+            label="進入照片任務",
+            msg="稍等我一下喔"
+        )
         self.add_item(self.terminate_button)
         self.message = None
 
@@ -27,14 +33,13 @@ class OpenPhotoTaskView(discord.ui.View):
 
 class OpenPhotoTaskButton(discord.ui.Button):
     def __init__(
-        self, client, student_mission_info, reward, label, msg, style=discord.ButtonStyle.secondary
+        self, client, user_id, mission_id, label, msg, style=discord.ButtonStyle.secondary
     ):
         super().__init__(label=label, style=style)
         self.client = client
-        self.student_mission_info = student_mission_info
-        self.mission_id = self.student_mission_info['mission_id']
+        self.user_id = user_id
+        self.mission_id = mission_id
         self.msg = msg
-        self.reward = reward
 
     async def callback(self, interaction: discord.Interaction):
         user_id = str(interaction.user.id)
@@ -44,16 +49,5 @@ class OpenPhotoTaskButton(discord.ui.Button):
 
         await interaction.message.edit(view=self.view)
         await interaction.response.send_message(self.msg)
-        await self.client.api_utils.add_gold(
-            user_id,
-            gold=self.reward
-        )
-        await self.client.api_utils.send_dm_message(
-            user_id,
-            f"🎉 恭喜完成{self.student_mission_info['mission_type']} - {self.student_mission_info['mission_title']} 任務\n"
-            f"獲得🪙{self.reward}金幣🎉，🐾不要忘了還有照片任務喔💪\n"
-        )
-
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
         await handle_photo_mission_start(self.client, user_id, self.mission_id)
-

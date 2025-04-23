@@ -155,6 +155,9 @@ class APIUtils:
             return None
         return response
 
+    async def get_student_babies(self, user_id, endpoint='get_student_babies'):
+        return await self._get_request(f"{endpoint}?discord_id={user_id}")
+
     async def get_baby_additional_info(self, user_id):
         additional_info = "另外以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n"
 
@@ -269,7 +272,4 @@ class APIUtils:
             'message': message
         }
         return await self._post_request(endpoint, payload)
-
-    async def get_active_control_panel(self, endpoint='get_active_mission_control_panel?channel_id=任務佈告欄'):
-        return await self._get_request(endpoint)
 
