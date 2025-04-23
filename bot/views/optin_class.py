@@ -1,6 +1,7 @@
 import discord
 from bot.config import config
 from bot.views.control_panel import ControlPanelView
+from bot.utils.message_tracker import delete_greeting_message_record
 
 class OptinClassView(discord.ui.View):
     def __init__(self, client, user_id, timeout=None):
@@ -38,6 +39,7 @@ class OptinClassButton(discord.ui.Button):
         if interaction.message is None:
             return
         await interaction.message.edit(view=self.view)
+        delete_greeting_message_record(self.user_id)
 
         # Ensure we provide an immediate response to the interaction
         await interaction.response.defer()  # Indicates processing is ongoing

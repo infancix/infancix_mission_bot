@@ -3,8 +3,8 @@ from types import SimpleNamespace
 from datetime import datetime
 
 from bot.config import config
-from bot.views.milestones import MilestoneSelectView
-from bot.views.phototask_milestones import PhotoTaskSelectView
+from bot.views.mission import MilestoneSelectView
+from bot.views.photo_mission import PhotoTaskSelectView
 
 class ControlPanelView(discord.ui.View):
     def __init__(self, client, user_id, course_info, timeout=None):

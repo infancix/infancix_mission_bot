@@ -17,9 +17,6 @@ class OpenAIUtils:
         if not os.path.exists('audio'):
             os.makedirs('audio')
 
-        with open("bot/resource/mission_quiz.json", "r") as file:
-            self.mission_quiz = json.load(file)
-
     async def convert_audio_to_message(self, message):
         file_path = os.path.join('audio', f'{message.author.id}.ogg')
         await message.attachments[0].save(file_path)
@@ -151,9 +148,6 @@ class OpenAIUtils:
         else:
             quiz = process_result['result'].get('quiz', [])
             return quiz
-
-    async def load_quiz(self, mission):
-        return self.mission_quiz[str(mission['mission_id'])]
 
     def generate_quiz_prompt(self, mission):
         with open("bot/resource/quiz_prompt.txt", "r") as file:

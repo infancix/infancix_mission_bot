@@ -10,7 +10,6 @@ from bot.handlers.utils import send_reward_and_log
 photo_timers = {}
 
 async def handle_photo_mission_start(client, user_id, mission_id):
-    user_id = str(user_id)
     student_mission_info = await client.api_utils.get_student_mission_status(user_id, mission_id)
     await client.api_utils.update_student_current_mission(user_id, mission_id)
     student_mission_info = {

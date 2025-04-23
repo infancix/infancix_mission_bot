@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 import schedule
 import asyncio
+import json
 
 from bot.config import config
 from bot.logger import setup_logger
@@ -30,6 +31,9 @@ class MissionBot(discord.Client):
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
+
+        with open("bot/resource/mission_quiz.json", "r") as file:
+            self.mission_quiz = json.load(file)
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
