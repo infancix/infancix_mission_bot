@@ -103,8 +103,6 @@ class APIUtils:
         if score:
             data['score'] = score
 
-        print(data)
-
         response = await self._post_request('update_student_mission_status', data)
         return bool(response)
 

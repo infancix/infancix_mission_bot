@@ -27,7 +27,7 @@ async def handle_background_message(client, message):
         return
 
 async def handle_direct_message(client, message):
-    client.logger.info(f"Message received: {message}")
+    client.logger.debug(f"Message received: {message}")
     user_id = str(message.author.id)
     student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
 

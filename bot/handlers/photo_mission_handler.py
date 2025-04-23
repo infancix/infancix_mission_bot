@@ -59,7 +59,7 @@ async def handle_photo_mission(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     try:
-        photo_url = await client.s3_client.process_discord_attachment(message.attachments[0])
+        photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
         if 'mission_title' not in student_mission_info:
             mission = await client.api_utils.get_mission_info(mission_id)
             student_mission_info.update(mission)
@@ -70,6 +70,8 @@ async def handle_photo_mission(client, message, student_mission_info):
         assistant_id = config.MISSION_BOT_ASSISTANT
         thread_id = student_mission_info['thread_id']
         response = await client.openai_utils.get_reply_message(assistant_id, thread_id, "已收到任務照片")
+        await message.channel.send(response['message'])
+        await client.api_utils.store_message(user_id, assistant_id, response['message'])
         client.logger.info(f"Assitant response: {response}")
 
         # Mission Completed
