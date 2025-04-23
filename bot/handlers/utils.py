@@ -204,7 +204,5 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
 def get_user_id(source: discord.Interaction | discord.Message) -> str:
     if isinstance(source, discord.Interaction):
         return str(source.user.id)
-    elif isinstance(source, discord.Message):
-        return str(source.author.id)
     else:
-        raise TypeError("Unsupported input type: must be Interaction or Message")
+        return str(source.author.id)
