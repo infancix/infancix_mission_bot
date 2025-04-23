@@ -104,14 +104,15 @@ async def load_messages(client):
 
 async def load_greeting_message(client):
     records = load_greeting_message_records()
+    channel = await client.fetch_user(user_id)
     for user_id, message_id in records.items():
         try:
-            channel = await client.fetch_user(user_id)
             message = await channel.fetch_message(int(message_id))
             view = OptinClassView(client, user_id)
             await message.edit(view=view)
             client.logger.info(f"✅ Restored optin-view for user {user_id}")
         except Exception as e:
+            await channel.send("課程邀請已經過期囉，麻煩找管理員處理喔")
             client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
 async def load_control_panel_message(client):
@@ -130,7 +131,7 @@ async def load_control_panel_message(client):
             await message.edit(embed=embed, view=view)
             client.logger.info(f"✅ Restored control-panel for user {user_id}")
         except Exception as e:
-            channel.send("儀表板過期囉！ 輸入\"/任務佈告欄\" 重新呼叫喔！")
+            await channel.send("儀表板過期囉！ 輸入\"/任務佈告欄\" 重新呼叫喔！")
             client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
 async def load_reply_option_message(client):
@@ -139,11 +140,11 @@ async def load_reply_option_message(client):
         channel = await client.fetch_user(user_id)
         try:
             message = await channel.fetch_message(int(message_id))
-            view = ReplyOptionView(client, user_id, options)
+            view = ReplyOptionView(options)
             await message.edit(view=view)
             client.logger.info(f"✅ Restored reply-option for user {user_id}")
         except Exception as e:
-            channel.send("任務已過期囉！ 輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
+            await channel.send("任務已過期囉！ 輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
             client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
 async def load_quiz_message(client):
@@ -156,7 +157,7 @@ async def load_quiz_message(client):
             await message.edit(view=view)
             client.logger.info(f"✅ Restored quiz for user {user_id}")
         except Exception as e:
-            channel.send("⏰挑戰時間已到！下次再努力喔\n輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
+            await channel.send("⏰挑戰時間已到！下次再努力喔\n輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！")
             client.logger.warning(f"⚠️ Failed to restore for {user_id}: {e}")
 
 async def send_reward_and_log(client, user_id, mission_id, reward):

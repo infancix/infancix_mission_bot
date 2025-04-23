@@ -171,9 +171,6 @@ async def handle_mission_end(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = int(student_mission_info['mission_id'])
     is_photo_mission = student_mission_info['mission_id'] in config.photo_mission_list
-    ending_msg = "請問你對今天的課程還有疑問嗎？不要害羞，跟加一說喔🐾\n\n"
-    await message.channel.send(ending_msg)
-
     if is_photo_mission:
         ending_msg = "這堂課的最後一步很特別，我們有個超可愛的照片任務，你一定不能錯過！"
         view = ReplyOptionView(["進入照片任務!"])

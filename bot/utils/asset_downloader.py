@@ -22,8 +22,9 @@ async def download_drive_image(url: str, save_dir: str = "cache") -> File:
     match = re.search(r"https://drive\.google\.com/file/d/([^/]+)/preview", url)
     if match:
         file_id = match.group(1)
+        download_url = f"https://drive.google.com/uc?id={file_id}&export=download"
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
+            async with session.get(download_url) as resp:
                 if resp.status != 200:
                     raise Exception(f"Download failed for {file_id}")
                 data = await resp.read()
