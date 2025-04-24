@@ -13,6 +13,7 @@ from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
 from bot.views.control_panel import ControlPanelView
+from bot.views.mission import MilestoneSelectView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -37,34 +38,15 @@ class MissionBot(discord.Client):
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT]
-
-            if not is_in_mission_room:
-                target_channel = await self.fetch_user(interaction.user.id)
-                await interaction.response.send_message(
-                    f"📢 *你的任務儀表板已更新，請到 <@{interaction.channel.id}> 查看！*",
-                    ephemeral=True
-                )
-            else:
-                target_channel = interaction.channel
-
-            course_info = await self.api_utils.get_student_mission_notifications_by_id(interaction.user.id)
-            view = ControlPanelView(self, str(interaction.user.id), course_info)
-            embed = discord.Embed(
-                title=f"📅 任務佈告欄",
-                description=view.embed_content,
-                color=discord.Color.blue()
+            await interaction.response.defer(ephemeral=True)
+            student_milestones = await self.api_utils.get_student_milestones(str(interaction.user.id))
+            milestone_view = MilestoneSelectView(self, str(interaction.user.id), student_milestones)
+            message = await interaction.followup.send(
+                "🏆 ** 以下是您的任務進度，按下方按鈕開始任務**",
+                view=milestone_view,
+                ephemeral=True
             )
-            if is_in_mission_room:
-                await interaction.response.send_message(embed=embed, view=view)
-                message = await interaction.original_response()
-            else:
-                message = await target_channel.send(embed=embed, view=view)
-
-            # Store the message ID in the database
-            await self.api_utils.store_message(str(interaction.user.id), 'assistant', view.embed_content)
-            save_control_panel_record(str(interaction.user.id), str(message.id))
-
+            #save_control_panel_record(str(interaction.user.id), str(message.id))
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
@@ -74,7 +56,7 @@ class MissionBot(discord.Client):
 
         self.tree.add_command(
             app_commands.Command(
-                name="任務佈告欄",
+                name="🏆 任務佈告欄",
                 description="顯示任務佈告欄",
                 callback=self.call_mission_start
             )
@@ -86,7 +68,6 @@ class MissionBot(discord.Client):
     async def on_ready(self):
         self.loop.create_task(run_scheduler())
         self.logger.info(f'Logged in as {self.user.name} (ID: {self.user.id})')
-        #await job(self)
 
     async def on_reaction_add(self, reaction, user):
         if isinstance(reaction.message.channel, discord.DMChannel) and reaction.message.author == self.user:
@@ -103,8 +84,6 @@ class MissionBot(discord.Client):
         if message.channel.id == config.BACKGROUND_LOG_CHANNEL_ID:
             await handle_background_message(self, message)
         elif isinstance(message.channel, discord.channel.DMChannel):
-            if str(message.author.id) != '1281121934536605739':
-                return
             await handle_direct_message(self, message)
 
 def run_bot():
@@ -115,4 +94,4 @@ def run_bot():
 
     #schedule.every().day.at("10:00").do(lambda: asyncio.create_task(scheduled_job(client)))
 
-    client.run(config.DISCORD_DEV_TOKEN)
+    client.run(config.DISCORD_TOKEN)

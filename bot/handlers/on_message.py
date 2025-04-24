@@ -10,6 +10,7 @@ from bot.handlers.utils import handle_greeting_job
 async def handle_background_message(client, message):
     client.logger.debug(f"Background message received: {message}")
     client.logger.debug(f"Message metions: {message.mentions}")
+
     if len(message.mentions) == 1 and message.mentions[0].id == config.MISSION_BOT and 'START_GREETING_ALL' in message.content:
         await handle_greeting_job(client)
         return
@@ -18,7 +19,7 @@ async def handle_background_message(client, message):
         return
     elif len(message.mentions) == 1:
         user_id = message.mentions[0].id
-        match = re.search(r'START_MISSION_(\d+)', message.content)
+        match = re.search(rf'START_MISSION_(\d+)', message.content)
         if match:
             mission_id = int(match.group(1))
             await handle_start_mission(client, user_id, mission_id)

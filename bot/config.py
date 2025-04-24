@@ -7,16 +7,22 @@ class Config:
     def __init__(self):
         load_dotenv()
 
+        self.ENV = True if os.getenv('ENV') == 'dev' else False
         self.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
         self.DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
         self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
         self.MY_GUILD_ID = int(os.getenv('MY_GUILD_ID'))
         self.BACKGROUND_LOG_CHANNEL_ID = int(os.getenv('BACKGROUND_LOG_CHANNEL_ID'))
-        self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
         self.BABY_API_PORT = os.getenv('BABY_API_PORT')
         self.MISSION_BOT_ASSISTANT = 'asst_DlqSJaUKd9K118tbYvB4EbfD'
         self.PHOTO_TASK_ASSISTANT = 'asst_NKABptwzFlKB9kZnm2f8QbAa'
+
+        self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
+        self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
+        if self.ENV:
+            self.MISSION_BOT = self.DEV_BOT_ID
+            self.DISCORD_TOKEN = self.DISCORD_DEV_TOKEN
 
         self.channel_map = {
             '1166487593492418594': '社團大廳',

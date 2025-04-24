@@ -1,10 +1,16 @@
 import json
 from pathlib import Path
+from bot.config import config
 
-GREETING_MESSAGE_LOG_PATH = Path("bot/data/greeting_message_records.json")
-CONTROL_PANEL_LOG_PATH = Path("bot/data/control_panel_records.json")
-QUIZ_MESSAGE_LOG_PATH = Path("bot/data/quiz_message_records.json")
-TASK_ENTRY_LOG_PATH = Path("bot/data/task_entry_records.json")
+DATA_DIR = Path("bot/data")
+if config.ENV:
+    DATA_DIR = DATA_DIR / "dev"
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+GREETING_MESSAGE_LOG_PATH = DATA_DIR / "greeting_message_records.json"
+CONTROL_PANEL_LOG_PATH =  DATA_DIR / "control_panel_records.json"
+QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
+TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 
 def load_greeting_message_records() -> dict:
     if GREETING_MESSAGE_LOG_PATH.exists():
