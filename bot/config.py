@@ -53,12 +53,4 @@ class Config:
         self.record_mission_list = [32, 39, 45, 54, 67]
         self.photo_mission_list = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
 
-        self.class_step = {
-            0: '未發送',
-            1: 'Hello 階段',
-            2: '課程講解階段',
-            3: '測驗階段',
-            4: '課程結束'
-        }
-
 config = Config()

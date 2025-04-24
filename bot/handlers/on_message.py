@@ -19,7 +19,7 @@ async def handle_background_message(client, message):
         return
     elif len(message.mentions) == 1:
         user_id = message.mentions[0].id
-        match = re.search(rf'START_MISSION_(\d+)', message.content)
+        match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
         if match:
             mission_id = int(match.group(1))
             await handle_start_mission(client, user_id, mission_id)
@@ -34,7 +34,7 @@ async def handle_direct_message(client, message):
 
     if not bool(student_mission_info):
         client.api_utils.store_message(str(user_id), 'user', message.content)
-        reply_msg = "請透過儀表板選擇任務喔！"
+        reply_msg = "輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！"
         await message.channel.send(reply_msg)
         client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return

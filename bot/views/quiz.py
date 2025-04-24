@@ -40,13 +40,13 @@ class QuizView(discord.ui.View):
                     await interaction.channel.send(f"正確答案是：{self.quiz['answer']}\n{explanation}\n\n")
                 self.stop()
 
-                from bot.handlers.video_mission_handler import handle_quiz, send_quiz_summary
-                if self.current_round+1 >= 5:
+                from bot.handlers.video_mission_handler import handle_quiz_round, send_quiz_summary
+                if self.current_round+1 >= 3:
                     delete_quiz_message_record(str(interaction.user.id))
                     await send_quiz_summary(interaction, self.correct, self.student_mission_info)
                 else:
                     message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-                    await handle_quiz(self.client, message, self.student_mission_info, self.current_round + 1, self.correct)
+                    await handle_quiz_round(self.client, message, self.student_mission_info, self.current_round + 1, self.correct)
 
             except Exception as e:
                 await interaction.response.defer()

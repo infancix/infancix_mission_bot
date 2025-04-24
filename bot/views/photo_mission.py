@@ -25,7 +25,7 @@ def setup_label(mission):
     return f"{title}{spaces}{score_text}"
 
 class PhotoTaskSelectView(discord.ui.View):
-    def __init__(self, client, user_id, student_milestones, timeout=None):
+    def __init__(self, client, user_id, student_milestones, timeout=3600):
         super().__init__(timeout=timeout)
         self.client = client
         self.add_item(PhotoTaskSelect(client, user_id, student_milestones))
@@ -41,7 +41,7 @@ class PhotoTaskSelect(discord.ui.Select):
         ]
 
         super().__init__(
-            placeholder="檢視照片任務...",
+            placeholder="🧩 回憶碎片",
             min_values=1,
             max_values=1,
             options=options
@@ -55,20 +55,7 @@ class PhotoTaskSelect(discord.ui.Select):
 
         # Stop View to prevent duplicate interactions
         self.view.stop()
-
-        is_ephemeral = interaction.message.flags.ephemeral
-        if is_ephemeral:
-            await interaction.response.edit_message(view=None)
-            await interaction.followup.send(
-                "汪～請交給我🐾\n會需要一點時間喔，請耐心等候😊",
-                ephemeral=True
-            )
-        else:
-            await interaction.message.edit(
-                f"汪～請交給我🐾\n會需要一點時間喔，請耐心等候😊",
-                view=None
-            )
+        await interaction.response.edit_message(view=None)
 
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(self.client, interaction.user.id, selected_mission_id)
-
+        await handle_photo_mission_start(self.client, str(interaction.user.id), selected_mission_id)

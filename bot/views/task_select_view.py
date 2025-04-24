@@ -2,7 +2,6 @@ import discord
 from types import SimpleNamespace
 
 from bot.config import config
-from bot.utils.message_tracker import delete_task_entry_record
 
 class TaskSelectView(discord.ui.View):
     def __init__(self, client, task_type, mission_id, timeout=None):
@@ -35,32 +34,26 @@ class TaskSelectView(discord.ui.View):
         for item in self.children:
             item.disabled = True
         await interaction.response.edit_message(view=self)
-        delete_task_entry_record(str(interaction.user.id))
 
-        mission = await self.client.api_utils.get_mission_info(self.mission_id)
-        student_mission_info = {
-            **mission,
-            'user_id': str(interaction.user.id),
-            'assistant_id': config.MISSION_BOT_ASSISTANT,
-            'mission_id': self.mission_id,
-            'current_step': 3
-        }
+        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
+        student_mission_info['user_id'] = str(interaction.user.id)
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-        await interaction.channel.send(f"🔥 挑戰開始！讓我來看看你對「{mission['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
+        await interaction.channel.send(f"🔥 挑戰開始！讓我來看看你對「{student_mission_info['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
         
-        from bot.handlers.video_mission_handler import handle_quiz
-        await handle_quiz(self.client, message, student_mission_info)
+        from bot.handlers.video_mission_handler import handle_quiz_round
+        await handle_quiz_round(self.client, message, student_mission_info)
     
     async def go_photo_button_callback(self, interaction):
         for item in self.children:
             item.disabled = True
         await interaction.response.edit_message(view=self)
-        delete_task_entry_record(str(interaction.user.id))
 
+        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
+        student_mission_info['user_id'] = str(interaction.user.id)
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
 
-        from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(self.client, str(interaction.user.id), self.mission_id)
+        from bot.handlers.video_mission_handler import handle_photo_round
+        await handle_photo_round(self.client, message, student_mission_info)
 
     async def on_timeout(self):
         for item in self.children:
