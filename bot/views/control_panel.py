@@ -42,7 +42,7 @@ class ControlPanelView(discord.ui.View):
         if self.incomplete_photo_tasks:
             photo_button = discord.ui.Button(
                 custom_id='photo_task',
-                label="📸 補交任務照片",
+                label="🧩 回憶碎片",
                 style=discord.ButtonStyle.success,
                 row=self.button_index
             )
@@ -76,18 +76,10 @@ class ControlPanelView(discord.ui.View):
         if self.continue_course:
             embed_content.append(f"🎯 **上次未完成課程**：{self.continue_course['mission_title']}\n({self.continue_course['mission_type']})\n")
 
-        if self.incomplete_photo_tasks:
-            photo_content = "待補交照片:\n"
-            for task in self.incomplete_photo_tasks:
-                photo_content += f"📸 {task['photo_mission']}\n"
-            embed_content.append("".join(photo_content))
-
         return "-------------------\n".join(embed_content)
 
     async def start_today_callback(self, interaction):
-        await interaction.response.send_message(
-            f"汪～請交給我，課程馬上開始囉🐾", ephemeral=True
-        )
+        await interaction.response.defer(ephemeral=True)
         self.todays_course['current_step'] = 0
         await self.start_or_resume_course(self.todays_course)
 
@@ -102,15 +94,12 @@ class ControlPanelView(discord.ui.View):
         if len(self.incomplete_photo_tasks) > 1:
             photo_task_view = PhotoTaskSelectView(self.client, interaction.user.id, self.incomplete_photo_tasks)
             await interaction.response.send_message(
-                "🔍 *📸 請選擇要補交的照片：* 🔍",
+                "🧩 缺失的回憶碎片",
                 view=photo_task_view,
                 ephemeral=True
             )
         elif len(self.incomplete_photo_tasks) == 1:
-            await interaction.response.send_message(
-                "請稍等，加一馬上幫你準備任務📸",
-                ephemeral=True
-            )
+            await interaction.response.defer(ephemeral=True)
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             self.client.logger.info(f"User {interaction.user.id} starts photo mission {self.incomplete_photo_tasks[0]['mission_id']}")
             await handle_photo_mission_start(self.client, interaction.user.id, self.incomplete_photo_tasks[0]['mission_id'])

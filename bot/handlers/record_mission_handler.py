@@ -26,8 +26,13 @@ async def handle_record_mission_start(client, user_id, mission_id):
         "讓加一🐾幫你確認一下，這兩週您是否有定期在寶寶檔案室紀錄寶寶的日常呢？\n"
         "這樣我們可以更好地為您和寶寶提供貼心的支持喔💪"
     )
+    embed = discord.Embed(
+        title="確實紀錄寶寶數據",
+        description=hello_message,
+        color=discord.Color.blue()
+    )
     user = await client.fetch_user(user_id)
-    await user.send(hello_message)
+    await user.send(embed=embed)
     await client.api_utils.store_message(str(user_id), 'assistant', hello_message)
 
     # class_state = `in_class`

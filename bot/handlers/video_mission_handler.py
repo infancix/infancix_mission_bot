@@ -63,26 +63,34 @@ async def handle_video_mission_start(client, user_id, mission_id):
 
     hello_message = (
         f"✨ 今天是 {datetime.now().strftime('%Y-%m-%d')}，歡迎回來！\n"
-        f"👶 寶寶今天是出生第 {calculate_age(baby_info['birthdate'])} 天。\n\n"
+        f"👶 寶寶今天是出生第 {calculate_age(baby_info['birthdate'])} 天。\n"
+        f"--------------------------\n\n"
         f"🎖 **{mission['mission_title']}** 🎖\n"
         f"{mission['mission_type']}\n\n"
         f"🎥 影片教學\n"
-        f"> {mission['mission_video_contents']}\n\n"
-        f"📖 圖文教學內容\n"
-        f"> 見附檔\n\n"
-        f"看完之後記得告訴我，我們就能開始小測驗囉！🙌"
+        f"▶️ [{mission['mission_title']}]({mission['mission_video_contents']})\n\n"
+    )
+    image_urls = mission['mission_image_contents'].split(',')
+    if image_urls:
+        hello_message += f"📸 圖片教學\n"
+        if len(image_urls) == 1:
+            hello_message += f"▶️ [點我開啟懶人包]({image_urls[0].strip()})\n\n"
+        else:
+            for e, url in enumerate(image_urls, 1):
+                if url.strip():
+                    hello_message += f"▶️ [點我開啟懶人包 {e}]({url.strip()})\n"
+            hello_message += f"\n"
+
+    hello_message += f"看完之後記得跟我說，我們就能展開今天的挑戰啦！🔥"
+    embed = discord.Embed(
+        title=mission['mission_title'],
+        description=hello_message,
+        color=discord.Color.blue()
     )
 
-    files = []
-    for url in mission['mission_image_contents'].split(','):
-        file = await download_drive_image(url)
-        files.append(file)
-
-    await user.send(hello_message, files=files)
-    await client.api_utils.store_message(user_id, 'assistant', hello_message)
-
     view = TaskSelectView(client, "go_quiz", mission_id)
-    view.message = await user.send(view=view)
+    view.message = await user.send(embed=embed, view=view)
+    await client.api_utils.store_message(user_id, 'assistant', hello_message)
     save_task_entry_record(user_id, str(view.message.id), "go_photo", mission_id)
 
 async def handle_quiz(client, message, student_mission_info, current_round=0, score=0):
@@ -93,11 +101,14 @@ async def handle_quiz(client, message, student_mission_info, current_round=0, sc
     total_rounds = 5
     quiz = client.mission_quiz[str(mission_id)][current_round]
     question = quiz['question'].replace('？', ':grey_question:')
+    task_request = f"🌟 **{question}**\n"
+    for option in quiz['options']:
+        task_request += f"{option['option']}\n"
 
     embed = discord.Embed(
-        title=f"🧠 小測驗 - 第 {current_round+1} 題",
-        description=f"🌟 {question}",
-        color=discord.Color.blue()
+        title=f"🏆 挑戰任務 - 第 {current_round+1} 題",
+        description=task_request,
+        color=discord.Color.purple()
     )
 
     view = QuizView(client, mission_id, current_round, score, student_mission_info)
@@ -112,9 +123,12 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
     total = 5
     score = float(correct) / total
 
-    quiz_summary = f"測驗結束！🎉 答對 {correct}/{total} 題！🎓\n"
+    quiz_summary = (
+        f"--------------------------\n\n"
+        f"挑戰結束！🎉 答對 {correct}/{total} 題，"
+    )
     if score >= 0.8:
-        quiz_summary += "恭喜你！你已經掌握了這堂課的知識！"
+        quiz_summary += "恭喜掌握了這堂課的知識！🎓"
     else:
         quiz_summary += "加油！還有一些地方需要加強，別氣餒！"
 

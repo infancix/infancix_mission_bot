@@ -1,7 +1,7 @@
 import discord
 from bot.config import config
 from bot.views.control_panel import ControlPanelView
-from bot.utils.message_tracker import delete_greeting_message_record
+from bot.utils.message_tracker import delete_greeting_message_record, save_control_panel_record
 
 class OptinClassView(discord.ui.View):
     def __init__(self, client, user_id, timeout=None):
@@ -64,11 +64,12 @@ class OptinClassButton(discord.ui.Button):
             course_info = await self.client.api_utils.get_student_mission_notifications_by_id(self.user_id)
             control_panel_view = ControlPanelView(self.client, self.user_id, course_info)
             embed = discord.Embed(
-                title=f"📅 照護課表",
+                title=f"📅 任務里程碑",
                 description=control_panel_view.embed_content,
                 color=discord.Color.blue()
             )
             message = await interaction.user.send(embed=embed, view=control_panel_view)
+            save_control_panel_record(self.user_id, str(message.id))
             await self.client.api_utils.store_message(self.user_id, 'assistant', control_panel_view.embed_content, message_id=message.id)
 
 

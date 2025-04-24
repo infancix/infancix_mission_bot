@@ -18,7 +18,7 @@ class QuizView(discord.ui.View):
         self.quiz = self.client.mission_quiz[str(mission_id)][current_round]
         self.options = self.quiz['options']
         for idx, option in enumerate(self.options):
-            button = discord.ui.Button(label=option['option'], custom_id=f"quiz_{mission_id}_{current_round}_opt_{idx}")
+            button = discord.ui.Button(label=option['option'][0], custom_id=f"quiz_{mission_id}_{current_round}_opt_{idx}")
             button.callback = self.create_callback(idx)
             self.add_item(button)
 

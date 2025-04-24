@@ -26,18 +26,24 @@ async def handle_photo_mission_start(client, user_id, mission_id):
     thread_id = student_mission_info['thread_id']
     assistant_id = student_mission_info['assistant_id']
     user = await client.fetch_user(user_id)
-    photo_reminder = (
-        "💡 拍照小提醒：記得自己也要入鏡，你是寶寶最珍貴的人，少了你，這份回憶就不完整。\n"
-        if '你' in student_mission_info['photo_mission'] else ""
-    )
     photo_task_request = (
-        f"📸 請上傳「**{student_mission_info['photo_mission']}**」的照片！\n"
-        f"💡 這是最後一步，上傳即可完成本次課程！🎉\n"
-        f"{photo_reminder}"
-        f"📎 **點擊對話框左側「+」上傳**"
+        f"✨ 挑戰任務已經快完成囉，就差這一步了！\n"
+        f"--------------------------\n\n"
+        f"📸 請上傳「**{student_mission_info['photo_mission']}**」的照片！\n\n"
+        f"🧩 這張回憶將化作【回憶碎片】，拼入寶寶的成長相冊 📖  \n"
+    )
+    if '你' in student_mission_info['photo_mission']:
+        photo_task_request += "💡 拍照時記得讓自己也入鏡喔，這份回憶不能少了你 💖\n"
+    else:
+        photo_task_request += "📎 點左下角「➕」按鈕，上傳照片吧！ \n"
+
+    embed = discord.Embed(
+        title=student_mission_info['mission_title'],
+        description=photo_task_request,
+        color=discord.Color.orange()
     )
 
-    message = await user.send(photo_task_request)
+    message = await user.send(embed=embed)
     await client.api_utils.store_message(user_id, 'assistant', photo_task_request)
     task = asyncio.create_task(photo_reminder_task(client, user_id, mission_id, message.id))
     photo_timers[(user_id, str(mission_id))] = task

@@ -87,11 +87,11 @@ async def handle_greeting_job(client, user_id = None):
     return
 
 async def load_messages(client):
-    #await load_greeting_message(client)
-    #client.logger.info("Finished loading greeting messages")
+    await load_greeting_message(client)
+    client.logger.info("Finished loading greeting messages")
 
-    #await load_control_panel_message(client)
-    #client.logger.info("Finished loading control panel messages")
+    await load_control_panel_message(client)
+    client.logger.info("Finished loading control panel messages")
 
     await load_task_entry_messages(client)
     client.logger.info("Finished loading task entry messages")
@@ -103,8 +103,8 @@ async def load_messages(client):
 
 async def load_greeting_message(client):
     records = load_greeting_message_records()
-    channel = await client.fetch_user(user_id)
     for user_id, message_id in records.items():
+        channel = await client.fetch_user(user_id)
         try:
             message = await channel.fetch_message(int(message_id))
             view = OptinClassView(client, user_id)
@@ -176,7 +176,7 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
 
     # Send the ending message to the user
     ending_msg = (
-        "🎉 恭喜你完成今日任務！\n"
+        "🎉 恭喜你完成今日任務！\n\n"
         "🎁 你獲得了以下獎勵：\n"
         f"> 🪙 金幣 Coin：+{reward}\n"
     )

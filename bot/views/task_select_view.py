@@ -12,7 +12,7 @@ class TaskSelectView(discord.ui.View):
         self.message = None
 
         if task_type == "go_quiz":
-            label = "進行小測驗 GO!"
+            label = "挑戰任務 GO!"
             self.go_quiz_button = discord.ui.Button(
                 custom_id="go_quiz_button",
                 label=label,
@@ -22,7 +22,7 @@ class TaskSelectView(discord.ui.View):
             self.add_item(self.go_quiz_button)
         
         if task_type == "go_photo":
-            label = "進入照片任務 GO!"
+            label = "照片任務 GO!"
             self.go_photo_button = discord.ui.Button(
                 custom_id="go_photo_button",
                 label=label,
@@ -46,7 +46,7 @@ class TaskSelectView(discord.ui.View):
             'current_step': 3
         }
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-        await interaction.channel.send(f"準備進行小測驗囉！讓我來看看你對「{mission['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
+        await interaction.channel.send(f"🔥 挑戰開始！讓我來看看你對「{mission['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
         
         from bot.handlers.video_mission_handler import handle_quiz
         await handle_quiz(self.client, message, student_mission_info)
@@ -58,7 +58,6 @@ class TaskSelectView(discord.ui.View):
         delete_task_entry_record(str(interaction.user.id))
 
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-        await interaction.followup.send(f"準備進入照片任務囉🐾")
 
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
         await handle_photo_mission_start(self.client, str(interaction.user.id), self.mission_id)
