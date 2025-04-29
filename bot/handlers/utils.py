@@ -2,6 +2,8 @@ import discord
 import schedule
 import asyncio
 import datetime
+import functools
+import traceback
 
 from bot.config import config
 from bot.utils.message_tracker import (
@@ -124,6 +126,14 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
 
     msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
     await channel.send(msg_task)
+
+def add_task_instructions(client, mission, thread_id):
+    mission_instructions = f"""
+        這是這次課程的主題和課程影片字幕：
+        ## 課程內容：{mission['mission_title']}
+        ## 影片字幕: {mission['transcription']}
+    """
+    client.openai_utils.add_task_instruction(thread_id, mission_instructions)
 
 def get_user_id(source: discord.Interaction | discord.Message) -> str:
     if isinstance(source, discord.Interaction):

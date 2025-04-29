@@ -18,73 +18,20 @@ class APIUtils:
         self.base_url = f"http://{api_host}:{api_port}/api/{{}}"
         self.logger = setup_logger('APIUtils')
 
-    async def _get_request(self, endpoint: str) -> Any:
-        """Generic method to handle GET requests to the API"""
-        url = self.base_url.format(endpoint)
-        self.logger.debug(f"Calling {url}.")
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        return response_data.get('data')
-                    else:
-                        self.logger.error(f"API request failed with status (/api/{endpoint}): {response.status}")
-                        return None
-        except Exception as e:
-            self.logger.error(f"API request failed - /api/{endpoint}: {str(e)}")
-            return None
-
-    async def _post_request(self, endpoint: str, data: Dict) -> Any:
-        """Generic method to handle POST requests to the API"""
-        url = self.base_url.format(endpoint)
-        self.logger.debug(f"Calling {url} with data: {data}")
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=data) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        if endpoint == 'user_login':
-                            return response_data.get('url')
-                        elif endpoint == 'update_community_record':
-                            return response_data
-                        elif endpoint.startswith('get_'):
-                            return response_data.get('data') or response_data.get('records')
-                        else:
-                            return response_data
-                    else:
-                        self.logger.error(f"API request failed /api/{endpoint} with status {response.status}, {response.text}")
-                        return None
-        except Exception as e:
-            error_traceback = traceback.format_exc()
-            caller_info = inspect.stack()[1]
-            caller_function = caller_info.function
-            caller_line = caller_info.lineno
-            self.logger.error(f"API request failed: {str(e)}")
-            self.logger.error(f"Error Traceback: {error_traceback}")
-            self.logger.error(f"Caller Function: {caller_function}, Line: {caller_line}")
-            return None
-
     async def fetch_student_list(self):
         return await self._get_request('mission/greeting_student_list')
 
     async def fetch_baby_list(self):
         return await self._get_request('get_baby_list')
 
-    async def get_mission_info(self, mission_id):
-        missions = await self._get_request('get_mission_list')
-        return missions[int(mission_id)-1]
-
-    async def optin_class(self, user_id, channel_id='照護教室'):
-        data = {
-            'discord_id': str(user_id),
-            'channel_id': channel_id
-        }
-        response = await self._post_request('optin_class', data)
-        return bool(response)
+    async def get_mission_info(self, mission_id, endpoint='mission/mission_info'):
+        return await self._get_request(f"{endpoint}?mission_id={mission_id}")
 
     async def get_student_is_in_mission(self, user_id):
         return await self._post_request('get_student_is_in_mission', {'discord_id': str(user_id)})
+
+    async def get_mission_default_content_by_id(self, baby_id, mission_id, endpoint='photo_mission/default_mission_content'):
+        return await self._get_request(f"{endpoint}?baby_id={baby_id}&mission_id={mission_id}")
 
     async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
         # thread_id is none only if the status is complete
@@ -126,6 +73,20 @@ class APIUtils:
         response = await self._post_request('upload_baby_image', data)
         return bool(response)
 
+    async def update_mission_image_content(self, user_id, mission_id, image_url=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
+        payload = {
+            'discord_id': str(user_id),
+            'mission_id': int(mission_id)
+        }
+        if image_url:
+            payload['image_url'] = image_url
+        if aside_text:
+            payload['aside_text'] = aside_text
+        if content:
+            payload['content'] = content
+
+        return await self._post_request(endpoint, payload)
+
     async def get_all_students_mission_notifications(self):
         return await self._get_request('get_student_mission_notification_list')
 
@@ -134,9 +95,6 @@ class APIUtils:
         if bool(response) == False:
             return None
         return response[user_id]
-
-    async def get_student_incompleted_mission_list(self, user_id):
-        return await self._post_request('get_student_incompleted_mission_list', {'discord_id': str(user_id)})
 
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
@@ -180,16 +138,14 @@ class APIUtils:
         student = await self.get_student_profile(user_id)
         baby = await self.get_baby_profile(user_id)
         if not student and not baby:
-            return -1
+            return 'lack_baby_profile'
         elif not baby and student.get('due_date', None) is not None:
-            return 'pregnancy_or_newborn_stage'
-        else:
-            birth_date = datetime.strptime(baby['birthdate'], '%Y-%m-%d').date()
-            day_age = (datetime.today().date() - birth_date).days
-            if day_age >= 31:
-                return 'over_31_days'
+            if student.get('due_date') >= datetime.today().date():
+                return 'lack_baby_profile'
             else:
-                return 'pregnancy_or_newborn_stage'
+                return 'pregnancy_stage'
+        else:
+            return 'mission_eligible'
 
     async def check_baby_records_in_two_weeks(self, user_id):
         response = await self._post_request('get_baby_records', {'discord_id': str(user_id)})
@@ -271,3 +227,65 @@ class APIUtils:
         }
         return await self._post_request(endpoint, payload)
 
+    ## ------------------ API for generate photo / album request ----------------
+    async def submit_generate_album_request(self, user_id, book_id, endpoint='process_album_and_autofill'):
+        payload = {
+            'discord_id': str(user_id),
+            'book_id': int(book_id),
+        }
+        return await self._post_request(endpoint, payload)
+
+    async def submit_generate_photo_request(self, user_id, mission_id, endpoint='process_and_autofill'):
+        payload = {
+            'discord_id': str(user_id),
+            'mission_id': int(mission_id),
+        }
+        return await self._post_request(endpoint, payload)
+
+    ## ----------------- Helper functions ----------------
+    async def _get_request(self, endpoint: str) -> Any:
+        """Generic method to handle GET requests to the API"""
+        url = self.base_url.format(endpoint)
+        self.logger.debug(f"Calling {url}.")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        return response_data.get('data')
+                    else:
+                        self.logger.error(f"API request failed with status (/api/{endpoint}): {response.status}")
+                        return None
+        except Exception as e:
+            self.logger.error(f"API request failed - /api/{endpoint}: {str(e)}")
+            return None
+
+    async def _post_request(self, endpoint: str, data: Dict) -> Any:
+        """Generic method to handle POST requests to the API"""
+        url = self.base_url.format(endpoint)
+        self.logger.debug(f"Calling {url} with data: {data}")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=data) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        if endpoint == 'user_login':
+                            return response_data.get('url')
+                        elif endpoint == 'update_community_record':
+                            return response_data
+                        elif endpoint.startswith('get_'):
+                            return response_data.get('data') or response_data.get('records')
+                        else:
+                            return response_data
+                    else:
+                        self.logger.error(f"API request failed /api/{endpoint} with status {response.status}, {response.text}")
+                        return None
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            caller_info = inspect.stack()[1]
+            caller_function = caller_info.function
+            caller_line = caller_info.lineno
+            self.logger.error(f"API request failed: {str(e)}")
+            self.logger.error(f"Error Traceback: {error_traceback}")
+            self.logger.error(f"Caller Function: {caller_function}, Line: {caller_line}")
+            return None

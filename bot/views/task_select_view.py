@@ -21,7 +21,7 @@ class TaskSelectView(discord.ui.View):
             self.add_item(self.go_quiz_button)
         
         if task_type == "go_photo":
-            label = "照片任務 GO!"
+            label = "製作繪本 GO!"
             self.go_photo_button = discord.ui.Button(
                 custom_id="go_photo_button",
                 label=label,
@@ -40,7 +40,7 @@ class TaskSelectView(discord.ui.View):
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
         await interaction.channel.send(f"🔥 挑戰開始！讓我來看看你對「{student_mission_info['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
         
-        from bot.handlers.video_mission_handler import handle_quiz_round
+        from bot.handlers.quiz_mission_handler import handle_quiz_round
         await handle_quiz_round(self.client, message, student_mission_info)
     
     async def go_photo_button_callback(self, interaction):
@@ -52,8 +52,8 @@ class TaskSelectView(discord.ui.View):
         student_mission_info['user_id'] = str(interaction.user.id)
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
 
-        from bot.handlers.video_mission_handler import handle_photo_round
-        await handle_photo_round(self.client, message, student_mission_info)
+        from bot.handlers.photo_mission_handler import send_photo_mission_instruction
+        await send_photo_mission_instruction(self.client, message, student_mission_info)
 
     async def on_timeout(self):
         for item in self.children:

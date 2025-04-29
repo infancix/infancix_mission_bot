@@ -1,0 +1,78 @@
+import discord
+from bot.config import config
+
+class GrowthPhotoView(discord.ui.View):
+    def __init__(self, client, user_id, baby_id, mission_info, timeout=14400):
+        super().__init__(timeout=timeout)
+        self.client = client
+        self.user_id = user_id
+        self.baby_id = baby_id
+        self.mission_id = mission_info['mission_id']
+        self.aside_text = mission_info.get('aside_text', None)
+        self.content = mission_info.get('content', None)
+        self.image_url = mission_info.get('image', None)
+        
+        self.add_aside_text_button = discord.ui.Button(
+            custom_id='add_aside_text',
+            label="📝 新增/修改文字內容",
+            style=discord.ButtonStyle.success
+        )
+        self.add_aside_text_button.callback = self.add_aside_text_callback
+        self.add_item(self.add_aside_text_button)
+
+        self.change_image_button = discord.ui.Button(
+            custom_id='change_image',
+            label="📷 更換照片",
+                style=discord.ButtonStyle.success,
+            )
+        self.change_image_button.callback = self.change_image_callback
+        self.add_item(self.change_image_button)
+
+        self.complete_button = discord.ui.Button(
+            custom_id='complete_photo',
+            label="完成任務✨: 我覺得OK，不修改了!",
+            style=discord.ButtonStyle.secondary
+        )
+        self.complete_button.callback = self.complete_callback
+        self.add_item(self.complete_button)
+
+        self.message = None
+    
+    async def add_aside_text_callback(self, interaction):
+        await self.client.api_utils.store_message(self.user_id, 'user', "📝 新增/修改文字內容")
+        await interaction.response.send_message(f"好的～直接輸入你想要的內容就好囉！")
+
+    async def change_image_callback(self, interaction):
+        await self.client.api_utils.store_message(self.user_id, 'user', "📷 更換照片")
+        await interaction.response.send_message(f"好的～ **點擊對話框左側「+」上傳照片**")
+    
+    async def complete_callback(self, interaction):
+        await self.client.api_utils.store_message(self.user_id, 'user', "完成任務✨: 我覺得OK，不修改了!")
+        photo_url = None
+        if self.image_url:
+            photo_url = await self.client.s3_client.process_discord_attachment(self.image_url)
+        
+        if photo_url or self.aside_text or self.content:
+            update_status = await self.client.api_utils.update_photo_mission_status(
+                self.user_id, self.mission_id, image_url=photo_url, aside_text=self.aside_text, content=self.content
+            )
+            if bool(update_status):
+                await self.client.api_utils.submit_generate_photo_request(self.user_id, self.mission_id)
+
+        msg = "好的～我已經把這張照片收進寶寶的相冊裡囉 ❤️"
+        await interaction.response.send_message(msg)
+        await self.client.api_utils.store_message(self.user_id, 'assistant', msg)
+
+    async def on_timeout(self):
+        for item in self.children:
+            if isinstance(item, discord.ui.Button):
+                item.disabled = True
+
+        if self.message:
+            try:
+                await self.message.edit(content="邀請已經過期囉，麻煩找管理員處理喔", view=self)
+                self.client.logger.info("GrowthALbumView: Invitation expired and message updated successfully.")
+            except discord.NotFound:
+                self.client.logger.warning("GrowthALbumView: Failed to update expired invitation message as it was already deleted.")
+
+        self.stop()
