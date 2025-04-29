@@ -40,7 +40,7 @@ class QuizView(discord.ui.View):
                     await interaction.channel.send(f"正確答案是：{self.quiz['answer']}\n{explanation}\n\n")
                 self.stop()
 
-                from bot.handlers.video_mission_handler import handle_quiz_round, send_quiz_summary
+                from bot.handlers.quiz_mission_handler import handle_quiz_round, send_quiz_summary
                 if self.current_round+1 >= 3:
                     delete_quiz_message_record(str(interaction.user.id))
                     await send_quiz_summary(interaction, self.correct, self.student_mission_info)
