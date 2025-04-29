@@ -3,8 +3,9 @@ import discord
 import re
 
 from bot.config import config
-from bot.handlers.record_mission_handler import handle_record_mission_start, handle_check_baby_records
-from bot.handlers.video_mission_handler import handle_video_mission_start, handle_video_mission_dm
+from bot.handlers.record_check_mission_handler import handle_record_mission_start, handle_check_baby_records
+from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
+from bot.handlers.photo_mission_handler import handle_photo_mission_start, process_photo_mission_filling, process_photo_upload_and_summary
 from bot.handlers.utils import handle_greeting_job
 
 async def handle_background_message(client, message):
@@ -41,6 +42,8 @@ async def handle_direct_message(client, message):
 
     if message.stickers:
         message.content = "收到使用者的貼圖"
+
+    # 語音訊息
     elif message.attachments and message.attachments[0].filename.endswith('ogg'):
         try:
             voice_message = await client.openai_utils.convert_audio_to_message(message)
@@ -54,14 +57,22 @@ async def handle_direct_message(client, message):
             client.logger.error(f"語音處理錯誤: {str(e)}")
             await message.channel.send("語音訊息處理時發生錯誤，請稍後再試")
             return
+
+    # 照片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.heif')):
         is_valid = await client.s3_client.check_discord_attachment(message.attachments[0])
         if is_valid:
             photo_url = message.attachments[0].url
-            message.content = f"收到使用者的照片: {photo_url}"
+            message.content = message.content = (
+                f"任務主題{student_mission_info['mission_title']}\n"
+                f"photo_mission: {student_mission_info['photo_mission']}\n"
+                f"收到使用者的照片: {photo_url}"
+            )
         else:
             await message.channel.send("請上傳照片，並確保照片大小不超過 8MB，格式為 JPG、PNG、GIF、WEBP、HEIC 或 HEIF。")
             return
+
+    # 影片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
         await message.channel.send("汪～影片太重啦～ 加一沒法幫你處理喔！")
         return
@@ -71,17 +82,24 @@ async def handle_direct_message(client, message):
         return
 
     await client.api_utils.store_message(user_id, 'user', message.content)
-    student_mission_info['mission_id'] = int(student_mission_info['mission_id'])
-    if student_mission_info['mission_id'] in config.record_mission_list:
+    mission_id = int(student_mission_info['mission_id'])
+    # dispatch question
+    if mission_id in config.record_mission_list:
         await handle_check_baby_records(client, message, student_mission_info)
+    elif mission_id in config.photo_mission_list:
+        await process_photo_upload_and_summary(client, message, student_mission_info)
+    elif (mission_id in config.photo_mission_with_aside_text
+          or mission_id in config.photo_mission_with_title_and_content
+          or mission_id in config.baby_intro_mission):
+        await process_photo_mission_filling(client, message, student_mission_info)
     else:
-        await handle_video_mission_dm(client, message, student_mission_info)
-
-    return
+         await handle_class_question(client, message, student_mission_info)        
 
 async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
     if mission_id in config.record_mission_list:
         await handle_record_mission_start(client, user_id, mission_id)
+    elif mission_id < 100 and mission_id not in config.photo_mission_with_aside_text:
+        await handle_quiz_mission_start(client, user_id, mission_id)
     else:
-        await handle_video_mission_start(client, user_id, mission_id)
+        await handle_photo_mission_start(client, user_id, mission_id)

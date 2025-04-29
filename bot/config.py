@@ -17,6 +17,9 @@ class Config:
         self.BABY_API_PORT = os.getenv('BABY_API_PORT')
         self.MISSION_BOT_ASSISTANT = 'asst_DlqSJaUKd9K118tbYvB4EbfD'
         self.PHOTO_TASK_ASSISTANT = 'asst_NKABptwzFlKB9kZnm2f8QbAa'
+        self.ASIDE_TEXT_ASSISTANT = 'asst_kWEM7k1s3S6670Vk7qVPKd9h'
+        self.CONTENT_ASSISTANT = 'asst_ytMVwKFd6ik2rKpHOqepqohe'
+        self.BABY_INTRO_ASSISTANT = 'asst_Cgeuvc8kSBtgqSlFY51QKTPZ'
 
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
@@ -52,5 +55,24 @@ class Config:
 
         self.record_mission_list = [32, 39, 45, 54, 67]
         self.photo_mission_list = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
+        self.photo_mission_with_aside_text = [3, 4, 5, 15, 104, 105, 106, 999]
+        self.baby_intro_mission = [100]
+        self.photo_mission_with_title_and_content = [101, 102, 103]
+    
+    def get_assistant_id(self, mission_id):
+        if mission_id in self.record_mission_list:
+            return None
+        elif mission_id in self.photo_mission_list:
+            return self.PHOTO_TASK_ASSISTANT
+        elif mission_id in self.photo_mission_with_aside_text:
+            return self.ASIDE_TEXT_ASSISTANT
+        elif mission_id in self.baby_intro_mission:
+            return self.BABY_INTRO_ASSISTANT
+        elif mission_id in self.photo_mission_with_title_and_content:
+            return self.CONTENT_ASSISTANT
+        elif mission_id < 100:
+            return self.MISSION_BOT_ASSISTANT
+        else:
+            return None
 
 config = Config()
