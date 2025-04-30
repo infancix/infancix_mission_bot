@@ -6,14 +6,14 @@ from types import SimpleNamespace
 from datetime import datetime
 
 from bot.views.task_select_view import TaskSelectView
-from bot.handlers.utils import get_user_id, send_reward_and_log
+from bot.handlers.utils import get_user_id, send_reward_and_log, convert_image_to_preview
 from bot.utils.message_tracker import save_task_entry_record
 from bot.utils.decorator import exception_handler
 from bot.views.growth_photo import GrowthPhotoView
 from bot.config import config
 
-async def handle_photo_mission_start(client, message, mission_id):
-    user_id = get_user_id(message)
+async def handle_photo_mission_start(client, user_id, mission_id):
+    user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
     mission_status = await client.api_utils.get_student_mission_status(user_id, mission_id)
 
@@ -22,7 +22,6 @@ async def handle_photo_mission_start(client, message, mission_id):
         **mission,
         'user_id': user_id,
         'assistant_id': config.get_assistant_id(mission_id),
-        'thread_id': mission_status.get('thread_id', client.openai_utils.load_thread()),
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
@@ -39,7 +38,7 @@ async def handle_photo_mission_start(client, message, mission_id):
         task_instructions += f"🎥 影片教學\n▶️ [{mission['mission_title']}]({mission['mission_video_contents']})\n\n"
     if mission['mission_image_contents'] and mission['mission_image_contents'].strip():
         if mission_id > 100:
-            embed.set_image(url=mission['mission_image_contents'].strip())
+            embed.set_image(url=convert_image_to_preview(mission['mission_image_contents']))
         else:
             task_instructions += f"📖 圖文懶人包\n ▶️"
             for url in mission['mission_image_contents'].strip().split(','):
@@ -80,17 +79,35 @@ async def send_photo_mission_instruction(client, message, student_mission_info):
 async def process_photo_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
-    photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
+    if message.attachments:
+        photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
+        user_message = (
+            f"任務主題{student_mission_info['mission_title']}\n"
+            f"photo_mission: {student_mission_info['photo_mission']}\n"
+            f"收到使用者的照片: {photo_url}"
+        )
+    else:
+        user_message = message.content
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = student_mission_info['assistant_id']
-        thread_id = student_mission_info['thread_id']
-        bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, message.content)
+        assistant_id = config.get_assistant_id(mission_id)
+        thread_id = student_mission_info.get('thread_id', None)
+        if thread_id is None:
+            thread_id = client.openai_utils.load_thread()
+            student_mission_info['thread_id'] = thread_id
+            await client.api_utils.update_student_mission_status(**student_mission_info)
+        bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
         
     if bot_response.get('is_ready'):
+        student_mission_info = {
+            **student_mission_info,
+            'content': bot_response.get('content'),
+            'aside_text': bot_response.get('aside_text'),
+            'image': bot_response.get('image'),
+        }
         content = bot_response.get('content') or bot_response.get('aside_text')
-        view = GrowthPhotoView(client, user_id, bot_response)
+        view = GrowthPhotoView(client, user_id, student_mission_info)
         embed = discord.Embed(
             title=bot_response['photo_mission'],
             description=content,
@@ -107,15 +124,24 @@ async def process_photo_upload_and_summary(client, message, student_mission_info
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
+    user_message = (
+        f"任務主題{student_mission_info['mission_title']}\n"
+        f"photo_mission: {student_mission_info['photo_mission']}\n"
+        f"收到使用者的照片: {photo_url}"
+    )
 
     await client.api_utils.upload_baby_image(user_id, mission_id, student_mission_info['mission_title'], photo_url)
     await client.api_utils.store_message(user_id, 'user', f"收到任務照片: {photo_url}")
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = student_mission_info['assistant_id']
-        thread_id = student_mission_info['thread_id']
-        bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, message.content)
+        assistant_id = config.get_assistant_id(mission_id)
+        thread_id = student_mission_info.get('thread_id', None)
+        if thread_id is None:
+            thread_id = client.openai_utils.load_thread()
+            student_mission_info['thread_id'] = thread_id
+            await client.api_utils.update_student_mission_status(**student_mission_info)
+        bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
 
     await message.channel.send(bot_response['message'])
     await client.api_utils.store_message(user_id, assistant_id, bot_response['message'])

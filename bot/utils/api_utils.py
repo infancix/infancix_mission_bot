@@ -33,11 +33,18 @@ class APIUtils:
     async def get_mission_default_content_by_id(self, baby_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?baby_id={baby_id}&mission_id={mission_id}")
 
+    async def get_student_mission_status(self, user_id, mission_id):
+        response = await self._get_request(f'get_student_mission_status?discord_id={user_id}&mission_id={mission_id}')
+        if bool(response) == False:
+            return None
+
+        response['user_id'] = str(user_id)
+        return response
+
     async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
         # thread_id is none only if the status is complete
         if current_step == 0 and not isinstance(thread_id, str):
             raise Exception('thread_id is required for status Start')
-
         data = {
             'discord_id': str(user_id),
             'mission_id': mission_id,
@@ -162,13 +169,6 @@ class APIUtils:
             return True
         else:
             return False
-
-    async def get_student_mission_status(self, user_id, mission_id):
-        response = await self._post_request('get_student_mission_status', {'discord_id': str(user_id), 'mission_id': mission_id})
-        if bool(response) == False:
-            return None
-
-        return response[0]
 
     async def check_user_photo_mission_status(self, user_id, mission_id):
         response = await self._post_request('get_student_photo_mission_status', {'discord_id': str(user_id), 'mission_id': mission_id})

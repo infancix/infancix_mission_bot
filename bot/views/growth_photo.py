@@ -1,12 +1,12 @@
 import discord
 from bot.config import config
+from bot.handlers.utils import send_reward_and_log
 
 class GrowthPhotoView(discord.ui.View):
-    def __init__(self, client, user_id, baby_id, mission_info, timeout=14400):
+    def __init__(self, client, user_id, mission_info, timeout=14400):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
-        self.baby_id = baby_id
         self.mission_id = mission_info['mission_id']
         self.aside_text = mission_info.get('aside_text', None)
         self.content = mission_info.get('content', None)
@@ -53,7 +53,7 @@ class GrowthPhotoView(discord.ui.View):
             photo_url = await self.client.s3_client.process_discord_attachment(self.image_url)
         
         if photo_url or self.aside_text or self.content:
-            update_status = await self.client.api_utils.update_photo_mission_status(
+            update_status = await self.client.api_utils.update_mission_image_content(
                 self.user_id, self.mission_id, image_url=photo_url, aside_text=self.aside_text, content=self.content
             )
             if bool(update_status):
@@ -62,6 +62,16 @@ class GrowthPhotoView(discord.ui.View):
         msg = "好的～我已經把這張照片收進寶寶的相冊裡囉 ❤️"
         await interaction.response.send_message(msg)
         await self.client.api_utils.store_message(self.user_id, 'assistant', msg)
+
+        # Mission Completed
+        student_mission_info = {
+            'user_id': self.user_id,
+            'mission_id': self.mission_id,
+            'current_step': 4,
+            'score': 1
+        }
+        await self.client.api_utils.update_student_mission_status(**student_mission_info)
+        await send_reward_and_log(self.client, self.user_id, self.mission_id, 100)
 
     async def on_timeout(self):
         for item in self.children:

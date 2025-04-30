@@ -1,3 +1,4 @@
+import re
 import discord
 import schedule
 import asyncio
@@ -140,3 +141,11 @@ def get_user_id(source: discord.Interaction | discord.Message) -> str:
         return str(source.user.id)
     else:
         return str(source.author.id)
+
+def convert_image_to_preview(google_drive_url):
+    match = re.search(r"https://drive\.google\.com/file/d/([^/]+)/preview", google_drive_url)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/uc?export=view&id={file_id}"
+    else:
+        return google_drive_url

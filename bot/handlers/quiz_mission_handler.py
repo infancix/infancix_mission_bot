@@ -14,7 +14,6 @@ async def handle_quiz_mission_start(client, user_id, mission_id):
     user_id = str(user_id)
     baby_info = await client.api_utils.get_baby_profile(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
-    mission_status = await client.api_utils.get_student_mission_status(user_id, mission_id)
 
     # Mission start
     student_mission_info = {
@@ -103,10 +102,10 @@ async def handle_class_question(client, message, student_mission_info):
     user_id = get_user_id(message)
     mission_id = student_mission_info['mission_id']
 
-    assistant_id = student_mission_info['assistant_id']
-    if student_mission_info.get('thread_id', None):
-        thread_id = student_mission_info['thread_id']
-    else:
+    assistant_id = student_mission_info.get('assistant_id', None)
+    thread_id = student_mission_info.get('thread_id', None)
+    if assistant_id is None or thread_id is None:
+        assistant_id = config.get_assistant_id(mission_id)
         # create a new thread and add task-instructions
         thread_id = client.openai_utils.load_thread()
         student_mission_info['thread_id'] = thread_id
@@ -114,6 +113,7 @@ async def handle_class_question(client, message, student_mission_info):
 
         mission = await client.api_utils.get_mission_info(mission_id)
         add_task_instructions(client, mission, thread_id)
+
 
     async with message.channel.typing():
         response = await client.openai_utils.get_reply_message(assistant_id, thread_id, message.content)

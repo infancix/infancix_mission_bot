@@ -46,19 +46,11 @@ class OpenAIUtils:
             content=instructions,
         )
 
-    async def get_reply_message(self, assistant_id, thread_id, user_message):
-        return await self.run(user_message, assistant_id, thread_id)
-
-    async def run(self, message_content, assistant_id, thread_id, retry_count=2):
-        if retry_count <= 0:
-            return {
-                'message': "抱歉，加一不太懂你的意思，請聯絡管理員協助喔。",
-            }
-
+    def get_reply_message(self, assistant_id, thread_id, user_message):
         _ = self.client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
-            content=message_content,
+            content=user_message,
         )
 
         run = self.client.beta.threads.runs.create_and_poll(
@@ -66,69 +58,55 @@ class OpenAIUtils:
             assistant_id=assistant_id
         )
 
-        messages = self.client.beta.threads.messages.list(thread_id=thread_id, order="desc")
-        if not messages.data:
-            self.logger.error("Message list is empty.")
-            return {
-                'message': (
-                    "嗚嗚～加一跟你說，第三方AI系統…嗯，壞掉惹！😭\n"
-                    "現在紀錄功能暫時不能用啦～拜託你稍微等一下下～真的抱歉捏！🐾🥹\n"
-                    "請聯絡管理員協助喔。"
-                ),
-            }
-
+        messages = self.client.beta.threads.messages.list(thread_id=thread_id)
         process_result = self.post_process(messages.data[0].content[0].text.value)
-        if 'error' in process_result:
-            self.logger.error(f"Error Type: {process_result['error']}, Raw Response: {process_result['raw_response']}")
-            message_content += f"\n\n注意：{process_result['message']}，請根據提示重新調整。"
-            return await self.run(message_content, assistant_id, thread_id, retry_count - 1)
-        else:
-            return process_result['result']
+        return process_result
 
     def post_process(self, response):
-        """Process GPT response to parse JSON and clean the message."""
         response = self.clean_message(response)
+        if '{' in response and '}' in response:
+            return self.parsed_json(response)
+        else:
+            return {
+                'is_ready': False,
+                'message': response
+            }
+
+    def parsed_json(self, response):
         start_index = response.find('{')
         end_index = response.rfind('}')
         if start_index == -1 or end_index == -1:
             self.logger.error(f"Wrong format in response: {response}")
             return {
                 'error': 'format_error',
-                'message': 'Response does not contain valid JSON format.',
-                'raw_response': response
+                'message': f'Response does not contain valid JSON format. {response}'
             }
 
-        # clean message
         response = response[start_index:end_index + 1]
-
-        # Attempt to parse JSON
         try:
             parsed = json.loads(response)
         except json.JSONDecodeError as e:
             self.logger.error(f"JSON decode error: {e}")
             return {
                 'error': 'json_decode_error',
-                'message': str(e),
-                'raw_response': response
+                'message': f"{str(e)}\n{response}"
             }
         except Exception as e:
             self.logger.error(f"Receive unknown error: {e}")
             return {
                 'error': 'unknown_error',
-                'message': str(e),
-                'raw_response': response
+                'message': f"{str(e)}\n{response}"
             }
 
-        self.logger.debug(f"Final reuslts: {parsed}")
-        return {
-            'result': parsed
-        }
+        self.logger.info(f"Final reuslts: {parsed}")
+        return parsed
 
     def clean_message(self, message):
-        """
-        清理訊息，移除中括號內容及 HTML 標籤，並修剪空白。
-        """
-        return re.sub(r'\【.*?\】', '', message).strip().replace('<br>', '\n')
+        message = re.sub(r'\【.*?\】', '', message).strip().replace('<br>', '\n')
+        if '{{' in message and '}}' in message:
+            message = message.replace('{{', '{')
+            message = message.replace('}}', '}')
+        return message
 
     async def generate_quiz(self, mission, retry_count=1):
         if retry_count <= 0:
