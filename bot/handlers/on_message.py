@@ -6,7 +6,7 @@ from bot.config import config
 from bot.handlers.record_check_mission_handler import handle_record_mission_start, handle_check_baby_records
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
 from bot.handlers.photo_mission_handler import handle_photo_mission_start, process_photo_mission_filling, process_photo_upload_and_summary
-from bot.handlers.utils import handle_greeting_job
+from bot.handlers.utils import handle_greeting_job, handle_add_photo_job
 
 async def handle_background_message(client, message):
     client.logger.debug(f"Background message received: {message}")
@@ -20,10 +20,18 @@ async def handle_background_message(client, message):
         return
     elif len(message.mentions) == 1:
         user_id = message.mentions[0].id
-        match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
-        if match:
-            mission_id = int(match.group(1))
+        mission_match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
+        photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)', message.content)
+        album_match = re.search(rf'GROWTH_ALBUM_GENERATION_(\d+)', message.content)
+        if mission_match:
+            mission_id = int(mission_match.group(1))
             await handle_start_mission(client, user_id, mission_id)
+        elif photo_match:
+            mission_id = int(photo_match.group(1))
+            await handle_add_photo_job(client, user_id, mission_id)
+        elif album_match:
+            book_id = int(album_match.group(1))
+            pass
         return
     else:
         return

@@ -1,6 +1,5 @@
 import discord
 from bot.config import config
-from bot.handlers.utils import send_reward_and_log
 
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_info, timeout=14400):
@@ -42,9 +41,25 @@ class GrowthPhotoView(discord.ui.View):
         await self.client.api_utils.store_message(self.user_id, 'user', "📝 新增/修改文字內容")
         await interaction.response.send_message(f"好的～直接輸入你想要的內容就好囉！")
 
+        # Mission continue
+        student_mission_info = {
+            'user_id': self.user_id,
+            'mission_id': self.mission_id,
+            'current_step': 3
+        }
+        await self.client.api_utils.update_student_mission_status(**student_mission_info)
+
     async def change_image_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "📷 更換照片")
         await interaction.response.send_message(f"好的～ **點擊對話框左側「+」上傳照片**")
+
+        # Mission continue
+        student_mission_info = {
+            'user_id': self.user_id,
+            'mission_id': self.mission_id,
+            'current_step': 3
+        }
+        await self.client.api_utils.update_student_mission_status(**student_mission_info)
     
     async def complete_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "完成任務✨: 我覺得OK，不修改了!")
@@ -71,6 +86,8 @@ class GrowthPhotoView(discord.ui.View):
             'score': 1
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
+
+        from bot.handlers.utils import send_reward_and_log
         await send_reward_and_log(self.client, self.user_id, self.mission_id, 100)
 
     async def on_timeout(self):

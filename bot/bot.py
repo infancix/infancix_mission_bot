@@ -1,5 +1,6 @@
 import discord
 from discord import app_commands
+from collections import defaultdict
 import schedule
 import asyncio
 import json
@@ -30,6 +31,7 @@ class MissionBot(discord.Client):
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
+        self.growth_album = defaultdict(list)
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)

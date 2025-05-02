@@ -12,6 +12,7 @@ from bot.utils.message_tracker import (
     load_task_entry_records
 )
 from bot.views.task_select_view import TaskSelectView
+from bot.views.growth_photo import GrowthPhotoView
 from bot.views.quiz import QuizView
 
 async def run_scheduler():
@@ -93,6 +94,34 @@ async def load_quiz_message(client):
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore quiz for {user_id}: {e}")
 
+async def handle_add_photo_job(client, user_id, mission_id):
+    student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
+    if not student_mission_info or student_mission_info['mission_status'] == 'Completed':
+        await handle_notify_photo_ready_job(client, user_id, mission_id)
+    else:
+        if user_id not in client.growth_album:
+            client.growth_album[user_id] = []
+        client.growth_album[user_id].append(mission_id)
+        client.logger.info(f"Add photo to growth album for user {user_id}")
+        return
+
+async def handle_notify_photo_ready_job(client, user_id, mission_id):
+    notify_message = (
+        f"👋 Hello 這是你製作的回憶相冊內頁，希望你喜歡 ❤️\n"
+        f"如果修改的話，點選下方按鈕就可以囉!\n"
+    )
+    photo_info = await client.api_utils.get_baby_images(user_id, mission_id)
+    file = discord.File(f"../canva_exports/{photo_info['design_id']}.png")
+    try:
+        view = GrowthPhotoView(client, user_id, photo_info)
+        user = await client.fetch_user(user_id)
+        await user.send(notify_message, file=file, view=view)
+        client.logger.info(f"Send photo message to user {user_id}")
+        await client.api_utils.store_message(user_id, 'assistant', notify_message)
+    except Exception as e:
+        client.logger.error(f"Failed to send photo message to user {user_id}: {e}")
+    return
+
 async def send_reward_and_log(client, user_id, mission_id, reward):
     target_channel = await client.fetch_user(user_id)
     is_photo_mission = mission_id in config.photo_mission_list
@@ -127,6 +156,14 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
 
     msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
     await channel.send(msg_task)
+
+    # Send growth photo results
+    await send_growth_photo_results(client, user_id)
+
+async def send_growth_photo_results(client, user_id):
+    if client.growth_album.get(user_id, []):
+        mission_id = client.growth_album[user_id].pop()
+        await handle_notify_photo_ready_job(client, user_id, mission_id)
 
 def add_task_instructions(client, mission, thread_id):
     mission_instructions = f"""

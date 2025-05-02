@@ -141,6 +141,9 @@ class APIUtils:
         additional_info += f'\n寶寶日齡: {day_age}天'
         return additional_info
 
+    async def get_baby_images(self, discord_id, mission_id, endpoint='photo_mission/canva_result'):
+        return await self._get_request(f"{endpoint}?discord_id={discord_id}&mission_id={mission_id}")
+
     async def check_student_mission_eligible(self, user_id):
         student = await self.get_student_profile(user_id)
         baby = await self.get_baby_profile(user_id)

@@ -56,8 +56,8 @@ class Config:
         self.record_mission_list = [32, 39, 45, 54, 67]
         self.photo_mission_list = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
         self.photo_mission_with_aside_text = [3, 4, 5, 15, 104, 105, 106, 999]
-        self.baby_intro_mission = [100]
-        self.photo_mission_with_title_and_content = [101, 102, 103]
+        self.baby_intro_mission = [101]
+        self.photo_mission_with_title_and_content = [100, 102, 103]
     
     def get_assistant_id(self, mission_id):
         if mission_id in self.record_mission_list:
