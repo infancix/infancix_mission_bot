@@ -118,27 +118,53 @@ class APIUtils:
             return None
         return response
 
+    async def get_baby_height_records(self, user_id):
+        response = await self._post_request('get_baby_height_records', {'discord_id': str(user_id)})
+        if bool(response) == False:
+            return None
+
+        return sorted(response, key=lambda x: x["day_id"])
+
+    async def get_baby_weight_records(self, user_id):
+        response = await self._post_request('get_baby_weight_records', {'discord_id': str(user_id)})
+        if bool(response) == False:
+            return None
+
+        return sorted(response, key=lambda x: x["day_id"])
+
+    async def get_baby_head_circumference_records(self, user_id):
+        response = await self._post_request('get_baby_head_circumference_records', {'discord_id': str(user_id)})
+        if bool(response) == False:
+            return None
+
+        return sorted(response, key=lambda x: x["day_id"])
+
     async def get_student_babies(self, user_id, endpoint='get_student_babies'):
         return await self._get_request(f"{endpoint}?discord_id={user_id}")
 
     async def get_baby_additional_info(self, user_id):
-        additional_info = "另外以下為內部資料，僅僅只為了這次的主題給你參考，請不要覆述以下內容：\n"
-
         baby = await self.get_baby_profile(user_id)
         if not baby:
-            additional_info += '寶寶未登記資料，需要提醒家長用“寶寶檔案室”登記寶寶資料！'
-            return additional_info
+            return '寶寶資料未登記，需要和家長詢問寶寶的暱稱、性別、生日、出生時的身高、體重、頭圍等資料'
+
+        height_records = self.get_baby_height_records(user_id)
+        weight_records = self.get_baby_weight_records(user_id)
+        head_circumference_records = self.get_baby_head_circumference_records(user_id)
 
         birth_date = datetime.strptime(baby['birthdate'], '%Y-%m-%d').date()
         day_age = (datetime.today().date() - birth_date).days
         baby_name = baby['baby_name']
         baby_gender = '男' if baby['gender'] == 'm' else '女'
 
-        additional_info += f'今天日期: {datetime.today().date()}'
-        additional_info += f'\n寶寶姓名: {baby_name}'
-        additional_info += f'\n寶寶性別: {baby_gender}'
-        additional_info += f'\n寶寶生日: {birth_date}'
-        additional_info += f'\n寶寶日齡: {day_age}天'
+        additional_info = (
+            f"以下資料提供給你參考:\n"
+            f'寶寶暱稱: {baby_name}\n'
+            f'寶寶出生日期: {birth_date}\n'
+            f'寶寶性別: {baby_gender}\n'
+            f'寶寶身高紀錄: {height_records}\n'
+            f'寶寶體重紀錄: {weight_records}\n'
+            f'寶寶頭圍紀錄: {head_circumference_records}\n'
+        )
         return additional_info
 
     async def get_baby_images(self, discord_id, mission_id, endpoint='photo_mission/canva_result'):
@@ -179,6 +205,9 @@ class APIUtils:
             return None
 
         return response.get('mission_status', 'Incompleted') == 'Completed'
+
+    async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
+        return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
     async def store_message(self, user_id, role, message, message_id=None):
         data = {

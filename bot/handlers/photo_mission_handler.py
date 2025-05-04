@@ -81,11 +81,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     if message.attachments:
         photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
-        user_message = (
-            f"任務主題{student_mission_info['mission_title']}\n"
-            f"photo_mission: {student_mission_info['photo_mission']}\n"
-            f"收到使用者的照片: {photo_url}"
-        )
+        user_message = f"收到使用者的照片: {photo_url}"
     else:
         user_message = message.content
 
@@ -97,6 +93,25 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             thread_id = client.openai_utils.load_thread()
             student_mission_info['thread_id'] = thread_id
             await client.api_utils.update_student_mission_status(**student_mission_info)
+            # add task instruction
+            task_request = (
+                f"這是這次的任務說明：\n"
+                f"- mission_id: {mission_id}\n"
+                f"- 照片任務: {student_mission_info['photo_mission']}\n"
+            )
+            if mission_id in config.baby_intro_mission:
+                get_baby_additional_info = await client.api_utils.get_baby_additional_info(user_id)
+                task_request += get_baby_additional_info
+            if mission_id in (config.baby_intro_mission + config.photo_mission_with_title_and_content):
+                default_content = await client.api_utils.get_mission_default_content_by_id(user_id, mission_id)
+                task_request += (
+                    f"## 備註\n"
+                    f"如果使用者不知道寫什麼，可以提供範本給使用者修改：\n"
+                    f"{default_content}"
+                )
+            client.openai_utils.add_task_instruction(thread_id, task_request)
+
+        # add user message
         bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
         
     if bot_response.get('is_ready'):
@@ -124,11 +139,7 @@ async def process_photo_upload_and_summary(client, message, student_mission_info
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
-    user_message = (
-        f"任務主題{student_mission_info['mission_title']}\n"
-        f"photo_mission: {student_mission_info['photo_mission']}\n"
-        f"收到使用者的照片: {photo_url}"
-    )
+    user_message = f"收到使用者的照片: {photo_url}"
 
     await client.api_utils.upload_baby_image(user_id, mission_id, student_mission_info['mission_title'], photo_url)
     await client.api_utils.store_message(user_id, 'user', f"收到任務照片: {photo_url}")
