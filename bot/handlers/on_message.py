@@ -89,11 +89,9 @@ async def handle_direct_message(client, message):
     # dispatch question
     if mission_id in config.record_mission_list:
         await handle_check_baby_records(client, message, student_mission_info)
-    elif mission_id in config.photo_mission_list:
+    elif mission_id in config.quiz_mission_with_photo_tasks:
         await process_photo_upload_and_summary(client, message, student_mission_info)
-    elif (mission_id in config.photo_mission_with_aside_text
-          or mission_id in config.photo_mission_with_title_and_content
-          or mission_id in config.baby_intro_mission):
+    elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     else:
          await handle_class_question(client, message, student_mission_info)
@@ -102,7 +100,7 @@ async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
     if mission_id in config.record_mission_list:
         await handle_record_mission_start(client, user_id, mission_id)
-    elif mission_id < 100 and mission_id not in config.photo_mission_with_aside_text:
+    elif mission_id not in config.photo_mission_list:
         await handle_quiz_mission_start(client, user_id, mission_id)
     else:
         await handle_photo_mission_start(client, user_id, mission_id)

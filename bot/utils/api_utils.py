@@ -123,21 +123,21 @@ class APIUtils:
         if bool(response) == False:
             return None
 
-        return sorted(response, key=lambda x: x["day_id"])
+        return sorted(response, key=lambda x: x["day_id"])[0]
 
     async def get_baby_weight_records(self, user_id):
         response = await self._post_request('get_baby_weight_records', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
-        return sorted(response, key=lambda x: x["day_id"])
+        return sorted(response, key=lambda x: x["day_id"])[0]
 
     async def get_baby_head_circumference_records(self, user_id):
         response = await self._post_request('get_baby_head_circumference_records', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
-        return sorted(response, key=lambda x: x["day_id"])
+        return sorted(response, key=lambda x: x["day_id"])[0]
 
     async def get_student_babies(self, user_id, endpoint='get_student_babies'):
         return await self._get_request(f"{endpoint}?discord_id={user_id}")
@@ -147,9 +147,9 @@ class APIUtils:
         if not baby:
             return '寶寶資料未登記，需要和家長詢問寶寶的暱稱、性別、生日、出生時的身高、體重、頭圍等資料'
 
-        height_records = self.get_baby_height_records(user_id)
-        weight_records = self.get_baby_weight_records(user_id)
-        head_circumference_records = self.get_baby_head_circumference_records(user_id)
+        height_records = await self.get_baby_height_records(user_id)
+        weight_records = await self.get_baby_weight_records(user_id)
+        head_circumference_records = await self.get_baby_head_circumference_records(user_id)
 
         birth_date = datetime.strptime(baby['birthdate'], '%Y-%m-%d').date()
         day_age = (datetime.today().date() - birth_date).days
