@@ -1,41 +1,32 @@
 import discord
-
 from bot.config import config
 
-def calculate_spacer(label_text: str, score_text, max_spaces: int = 40) -> str:
-    label_text_length = sum(2 if '\u4e00' <= char <= '\u9fff' else 1 for char in label_text)
-    score_text_length = sum(2 if '\u4e00' <= char <= '\u9fff' else 1 for char in score_text)
-    spaces = max_spaces - label_text_length - score_text_length - 1
-    return '\u2000' * max(1, spaces)
-
 def setup_label(mission):
-    score = int(float(mission['mission_completion_percentage'])*100)
-    score_text = f"(完成度: {score})"
-    title = ""
-    if int(mission['mission_id']) in config.photo_mission_list:
-        title += "📸"
-    elif int(mission['mission_id']) in config.record_mission_list:
-        title += "📝"
+    if mission['mission_status'] == "Completed":
+        status_emoji = "✅"
+    elif mission['mission_available'] == 1:
+        status_emoji = "📷"
+    else:
+        status_emoji = "🔒"
 
-    title += f"{mission['photo_mission']}"
-    if score >= 100:
-        title += " ✅"
+    title = mission['mission_title']
+    if len(title) > 90:
+        title = title[:87] + "..."
 
-    spaces = calculate_spacer(title, score_text)
-    return f"{title}{spaces}{score_text}"
+    return f"{status_emoji}{title}"
 
 class PhotoTaskSelectView(discord.ui.View):
-    def __init__(self, client, user_id, student_milestones, timeout=3600):
+    def __init__(self, client, user_id, photo_tasks, timeout=3600):
         super().__init__(timeout=timeout)
         self.client = client
-        self.add_item(PhotoTaskSelect(client, user_id, student_milestones))
+        self.add_item(PhotoTaskSelect(client, user_id, photo_tasks))
 
 class PhotoTaskSelect(discord.ui.Select):
     def __init__(self, client, user_id, student_milestones):
         options = [
             discord.SelectOption(
                 label=setup_label(mission),
-                description=mission['mission_type'],
+                description=mission['photo_mission'],
                 value=mission['mission_id'])
             for mission in student_milestones
         ]

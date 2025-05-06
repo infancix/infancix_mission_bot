@@ -13,6 +13,7 @@ from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
 from bot.views.mission import MilestoneSelectView
+from bot.views.photo_mission import PhotoTaskSelectView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -50,6 +51,19 @@ class MissionBot(discord.Client):
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
+    async def call_photo_task(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer(ephemeral=True)
+            student_albums = await self.api_utils.get_student_growthalbums(str(interaction.user.id))
+            view = PhotoTaskSelectView(self, str(interaction.user.id), student_albums)
+            message = await interaction.followup.send(
+                "🧩 ** 以下是您的回憶碎片，按下方按鈕開始製作繪本**",
+                view=view,
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"Error while sending message: {str(e)}")
+
     async def setup_hook(self):
         await load_task_entry_messages(self)
         self.logger.info("Finished loading task entry messages")
@@ -62,6 +76,13 @@ class MissionBot(discord.Client):
                 name="任務佈告欄",
                 description="查看任務里程碑進度🏆",
                 callback=self.call_mission_start
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
+                name="回憶寶箱",
+                description="查看回憶碎片🧩",
+                callback=self.call_photo_task
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))

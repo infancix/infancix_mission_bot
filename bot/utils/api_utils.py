@@ -41,59 +41,6 @@ class APIUtils:
         response['user_id'] = str(user_id)
         return response
 
-    async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
-        # thread_id is none only if the status is complete
-        if current_step == 0 and not isinstance(thread_id, str):
-            raise Exception('thread_id is required for status Start')
-        data = {
-            'discord_id': str(user_id),
-            'mission_id': mission_id,
-            'total_steps': total_steps,
-            'current_step': current_step,
-            'is_paused': is_paused,
-        }
-        if thread_id:
-            data['thread_id'] = thread_id
-        if score:
-            data['score'] = score
-
-        response = await self._post_request('update_student_mission_status', data)
-        return bool(response)
-
-    async def update_student_current_mission(self, user_id, mission_id):
-        data = {
-            'discord_id': str(user_id),
-            'channel_id': '照護教室',
-            'class_id': mission_id,
-        }
-        response = await self._post_request('update_student_current_class', data)
-        return bool(response)
-
-    async def upload_baby_image(self, user_id, mission_id, milestone, image_url):
-        data = {
-            'discord_id': str(user_id),
-            'mission_id': mission_id,
-            'milestone': milestone,
-            'image_url': image_url,
-            'image_date': str(datetime.now().date())
-        }
-        response = await self._post_request('upload_baby_image', data)
-        return bool(response)
-
-    async def update_mission_image_content(self, user_id, mission_id, image_url=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
-        payload = {
-            'discord_id': str(user_id),
-            'mission_id': int(mission_id)
-        }
-        if image_url:
-            payload['image_url'] = image_url
-        if aside_text:
-            payload['aside_text'] = aside_text
-        if content:
-            payload['content'] = content
-
-        return await self._post_request(endpoint, payload)
-
     async def get_all_students_mission_notifications(self):
         return await self._get_request('get_student_mission_notification_list')
 
@@ -105,6 +52,12 @@ class APIUtils:
 
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
+
+    async def get_student_growthalbums(self, user_id):
+        response = await self._get_request(f'get_student_growth_albums?discord_id={user_id}&book_id=1')
+        if bool(response) == False:
+            return None
+        return response["growth_albums"]["1"] # Only first book for dev version
 
     async def get_student_profile(self, user_id):
         response = await self._post_request('get_student_profile', {'discord_id': str(user_id)})
@@ -169,6 +122,81 @@ class APIUtils:
 
     async def get_baby_images(self, discord_id, mission_id, endpoint='photo_mission/canva_result'):
         return await self._get_request(f"{endpoint}?discord_id={discord_id}&mission_id={mission_id}")
+
+    async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
+        # thread_id is none only if the status is complete
+        if current_step == 0 and not isinstance(thread_id, str):
+            raise Exception('thread_id is required for status Start')
+        data = {
+            'discord_id': str(user_id),
+            'mission_id': mission_id,
+            'total_steps': total_steps,
+            'current_step': current_step,
+            'is_paused': is_paused,
+        }
+        if thread_id:
+            data['thread_id'] = thread_id
+        if score:
+            data['score'] = score
+
+        response = await self._post_request('update_student_mission_status', data)
+        return bool(response)
+
+    async def update_student_current_mission(self, user_id, mission_id):
+        data = {
+            'discord_id': str(user_id),
+            'channel_id': '照護教室',
+            'class_id': mission_id,
+        }
+        response = await self._post_request('update_student_current_class', data)
+        return bool(response)
+
+    async def upload_baby_image(self, user_id, mission_id, milestone, image_url):
+        data = {
+            'discord_id': str(user_id),
+            'mission_id': mission_id,
+            'milestone': milestone,
+            'image_url': image_url,
+            'image_date': str(datetime.now().date())
+        }
+        response = await self._post_request('upload_baby_image', data)
+        return bool(response)
+
+    async def update_mission_image_content(self, user_id, mission_id, image_url=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
+        payload = {
+            'discord_id': str(user_id),
+            'mission_id': int(mission_id)
+        }
+        if image_url:
+            payload['image_url'] = image_url
+        if aside_text:
+            payload['aside_text'] = aside_text
+        if content:
+            payload['content'] = content
+
+        return await self._post_request(endpoint, payload)
+
+    async def update_student_baby_profile(self, user_id, baby_name, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
+        if gender:
+            if gender == '女孩':
+                gender = 'f'
+            elif gender == '男孩':
+                gender = 'm'
+            else:
+                gender = None
+
+        payload = {
+            'discord_id': str(user_id),
+            'baby_name': baby_name,
+            'gender': gender,
+            'birthdate': birthday,
+            'height': float(height),
+            'weight': round(float(weight)/1000, 4), # convert to kg
+            'head_circumference': float(head_circumference),
+        }
+
+        self.logger.info(f"User {user_id} call {endpoint} {payload}.")
+        return await self._post_request(endpoint, payload)
 
     async def check_student_mission_eligible(self, user_id):
         student = await self.get_student_profile(user_id)

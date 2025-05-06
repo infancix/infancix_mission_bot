@@ -10,6 +10,16 @@ class GrowthPhotoView(discord.ui.View):
         self.aside_text = mission_info.get('aside_text', None)
         self.content = mission_info.get('content', None)
         self.image_url = mission_info.get('image', None)
+        self.baby_data = {}
+        if int(self.mission_id) in config.baby_intro_mission:
+            self.baby_data.update({
+                'baby_name': mission_info.get('baby_name'),
+                'gender': mission_info.get('gender'),
+                'birthday': mission_info.get('birthday'),
+                'height': mission_info.get('height'),
+                'weight': mission_info.get('weight'),
+                'head_circumference': mission_info.get('head_circumference'),
+            })
         
         self.add_aside_text_button = discord.ui.Button(
             custom_id='add_aside_text',
@@ -66,6 +76,9 @@ class GrowthPhotoView(discord.ui.View):
         photo_url = None
         if self.image_url:
             photo_url = await self.client.s3_client.process_discord_attachment(self.image_url)
+
+        if self.baby_data:
+            await self.client.api_utils.update_student_baby_profile(self.user_id, **self.baby_data)
         
         if photo_url or self.aside_text or self.content:
             update_status = await self.client.api_utils.update_mission_image_content(
@@ -78,6 +91,11 @@ class GrowthPhotoView(discord.ui.View):
         await interaction.response.send_message(msg)
         await self.client.api_utils.store_message(self.user_id, 'assistant', msg)
 
+        student_mission_info = await self.client.api_utils.get_student_mission_status(self.user_id, self.mission_id)
+        if student_mission_info.get('mission_completion_percentage', 0) < 1:
+            from bot.handlers.utils import send_reward_and_log
+            await send_reward_and_log(self.client, self.user_id, self.mission_id, 100)
+
         # Mission Completed
         student_mission_info = {
             'user_id': self.user_id,
@@ -86,9 +104,6 @@ class GrowthPhotoView(discord.ui.View):
             'score': 1
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
-
-        from bot.handlers.utils import send_reward_and_log
-        await send_reward_and_log(self.client, self.user_id, self.mission_id, 100)
 
     async def on_timeout(self):
         for item in self.children:

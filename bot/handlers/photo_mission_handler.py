@@ -117,9 +117,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     if bot_response.get('is_ready'):
         student_mission_info = {
             **student_mission_info,
-            'content': bot_response.get('content'),
-            'aside_text': bot_response.get('aside_text'),
-            'image': bot_response.get('image'),
+            **bot_response,
         }
         content = bot_response.get('content') or bot_response.get('aside_text')
         view = GrowthPhotoView(client, user_id, student_mission_info)
