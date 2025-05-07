@@ -1,8 +1,9 @@
 import discord
 from bot.config import config
+from bot.utils.message_tracker import delete_photo_view_record
 
 class GrowthPhotoView(discord.ui.View):
-    def __init__(self, client, user_id, mission_info, timeout=14400):
+    def __init__(self, client, user_id, mission_info, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
@@ -59,6 +60,9 @@ class GrowthPhotoView(discord.ui.View):
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
+        # Delete the message record
+        await delete_photo_view_record(self.user_id)
+
     async def change_image_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "📷 更換照片")
         await interaction.response.send_message(f"好的～ **點擊對話框左側「+」上傳照片**")
@@ -70,7 +74,10 @@ class GrowthPhotoView(discord.ui.View):
             'current_step': 3
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
-    
+
+        # Delete the message record
+        await delete_photo_view_record(self.user_id)
+
     async def complete_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "完成任務✨: 我覺得OK，不修改了!")
         photo_url = None
@@ -105,6 +112,9 @@ class GrowthPhotoView(discord.ui.View):
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
+        # Delete the message record
+        await delete_photo_view_record(self.user_id)
+
     async def on_timeout(self):
         for item in self.children:
             if isinstance(item, discord.ui.Button):
@@ -112,7 +122,7 @@ class GrowthPhotoView(discord.ui.View):
 
         if self.message:
             try:
-                await self.message.edit(content="邀請已經過期囉，麻煩找管理員處理喔", view=self)
+                await self.message.edit(content="⚠️ 編輯逾時，可以透過「/回憶寶箱」重新上傳喔！", view=self)
                 self.client.logger.info("GrowthALbumView: Invitation expired and message updated successfully.")
             except discord.NotFound:
                 self.client.logger.warning("GrowthALbumView: Failed to update expired invitation message as it was already deleted.")

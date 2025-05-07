@@ -7,7 +7,7 @@ from datetime import datetime
 
 from bot.views.task_select_view import TaskSelectView
 from bot.handlers.utils import get_user_id, send_reward_and_log, convert_image_to_preview
-from bot.utils.message_tracker import save_task_entry_record
+from bot.utils.message_tracker import save_task_entry_record, save_photo_view_record
 from bot.utils.decorator import exception_handler
 from bot.views.growth_photo import GrowthPhotoView
 from bot.config import config
@@ -126,7 +126,10 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             description=content,
         )
         embed.set_image(url=bot_response['image'])
-        message = await message.channel.send(content=bot_response['message'], embed=embed, view=view)
+
+        view.message = await message.channel.send(content=bot_response['message'], embed=embed, view=view)
+        save_photo_view_record(user_id, str(view.message.id), mission_id, bot_response.get('image'), bot_response.get('aside_text'), bot_response.get('content'))
+
     else:
         await message.channel.send(bot_response['message'])
 

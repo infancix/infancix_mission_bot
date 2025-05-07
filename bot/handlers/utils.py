@@ -9,7 +9,9 @@ import traceback
 from bot.config import config
 from bot.utils.message_tracker import (
     load_quiz_message_records,
-    load_task_entry_records
+    load_task_entry_records,
+    load_photo_view_records,
+    save_photo_view_record
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
@@ -72,9 +74,9 @@ async def load_task_entry_messages(client):
     for user_id, message_data in records.items():
         try:
             channel = await client.fetch_user(user_id)
-            for (message_id, task_type, mission_id) in message_data:
-                message = await channel.fetch_message(int(message_id))
-                view = TaskSelectView(client, task_type, mission_id)
+            for record in message_data:
+                message = await channel.fetch_message(int(record['message_id']))
+                view = TaskSelectView(client, record['task_type'], int(record['mission_id']))
                 await message.edit(view=view)
             client.logger.info(f"✅ Restore task-entry for user {user_id}")
         except Exception as e:
@@ -93,6 +95,18 @@ async def load_quiz_message(client):
             client.logger.info(f"✅ Restored quiz for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore quiz for {user_id}: {e}")
+
+async def load_photo_view_messages(client):
+    records = load_photo_view_records()
+    for user_id, (message_id, mission_id, photo_info) in records.items():
+        try:
+            channel = await client.fetch_user(user_id)
+            message = await channel.fetch_message(int(message_id))
+            view = GrowthPhotoView(client, user_id, photo_info)
+            await message.edit(view=view)
+            client.logger.info(f"✅ Restored photo view for user {user_id}")
+        except Exception as e:
+            client.logger.warning(f"⚠️ Failed to restore photo view for {user_id}: {e}")
 
 async def handle_add_photo_job(client, user_id, mission_id):
     student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
@@ -115,7 +129,8 @@ async def handle_notify_photo_ready_job(client, user_id, mission_id):
     try:
         view = GrowthPhotoView(client, user_id, photo_info)
         user = await client.fetch_user(user_id)
-        await user.send(notify_message, file=file, view=view)
+        message = await user.send(notify_message, file=file, view=view)
+        save_photo_view_record(user_id, str(message.id), mission_id)
         client.logger.info(f"Send photo message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', notify_message)
     except Exception as e:
