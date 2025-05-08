@@ -93,22 +93,18 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             thread_id = client.openai_utils.load_thread()
             student_mission_info['thread_id'] = thread_id
             await client.api_utils.update_student_mission_status(**student_mission_info)
-            # add task instruction
+            # Add task instructions to the assistant's thread
             task_request = (
                 f"這是這次的任務說明：\n"
                 f"- mission_id: {mission_id}\n"
                 f"- 照片任務: {student_mission_info['photo_mission']}\n"
             )
+            default_content = await client.api_utils.get_mission_default_content_by_id(user_id, mission_id)
+            if default_content:
+                task_request += f"草稿：\n{default_content}"
             if mission_id in config.baby_intro_mission:
                 get_baby_additional_info = await client.api_utils.get_baby_additional_info(user_id)
                 task_request += get_baby_additional_info
-            if mission_id in (config.baby_intro_mission + config.photo_mission_with_title_and_content):
-                default_content = await client.api_utils.get_mission_default_content_by_id(user_id, mission_id)
-                task_request += (
-                    f"## 備註\n"
-                    f"如果使用者不知道寫什麼，可以提供範本給使用者修改：\n"
-                    f"{default_content}"
-                )
             client.openai_utils.add_task_instruction(thread_id, task_request)
 
         # add user message

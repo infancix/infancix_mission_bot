@@ -20,6 +20,7 @@ class Config:
         self.ASIDE_TEXT_ASSISTANT = 'asst_kWEM7k1s3S6670Vk7qVPKd9h'
         self.CONTENT_ASSISTANT = 'asst_ytMVwKFd6ik2rKpHOqepqohe'
         self.BABY_INTRO_ASSISTANT = 'asst_Cgeuvc8kSBtgqSlFY51QKTPZ'
+        self.FAMILY_INTRO_ASSISTANT = 'asst_50zwOomgzQuwQvqPkKzeNfIj'
 
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
@@ -57,11 +58,13 @@ class Config:
         self.quiz_mission_with_photo_tasks = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
         self.photo_mission_with_aside_text = [3, 4, 5, 15, 104, 105, 106, 999]
         self.baby_intro_mission = [101]
-        self.photo_mission_with_title_and_content = [100, 102, 103]
+        self.family_intro_mission = [102, 103]
+        self.photo_mission_with_title_and_content = [100]
         self.photo_mission_list = set(
             self.quiz_mission_with_photo_tasks +
             self.photo_mission_with_aside_text +
             self.baby_intro_mission +
+            self.family_intro_mission +
             self.photo_mission_with_title_and_content
         )
     
@@ -74,6 +77,8 @@ class Config:
             return self.ASIDE_TEXT_ASSISTANT
         elif mission_id in self.baby_intro_mission:
             return self.BABY_INTRO_ASSISTANT
+        elif mission_id in self.family_intro_mission:
+            return self.FAMILY_INTRO_ASSISTANT
         elif mission_id in self.photo_mission_with_title_and_content:
             return self.CONTENT_ASSISTANT
         elif mission_id < 100:
