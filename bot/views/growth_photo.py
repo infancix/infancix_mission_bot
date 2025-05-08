@@ -61,7 +61,7 @@ class GrowthPhotoView(discord.ui.View):
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
         # Delete the message record
-        await delete_photo_view_record(self.user_id)
+        delete_photo_view_record(self.user_id)
 
     async def change_image_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "📷 更換照片")
@@ -76,7 +76,7 @@ class GrowthPhotoView(discord.ui.View):
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
         # Delete the message record
-        await delete_photo_view_record(self.user_id)
+        delete_photo_view_record(self.user_id)
 
     async def complete_callback(self, interaction):
         await self.client.api_utils.store_message(self.user_id, 'user', "完成任務✨: 我覺得OK，不修改了!")
@@ -113,7 +113,7 @@ class GrowthPhotoView(discord.ui.View):
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
         # Delete the message record
-        await delete_photo_view_record(self.user_id)
+        delete_photo_view_record(self.user_id)
 
     async def on_timeout(self):
         for item in self.children:

@@ -81,7 +81,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     if message.attachments:
         photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
-        user_message = f"收到使用者的照片: {photo_url}"
+        user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {photo_url}"
     else:
         user_message = message.content
 
@@ -136,7 +136,7 @@ async def process_photo_upload_and_summary(client, message, student_mission_info
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     photo_url = await client.s3_client.process_discord_attachment(message.attachments[0].url)
-    user_message = f"收到使用者的照片: {photo_url}"
+    user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {photo_url}"
 
     await client.api_utils.upload_baby_image(user_id, mission_id, student_mission_info['mission_title'], photo_url)
     await client.api_utils.store_message(user_id, 'user', f"收到任務照片: {photo_url}")
