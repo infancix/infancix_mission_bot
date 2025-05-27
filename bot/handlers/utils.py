@@ -169,16 +169,20 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
     msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
     await channel.send(msg_task)
 
-    # Send growth photo results
+    # Send growth album results
     await send_growth_photo_results(client, user_id)
 
 async def send_growth_photo_results(client, user_id):
-    if client.growth_album.get(user_id, []):
-        album_id = client.growth_album[user_id].pop()
-        if album_id.isdigit():
-            await handle_notify_photo_ready_job(client, user_id, album_id)
-        else:
-            await handle_notify_album_ready_job(client, user_id, album_id)
+    student_albums = await client.api_utils.get_student_growthalbums(user_id)
+    if len(student_albums) == 0:
+        await client.api_utils.submit_generate_album_request(user_id, book_id=1)
+        target_channel = await client.fetch_user(user_id)
+        notify_message = (
+            "恭喜你完成所有任務囉～\n"
+            "馬上為你製作整本的成長繪本\n"
+        )
+        file = discord.File(f"bot/resource/please_waiting.gif")
+        await target_channel.send(notify_message, file=file)
 
 def add_task_instructions(client, mission, thread_id):
     mission_instructions = f"""

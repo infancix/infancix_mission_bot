@@ -135,9 +135,10 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             )
 
             if bool(update_status):
+                file = discord.File(f"bot/resource/please_waiting.gif")
                 await client.api_utils.submit_generate_photo_request(user_id, mission_id)
-                msg = "製作繪本內頁預覽會需要一點時間喔，請耐心等候一下！\nhttps://tenor.com/view/hammy-ham-gif-9441822720620805227"
-                await message.channel.send(msg)
+                msg = "製作繪本內頁預覽會需要一點時間喔，請耐心等候一下！"
+                await message.channel.send(msg, file=file)
                 await client.api_utils.store_message(user_id, 'assistant', msg)
 
     else:
