@@ -53,11 +53,11 @@ class APIUtils:
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
 
-    async def get_student_growthalbums(self, user_id):
-        response = await self._get_request(f'get_student_growth_albums?discord_id={user_id}&book_id=1')
+    async def get_student_growthalbums(self, user_id, book_id=1):
+        response = await self._get_request(f'get_student_growth_albums?discord_id={user_id}&book_id={book_id}')
         if bool(response) == False:
             return None
-        return response["growth_albums"]["1"] # Only first book for dev version
+        return response["growth_albums"].get(str(book_id), {})
 
     async def get_student_profile(self, user_id):
         response = await self._post_request('get_student_profile', {'discord_id': str(user_id)})

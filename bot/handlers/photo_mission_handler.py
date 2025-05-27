@@ -111,20 +111,34 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
         
     if bot_response.get('is_ready'):
-        student_mission_info = {
-            **student_mission_info,
-            **bot_response,
-        }
-        content = bot_response.get('content') or bot_response.get('aside_text')
-        view = GrowthPhotoView(client, user_id, student_mission_info)
-        embed = discord.Embed(
-            title=bot_response['photo_mission'],
-            description=content,
-        )
-        embed.set_image(url=bot_response['image'])
+        # Handle mission status update
+        student_mission_info['mission_id'] = mission_id
+        baby_data = {}
+        if int(mission_id) in config.baby_intro_mission:
+            baby_data.update({
+                'baby_name': bot_response.get('baby_name'),
+                'gender': bot_response.get('gender'),
+                'birthday': bot_response.get('birthday'),
+                'height': bot_response.get('height'),
+                'weight': bot_response.get('weight'),
+                'head_circumference': bot_response.get('head_circumference'),
+            })
 
-        view.message = await message.channel.send(content=bot_response['message'], embed=embed, view=view)
-        save_photo_view_record(user_id, str(view.message.id), mission_id, bot_response.get('image'), bot_response.get('aside_text'), bot_response.get('content'))
+        if baby_data:
+            await client.api_utils.update_student_baby_profile(user_id, **baby_data)
+
+        content = bot_response.get('content') or bot_response.get('aside_text')
+        if bot_response.get('image') and content:
+            photo_url = await client.s3_client.process_discord_attachment(bot_response.get('image'))
+            update_status = await client.api_utils.update_mission_image_content(
+                user_id, mission_id, image_url=photo_url, aside_text=bot_response.get('aside_text'), content=bot_response.get('content')
+            )
+
+            if bool(update_status):
+                await client.api_utils.submit_generate_photo_request(user_id, mission_id)
+                msg = "製作繪本內頁預覽會需要一點時間喔，請耐心等候一下！\nhttps://tenor.com/view/hammy-ham-gif-9441822720620805227"
+                await message.channel.send(msg)
+                await client.api_utils.store_message(user_id, 'assistant', msg)
 
     else:
         await message.channel.send(bot_response['message'])

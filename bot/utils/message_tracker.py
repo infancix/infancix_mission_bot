@@ -10,6 +10,7 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 PHOTO_VIEW_LOG_PATH = DATA_DIR / "photo_view_records.json"
+USER_ALBUM_LOG_PATH = DATA_DIR / "user_album_records.json"
 
 def load_quiz_message_records() -> dict:
     if QUIZ_MESSAGE_LOG_PATH.exists():
@@ -78,3 +79,15 @@ def delete_photo_view_record(user_id: str):
         del records[user_id]
         with open(PHOTO_VIEW_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
+
+def load_user_album_records() -> dict:
+    if USER_ALBUM_LOG_PATH.exists():
+        with open(USER_ALBUM_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_user_album_record(user_id: str, design_id: str):
+    records = load_user_album_records()
+    records[user_id] = design_id
+    with open(USER_ALBUM_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)

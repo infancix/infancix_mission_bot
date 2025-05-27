@@ -8,10 +8,11 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_photo_view_messages
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_photo_view_messages, handle_notify_album_ready_job
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
+from bot.utils.message_tracker import load_user_album_records
 from bot.views.mission import MilestoneSelectView
 from bot.views.photo_mission import PhotoTaskSelectView
 
@@ -55,12 +56,32 @@ class MissionBot(discord.Client):
         try:
             await interaction.response.defer(ephemeral=True)
             student_albums = await self.api_utils.get_student_growthalbums(str(interaction.user.id))
-            view = PhotoTaskSelectView(self, str(interaction.user.id), student_albums)
-            message = await interaction.followup.send(
-                "🧩 ** 以下是您的回憶碎片，按下方按鈕開始製作繪本**",
-                view=view,
-                ephemeral=True
-            )
+            if len(student_albums) > 0:
+                view = PhotoTaskSelectView(self, str(interaction.user.id), student_albums)
+                message = await interaction.followup.send(
+                    "🧩 **以下是您未完成的照片任務，按下方按鈕開始製作繪本**",
+                    view=view,
+                    ephemeral=True
+                )
+            else:
+                message = await interaction.followup.send(
+                    "恭喜你完成所有任務囉～\n",
+                    ephemeral=True
+                )
+        except Exception as e:
+            print(f"Error while sending message: {str(e)}")
+
+    async def call_album_task(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer(ephemeral=True)
+            album_records = load_user_album_records()
+            if str(interaction.user.id) in album_records:
+                await handle_notify_album_ready_job(self, str(interaction.user.id), album_records[str(interaction.user.id)])
+            else:
+                message = await interaction.followup.send(
+                    "請完成更多任務來製作您的成長紀錄本！\n",
+                    ephemeral=True
+                )
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
@@ -83,8 +104,8 @@ class MissionBot(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="回憶寶箱",
-                description="查看回憶碎片🧩",
+                name="製作繪本",
+                description="查看照片任務🧩",
                 callback=self.call_photo_task
             )
         )

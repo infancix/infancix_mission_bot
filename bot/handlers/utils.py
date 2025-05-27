@@ -5,13 +5,15 @@ import asyncio
 import datetime
 import functools
 import traceback
+from discord.ui import View, Button
 
 from bot.config import config
 from bot.utils.message_tracker import (
     load_quiz_message_records,
     load_task_entry_records,
     load_photo_view_records,
-    save_photo_view_record
+    save_photo_view_record,
+    save_user_album_record
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
@@ -49,8 +51,9 @@ async def daily_job(client):
 async def handle_greeting_job(client, user_id = None):
     hello_message = (
         "哈囉～新手爸媽們！我是「加一」🐾 任務佈告欄的助手\n"
-        "等寶寶出生29天後, 會自動發送任務給你\n"
+        "我會自動發送任務給你\n"
         "輸入 /任務佈告欄 可以查看任務進度🏆\n"
+        "輸入 /製作繪本 上傳照片製作寶寶的成長繪本\n"
     )
 
     if user_id == None:
@@ -108,17 +111,6 @@ async def load_photo_view_messages(client):
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore photo view for {user_id}: {e}")
 
-async def handle_add_photo_job(client, user_id, mission_id):
-    student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
-    if not student_mission_info or student_mission_info['mission_status'] == 'Completed':
-        await handle_notify_photo_ready_job(client, user_id, mission_id)
-    else:
-        if user_id not in client.growth_album:
-            client.growth_album[user_id] = []
-        client.growth_album[user_id].append(mission_id)
-        client.logger.info(f"Add photo to growth album for user {user_id}")
-        return
-
 async def handle_notify_photo_ready_job(client, user_id, mission_id):
     notify_message = (
         f"👋 Hello 這是你製作的回憶相冊內頁，希望你喜歡 ❤️\n"
@@ -137,25 +129,30 @@ async def handle_notify_photo_ready_job(client, user_id, mission_id):
         client.logger.error(f"Failed to send photo message to user {user_id}: {e}")
     return
 
+async def handle_notify_album_ready_job(client, user_id, design_id):
+    notify_message = (
+        f"👋 Hello 這是你這個月的成長紀錄本\n"
+        f"每天 1 分鐘，不只是紀錄，也是你和寶寶共同的成長徽章，希望你會喜歡❤️"
+    )
+    view = View()
+    view.add_item(Button(label="📘 點我查看成長紀錄本", url=f"https://infancixbaby120.com/babiary/{design_id}"))
+    try:
+        user = await client.fetch_user(user_id)
+        message = await user.send(notify_message, view=view)
+        client.logger.info(f"Send album message to user {user_id}")
+        await client.api_utils.store_message(user_id, 'assistant', notify_message)
+        save_user_album_record(user_id, design_id)
+    except Exception as e:
+        client.logger.error(f"Failed to send album message to user {user_id}: {e}")
+    return
+
 async def send_reward_and_log(client, user_id, mission_id, reward):
     target_channel = await client.fetch_user(user_id)
-    is_photo_mission = mission_id in config.photo_mission_list
-
     ending_msg = (
-        f"🎁 你獲得了以下獎勵：\n"
-        f"> 🪙 金幣 Coin：+{reward}\n"
+        f"🎉 任務完成！"
+        f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n"
     )
-    # Send the ending message to the user
-    if is_photo_mission:
-        mission = await client.api_utils.get_mission_info(int(mission_id))
-        ending_msg += f"> 🧩 回憶碎片：1 片《{mission['photo_mission']}》\n" if is_photo_mission else ""
-
-    embed = discord.Embed(
-        title="🎉 任務完成！",
-        description=ending_msg,
-        color=discord.Color.green()
-    )
-    await target_channel.send(embed=embed)
+    await target_channel.send(ending_msg)
     await client.api_utils.store_message(user_id, 'assistant', ending_msg)
 
     # Add gold to user
@@ -177,8 +174,11 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
 
 async def send_growth_photo_results(client, user_id):
     if client.growth_album.get(user_id, []):
-        mission_id = client.growth_album[user_id].pop()
-        await handle_notify_photo_ready_job(client, user_id, mission_id)
+        album_id = client.growth_album[user_id].pop()
+        if album_id.isdigit():
+            await handle_notify_photo_ready_job(client, user_id, album_id)
+        else:
+            await handle_notify_album_ready_job(client, user_id, album_id)
 
 def add_task_instructions(client, mission, thread_id):
     mission_instructions = f"""

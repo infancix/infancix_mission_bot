@@ -1,4 +1,6 @@
 import discord
+from types import SimpleNamespace
+
 from bot.config import config
 
 def setup_label(mission):
@@ -48,5 +50,13 @@ class PhotoTaskSelect(discord.ui.Select):
         self.view.stop()
         await interaction.response.edit_message(view=None)
 
-        from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(self.client, str(interaction.user.id), selected_mission_id)
+        mission = await self.client.api_utils.get_mission_info(selected_mission_id)
+        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), selected_mission_id)
+        student_mission_info['mission_id'] = selected_mission_id
+        student_mission_info['mission_title'] = mission['mission_title']
+        student_mission_info['photo_mission'] = mission['photo_mission']
+        student_mission_info['user_id'] = str(interaction.user.id)
+        message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+
+        from bot.handlers.photo_mission_handler import send_photo_mission_instruction
+        await send_photo_mission_instruction(self.client, message, student_mission_info)

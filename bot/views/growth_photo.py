@@ -3,24 +3,15 @@ from bot.config import config
 from bot.utils.message_tracker import delete_photo_view_record
 
 class GrowthPhotoView(discord.ui.View):
-    def __init__(self, client, user_id, mission_info, timeout=None):
+    def __init__(self, client, user_id, mission_info, photo_stage='edit', timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
+        self.photo_stage = photo_stage
         self.mission_id = mission_info['mission_id']
         self.aside_text = mission_info.get('aside_text', None)
         self.content = mission_info.get('content', None)
         self.image_url = mission_info.get('image', None)
-        self.baby_data = {}
-        if int(self.mission_id) in config.baby_intro_mission:
-            self.baby_data.update({
-                'baby_name': mission_info.get('baby_name'),
-                'gender': mission_info.get('gender'),
-                'birthday': mission_info.get('birthday'),
-                'height': mission_info.get('height'),
-                'weight': mission_info.get('weight'),
-                'head_circumference': mission_info.get('head_circumference'),
-            })
         
         self.add_aside_text_button = discord.ui.Button(
             custom_id='add_aside_text',
@@ -84,17 +75,7 @@ class GrowthPhotoView(discord.ui.View):
         if self.image_url:
             photo_url = await self.client.s3_client.process_discord_attachment(self.image_url)
 
-        if self.baby_data:
-            await self.client.api_utils.update_student_baby_profile(self.user_id, **self.baby_data)
-        
-        if photo_url or self.aside_text or self.content:
-            update_status = await self.client.api_utils.update_mission_image_content(
-                self.user_id, self.mission_id, image_url=photo_url, aside_text=self.aside_text, content=self.content
-            )
-            if bool(update_status):
-                await self.client.api_utils.submit_generate_photo_request(self.user_id, self.mission_id)
-
-        msg = "好的～我已經把這張照片收進寶寶的相冊裡囉 ❤️"
+        msg = "好的～我已經把這張照片收進寶寶的相冊裡囉 ❤️\n"
         await interaction.response.send_message(msg)
         await self.client.api_utils.store_message(self.user_id, 'assistant', msg)
 
