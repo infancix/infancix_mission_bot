@@ -22,15 +22,16 @@ async def handle_background_message(client, message):
         user_id = message.mentions[0].id
         mission_match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
         photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)', message.content)
+        album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)', message.content)
         if mission_match:
             mission_id = int(mission_match.group(1))
             await handle_start_mission(client, user_id, mission_id)
         elif photo_match:
             mission_id = int(photo_match.group(1))
             await handle_notify_photo_ready_job(client, user_id, mission_id)
-        elif 'ALBUM_GENERATION_COMPLETED' in message.content:
-            design_id = message.content.split('_')[-1]
-            await handle_notify_album_ready_job(client, user_id, design_id)
+        elif album_match:
+            book_id = int(album_match.group(1))
+            await handle_notify_album_ready_job(client, user_id, book_id)
         return
     else:
         return

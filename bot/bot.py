@@ -8,13 +8,14 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_photo_view_messages, handle_notify_album_ready_job
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_photo_view_messages
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
-from bot.utils.message_tracker import load_user_album_records
+from bot.handlers.utils import convert_image_to_preview
 from bot.views.mission import MilestoneSelectView
 from bot.views.photo_mission import PhotoTaskSelectView
+from bot.views.album_select_view import AlbumView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -48,12 +49,18 @@ class MissionBot(discord.Client):
                 view=milestone_view,
                 ephemeral=True
             )
-            #save_control_panel_record(str(interaction.user.id), str(message.id))
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
     async def call_photo_task(self, interaction: discord.Interaction):
         try:
+            if not isinstance(interaction.channel, discord.channel.DMChannel):
+                message = await interaction.response.send_message(
+                    "嗨！請到「任務佈告欄」查看製作繪本任務喔🧩",
+                    ephemeral=True
+                )
+                return
+
             await interaction.response.defer(ephemeral=True)
             student_albums = await self.api_utils.get_student_growthalbums(str(interaction.user.id))
             if len(student_albums) > 0:
@@ -71,17 +78,19 @@ class MissionBot(discord.Client):
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
-    async def call_album_task(self, interaction: discord.Interaction):
+    async def browse_growth_album(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
-            album_records = load_user_album_records()
-            if str(interaction.user.id) in album_records:
-                await handle_notify_album_ready_job(self, str(interaction.user.id), album_records[str(interaction.user.id)])
-            else:
-                message = await interaction.followup.send(
-                    "請完成更多任務來製作您的成長紀錄本！\n",
-                    ephemeral=True
-                )
+            album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
+            album_view = AlbumView(self, album_status)
+            embed = album_view.get_current_embed()
+            message = await interaction.followup.send(
+                "📖 **以下是您的成長書櫃**",
+                embed=embed,
+                view=album_view,
+                ephemeral=True
+            )
+            album_view.message = message
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
@@ -107,6 +116,13 @@ class MissionBot(discord.Client):
                 name="製作繪本",
                 description="查看照片任務🧩",
                 callback=self.call_photo_task
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
+                name="瀏覽書櫃",
+                description="查看所有成長紀錄本📖",
+                callback=self.browse_growth_album
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))
