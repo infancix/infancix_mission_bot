@@ -7,9 +7,8 @@ from datetime import datetime
 
 from bot.views.task_select_view import TaskSelectView
 from bot.handlers.utils import get_user_id, send_reward_and_log, convert_image_to_preview
-from bot.utils.message_tracker import save_task_entry_record, save_photo_view_record
+from bot.utils.message_tracker import save_task_entry_record, save_photo_mission_status
 from bot.utils.decorator import exception_handler
-from bot.views.growth_photo import GrowthPhotoView
 from bot.config import config
 
 async def handle_photo_mission_start(client, user_id, mission_id):
@@ -73,6 +72,7 @@ async def send_photo_mission_instruction(client, message, student_mission_info):
     student_mission_info['current_step'] = 2
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
+    save_photo_mission_status(user_id, student_mission_info['mission_id'])
     return
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試一次喔！")
@@ -109,37 +109,30 @@ async def process_photo_mission_filling(client, message, student_mission_info):
 
         # add user message
         bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
+        if message.attachments:
+            user = await client.fetch_user(user_id)
+            if user.dm_channel is None:
+                await user.create_dm()
+            view = TaskSelectView(client, "go_aside_text", mission_id)
+            view.message = await user.send(view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_aside_text", mission_id)
         
     if bot_response.get('is_ready'):
         # Handle mission status update
-        student_mission_info['mission_id'] = mission_id
-        baby_data = {}
-        if int(mission_id) in config.baby_intro_mission:
-            baby_data.update({
-                'baby_name': bot_response.get('baby_name'),
-                'gender': bot_response.get('gender'),
-                'birthday': bot_response.get('birthday'),
-                'height': bot_response.get('height'),
-                'weight': bot_response.get('weight'),
-                'head_circumference': bot_response.get('head_circumference'),
-            })
+        book_data = {
+            'mission_id': mission_id,
+            'image_url': bot_response.get('image'),
+            'aside_text': bot_response.get('aside_text'),
+            'content': bot_response.get('content')
+        }
 
-        if baby_data:
-            await client.api_utils.update_student_baby_profile(user_id, **baby_data)
-
-        content = bot_response.get('content') or bot_response.get('aside_text')
-        if bot_response.get('image') and content:
-            photo_url = await client.s3_client.process_discord_attachment(bot_response.get('image'))
-            update_status = await client.api_utils.update_mission_image_content(
-                user_id, mission_id, image_url=photo_url, aside_text=bot_response.get('aside_text'), content=bot_response.get('content')
-            )
-
-            if bool(update_status):
-                file = discord.File(f"bot/resource/please_waiting.gif")
-                await client.api_utils.submit_generate_photo_request(user_id, mission_id)
-                msg = "製作繪本內頁預覽會需要一點時間喔，請耐心等候一下！"
-                await message.channel.send(msg, file=file)
-                await client.api_utils.store_message(user_id, 'assistant', msg)
+        if book_data['image_url'] and (book_data['aside_text'] or book_data['content']):
+            user = await client.fetch_user(user_id)
+            if user.dm_channel is None:
+                await user.create_dm()
+            view = TaskSelectView(client, "go_submit", mission_id)
+            view.message = await user.send(bot_response.get('message'), view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id)
 
     else:
         await message.channel.send(bot_response['message'])
