@@ -2,7 +2,6 @@ import discord
 from types import SimpleNamespace
 
 from bot.config import config
-from bot.handlers.utils import convert_image_to_preview
 
 class AlbumView(discord.ui.View):
     def __init__(self, client, albums_info, timeout=None):
@@ -22,22 +21,23 @@ class AlbumView(discord.ui.View):
         album_info = self.album_info[self.current_page]
         if album_info.get('design_id'):
             label = "預覽整本"
-            link_target = "https://infancixbaby120.com/babiary/{album_info['design_id']}"
+            link_target = f"https://infancixbaby120.com/babiary/{album_info['design_id']}"
         else:
             label = "點我購買"
             link_target = album_info['purchase_url']
 
-        if len(self.total_pages) > 0:
+        if self.total_pages > 0:
             self.add_item(PreviousButton(self.current_page > 0))
 
         self.add_item(discord.ui.Button(label=label, url=link_target, row=1))
         
-        if len(self.total_pages) > 0:
+        if self.total_pages > 0:
             self.add_item(NextButton(self.current_page < self.total_pages - 1))
             if self.current_page == self.total_pages - 1:
-                self.add_item(discord.ui.Button(label="查看更多繪本", url=f"LINK_TO_MORE_ALBUMS(官網商品頁)", row=2))
+                self.add_item(discord.ui.Button(label="查看更多繪本", url=f"https://www.canva.com/design/DAGmqP-18Qc/KLdARiNs6hcxrQyVy1qWNg/view?utm_content=DAGmqP-18Qc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h772b8e1103", row=2))
     
     def get_current_embed(self):
+        from bot.handlers.utils import convert_image_to_preview
         album_info = self.album_info[self.current_page]
         embed = discord.Embed(
             title=album_info['book_title'],

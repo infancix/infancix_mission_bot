@@ -28,7 +28,11 @@ class APIUtils:
         return await self._get_request(f"{endpoint}?mission_id={mission_id}")
 
     async def get_student_is_in_mission(self, user_id, endpoint='get_student_is_in_mission'):
-        return await self._post_request(endpoint, {'discord_id': str(user_id)})
+        response = await self._post_request(endpoint, {'discord_id': str(user_id)})
+        if bool(response) == False:
+            return {}
+
+        return response
 
     async def get_mission_default_content_by_id(self, baby_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?baby_id={baby_id}&mission_id={mission_id}")

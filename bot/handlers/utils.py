@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.quiz import QuizView
+from bot.views.album_select_view import AlbumView
 
 async def run_scheduler():
     while True:
@@ -135,16 +136,11 @@ async def handle_notify_album_ready_job(client, user_id, book_id):
         f"每天 1 分鐘，不只是紀錄，也是你和寶寶共同的成長徽章，希望你會喜歡❤️"
     )
     album_info = await client.api_utils.get_baby_album(user_id, book_id)
-    embed = discord.Embed(
-        title=album_info['book_title'],
-        color=discord.Color.blue()
-    )
-    embed.set_image(url=convert_image_to_preview(album_info['book_cover_url']))
-    view = View()
-    view.add_item(Button(label="📘 點我查看成長紀錄本", url=f"https://infancixbaby120.com/babiary/{album_info['design_id']}"))
+    album_view = AlbumView(client, album_info) 
+    embed = album_view.get_current_embed()
     try:
         user = await client.fetch_user(user_id)
-        message = await user.send(notify_message, view=view)
+        message = await user.send(notify_message, view=album_view, embed=embed)
         client.logger.info(f"Send album message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', notify_message)
     except Exception as e:
