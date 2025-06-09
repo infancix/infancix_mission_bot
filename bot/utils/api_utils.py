@@ -27,14 +27,17 @@ class APIUtils:
     async def get_mission_info(self, mission_id, endpoint='mission/mission_info'):
         return await self._get_request(f"{endpoint}?mission_id={mission_id}")
 
-    async def get_student_is_in_mission(self, user_id):
-        return await self._post_request('get_student_is_in_mission', {'discord_id': str(user_id)})
+    async def get_student_is_in_mission(self, user_id, endpoint='get_student_is_in_mission'):
+        return await self._post_request(endpoint, {'discord_id': str(user_id)})
 
     async def get_mission_default_content_by_id(self, baby_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?baby_id={baby_id}&mission_id={mission_id}")
 
-    async def get_student_mission_status(self, user_id, mission_id):
-        response = await self._get_request(f'get_student_mission_status?discord_id={user_id}&mission_id={mission_id}')
+    async def get_student_album_purchase_status(self, user_id, endpoint='growth_album/get_browse_growth_albums'):
+        return await self._get_request(f'{endpoint}?discord_id={user_id}')
+
+    async def get_student_mission_status(self, user_id, mission_id, endpoint='get_student_mission_status'):
+        response = await self._get_request(f'{endpoint}?discord_id={user_id}&mission_id={mission_id}')
         if bool(response) == False:
             return None
 
@@ -44,8 +47,8 @@ class APIUtils:
     async def get_all_students_mission_notifications(self):
         return await self._get_request('get_student_mission_notification_list')
 
-    async def get_student_mission_notifications_by_id(self, user_id):
-        response = await self._get_request(f'get_student_mission_notification_list?discord_id={user_id}')
+    async def get_student_mission_notifications_by_id(self, user_id, endpoint='get_student_mission_notification_list'):
+        response = await self._get_request(f'{endpoint}?discord_id={user_id}')
         if bool(response) == False:
             return None
         return response[user_id]
@@ -72,21 +75,21 @@ class APIUtils:
         return response
 
     async def get_baby_height_records(self, user_id):
-        response = await self._post_request('get_baby_height_records', {'discord_id': str(user_id)})
+        response = await self._post_request('get_baby_height', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
         return sorted(response, key=lambda x: x["day_id"])[0]
 
     async def get_baby_weight_records(self, user_id):
-        response = await self._post_request('get_baby_weight_records', {'discord_id': str(user_id)})
+        response = await self._post_request('get_baby_weight', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
         return sorted(response, key=lambda x: x["day_id"])[0]
 
     async def get_baby_head_circumference_records(self, user_id):
-        response = await self._post_request('get_baby_head_circumference_records', {'discord_id': str(user_id)})
+        response = await self._post_request('get_baby_head_circumference', {'discord_id': str(user_id)})
         if bool(response) == False:
             return None
 
@@ -123,13 +126,16 @@ class APIUtils:
     async def get_baby_images(self, discord_id, mission_id, endpoint='photo_mission/canva_result'):
         return await self._get_request(f"{endpoint}?discord_id={discord_id}&mission_id={mission_id}")
 
+    async def get_baby_album(self, discord_id, book_id, endpoint='growth_album/album_result'):
+        return await self._get_request(f"{endpoint}?discord_id={discord_id}&book_id={book_id}")
+
     async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
         # thread_id is none only if the status is complete
         if current_step == 0 and not isinstance(thread_id, str):
             raise Exception('thread_id is required for status Start')
         data = {
             'discord_id': str(user_id),
-            'mission_id': mission_id,
+            'mission_id': int(mission_id),
             'total_steps': total_steps,
             'current_step': current_step,
             'is_paused': is_paused,
@@ -137,8 +143,9 @@ class APIUtils:
         if thread_id:
             data['thread_id'] = thread_id
         if score:
-            data['score'] = score
+            data['score'] = float(score)
 
+        print(data)
         response = await self._post_request('update_student_mission_status', data)
         return bool(response)
 

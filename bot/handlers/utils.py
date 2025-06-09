@@ -13,7 +13,6 @@ from bot.utils.message_tracker import (
     load_task_entry_records,
     load_photo_view_records,
     save_photo_view_record,
-    save_user_album_record
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
@@ -54,6 +53,7 @@ async def handle_greeting_job(client, user_id = None):
         "我會自動發送任務給你\n"
         "輸入 /任務佈告欄 可以查看任務進度🏆\n"
         "輸入 /製作繪本 上傳照片製作寶寶的成長繪本\n"
+        "輸入 /瀏覽書櫃 查看已有的成長繪本\n"
     )
 
     if user_id == None:
@@ -122,31 +122,36 @@ async def handle_notify_photo_ready_job(client, user_id, mission_id):
         view = GrowthPhotoView(client, user_id, photo_info)
         user = await client.fetch_user(user_id)
         message = await user.send(notify_message, file=file, view=view)
-        save_photo_view_record(user_id, str(message.id), mission_id)
+        save_photo_view_record(user_id, str(message.id), mission_id, photo_info['book_number'])
         client.logger.info(f"Send photo message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', notify_message)
     except Exception as e:
         client.logger.error(f"Failed to send photo message to user {user_id}: {e}")
     return
 
-async def handle_notify_album_ready_job(client, user_id, design_id):
+async def handle_notify_album_ready_job(client, user_id, book_id):
     notify_message = (
         f"👋 Hello 這是你這個月的成長紀錄本\n"
         f"每天 1 分鐘，不只是紀錄，也是你和寶寶共同的成長徽章，希望你會喜歡❤️"
     )
+    album_info = await client.api_utils.get_baby_album(user_id, book_id)
+    embed = discord.Embed(
+        title=album_info['book_title'],
+        color=discord.Color.blue()
+    )
+    embed.set_image(url=convert_image_to_preview(album_info['book_cover_url']))
     view = View()
-    view.add_item(Button(label="📘 點我查看成長紀錄本", url=f"https://infancixbaby120.com/babiary/{design_id}"))
+    view.add_item(Button(label="📘 點我查看成長紀錄本", url=f"https://infancixbaby120.com/babiary/{album_info['design_id']}"))
     try:
         user = await client.fetch_user(user_id)
         message = await user.send(notify_message, view=view)
         client.logger.info(f"Send album message to user {user_id}")
         await client.api_utils.store_message(user_id, 'assistant', notify_message)
-        save_user_album_record(user_id, design_id)
     except Exception as e:
         client.logger.error(f"Failed to send album message to user {user_id}: {e}")
     return
 
-async def send_reward_and_log(client, user_id, mission_id, reward):
+async def send_reward_and_log(client, user_id, mission_id, reward, book_id):
     target_channel = await client.fetch_user(user_id)
     ending_msg = (
         f"🎉 任務完成！"
@@ -170,12 +175,12 @@ async def send_reward_and_log(client, user_id, mission_id, reward):
     await channel.send(msg_task)
 
     # Send growth album results
-    await send_growth_photo_results(client, user_id)
+    await send_growth_photo_results(client, user_id, book_id)
 
-async def send_growth_photo_results(client, user_id):
-    student_albums = await client.api_utils.get_student_growthalbums(user_id)
+async def send_growth_photo_results(client, user_id, book_id):
+    student_albums = await client.api_utils.get_student_growthalbums(user_id, book_id)
     if len(student_albums) == 0:
-        await client.api_utils.submit_generate_album_request(user_id, book_id=1)
+        await client.api_utils.submit_generate_album_request(user_id, book_id)
         target_channel = await client.fetch_user(user_id)
         notify_message = (
             "恭喜你完成所有任務囉～\n"

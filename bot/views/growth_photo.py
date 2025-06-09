@@ -1,6 +1,6 @@
 import discord
 from bot.config import config
-from bot.utils.message_tracker import delete_photo_view_record
+from bot.utils.message_tracker import delete_photo_view_record, delete_photo_mission_status
 
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_info, photo_stage='edit', timeout=None):
@@ -8,6 +8,7 @@ class GrowthPhotoView(discord.ui.View):
         self.client = client
         self.user_id = user_id
         self.photo_stage = photo_stage
+        self.book_id = mission_info['book_number']
         self.mission_id = mission_info['mission_id']
         self.aside_text = mission_info.get('aside_text', None)
         self.content = mission_info.get('content', None)
@@ -82,7 +83,7 @@ class GrowthPhotoView(discord.ui.View):
         student_mission_info = await self.client.api_utils.get_student_mission_status(self.user_id, self.mission_id)
         if student_mission_info.get('mission_completion_percentage', 0) < 1:
             from bot.handlers.utils import send_reward_and_log
-            await send_reward_and_log(self.client, self.user_id, self.mission_id, 100)
+            await send_reward_and_log(self.client, self.user_id, self.mission_id, 100, self.book_id)
 
         # Mission Completed
         student_mission_info = {
@@ -93,8 +94,12 @@ class GrowthPhotoView(discord.ui.View):
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
+        # Submit
+        await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
+
         # Delete the message record
         delete_photo_view_record(self.user_id)
+        delete_photo_mission_status(self.user_id)
 
     async def on_timeout(self):
         for item in self.children:
@@ -103,7 +108,7 @@ class GrowthPhotoView(discord.ui.View):
 
         if self.message:
             try:
-                await self.message.edit(content="⚠️ 編輯逾時，可以透過「/回憶寶箱」重新上傳喔！", view=self)
+                await self.message.edit(content="⚠️ 編輯逾時，可以透過「/製作繪本」重新上傳喔！", view=self)
                 self.client.logger.info("GrowthALbumView: Invitation expired and message updated successfully.")
             except discord.NotFound:
                 self.client.logger.warning("GrowthALbumView: Failed to update expired invitation message as it was already deleted.")
