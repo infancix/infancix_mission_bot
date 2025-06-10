@@ -176,9 +176,12 @@ async def send_reward_and_log(client, user_id, mission_id, reward, book_id):
     await send_growth_photo_results(client, user_id, book_id)
 
 async def send_growth_photo_results(client, user_id, book_id):
+    # Submit growth album
+    await client.api_utils.submit_generate_album_request(user_id, book_id)
+
+    # Only notify if there are no existing albums
     student_albums = await client.api_utils.get_student_growthalbums(user_id, book_id)
     if len(student_albums) == 0:
-        await client.api_utils.submit_generate_album_request(user_id, book_id)
         target_channel = await client.fetch_user(user_id)
         notify_message = (
             "恭喜你完成所有任務囉～\n"

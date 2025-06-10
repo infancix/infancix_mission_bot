@@ -94,9 +94,6 @@ class GrowthPhotoView(discord.ui.View):
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
-        # Submit
-        await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
-
         # Delete the message record
         delete_photo_view_record(self.user_id)
         delete_photo_mission_status(self.user_id)
