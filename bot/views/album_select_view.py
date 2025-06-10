@@ -26,12 +26,12 @@ class AlbumView(discord.ui.View):
             label = "點我購買"
             link_target = album_info['purchase_url']
 
-        if self.total_pages > 0:
+        if self.total_pages > 1:
             self.add_item(PreviousButton(self.current_page > 0))
 
         self.add_item(discord.ui.Button(label=label, url=link_target, row=1))
         
-        if self.total_pages > 0:
+        if self.total_pages > 1:
             self.add_item(NextButton(self.current_page < self.total_pages - 1))
             if self.current_page == self.total_pages - 1:
                 self.add_item(discord.ui.Button(label="查看更多繪本", url=f"https://www.canva.com/design/DAGmqP-18Qc/KLdARiNs6hcxrQyVy1qWNg/view?utm_content=DAGmqP-18Qc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h772b8e1103", row=2))

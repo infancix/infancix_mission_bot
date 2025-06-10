@@ -80,7 +80,9 @@ async def load_task_entry_messages(client):
             channel = await client.fetch_user(user_id)
             for record in message_data:
                 message = await channel.fetch_message(int(record['message_id']))
-                view = TaskSelectView(client, record['task_type'], int(record['mission_id']))
+                baby_data = record.get('baby_data', None)
+                book_data = record.get('book_data', None)
+                view = TaskSelectView(client, record['task_type'], int(record['mission_id']), book_data=book_data, baby_data=baby_data)
                 await message.edit(view=view)
             client.logger.info(f"✅ Restore task-entry for user {user_id}")
         except Exception as e:
@@ -136,7 +138,7 @@ async def handle_notify_album_ready_job(client, user_id, book_id):
         f"每天 1 分鐘，不只是紀錄，也是你和寶寶共同的成長徽章，希望你會喜歡❤️"
     )
     album_info = await client.api_utils.get_baby_album(user_id, book_id)
-    album_view = AlbumView(client, album_info) 
+    album_view = AlbumView(client, [album_info])
     embed = album_view.get_current_embed()
     try:
         user = await client.fetch_user(user_id)

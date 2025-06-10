@@ -37,7 +37,7 @@ def load_task_entry_records() -> dict:
             return json.load(f)
     return {}
 
-def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, max_records=5):
+def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, book_data=None, baby_data=None, max_records=5):
     records = load_task_entry_records()
     if user_id not in records:
         records[user_id] = []
@@ -48,6 +48,10 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
         'task_type': task_type,
         'mission_id': mission_id,
     })
+    if book_data:
+        records[user_id][-1]['book_data'] = book_data
+    if baby_data:
+        records[user_id][-1]['baby_data'] = baby_data
 
     if len(records[user_id]) > max_records:
         records[user_id].pop(0)

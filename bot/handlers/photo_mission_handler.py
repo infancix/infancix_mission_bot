@@ -109,13 +109,6 @@ async def process_photo_mission_filling(client, message, student_mission_info):
 
         # add user message
         bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
-        if message.attachments:
-            user = await client.fetch_user(user_id)
-            if user.dm_channel is None:
-                await user.create_dm()
-            view = TaskSelectView(client, "go_aside_text", mission_id)
-            view.message = await user.send(view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_aside_text", mission_id)
         
     if bot_response.get('is_ready'):
         # Handle mission status update
@@ -126,16 +119,38 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             'content': bot_response.get('content')
         }
 
-        if book_data['image_url'] and (book_data['aside_text'] or book_data['content']):
-            user = await client.fetch_user(user_id)
-            if user.dm_channel is None:
-                await user.create_dm()
-            view = TaskSelectView(client, "go_submit", mission_id)
-            view.message = await user.send(bot_response.get('message'), view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id)
+        if int(mission_id) in config.baby_intro_mission:
+            baby_data = bot_response
+        else:
+            baby_data = None
+
+        content = bot_response.get('aside_text') or bot_response.get('content')
+        if bot_response.get('image') and content:
+            confirmation_message = (
+                f"{bot_response.get('message')}\n\n"
+                f"請確認您即將送出的內容：\n"
+                f"> {content}\n\n"
+                "如果一切無誤，請點擊「送出」按鈕來提交！"
+            )
+            view = TaskSelectView(client, "go_submit", mission_id, book_data=book_data, baby_data=baby_data)
+            view.message = await message.channel.send(confirmation_message, view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, book_data=book_data, baby_data=baby_data)
 
     else:
         await message.channel.send(bot_response['message'])
+        if message.attachments:
+            if int(mission_id) in config.baby_intro_mission:
+                task_type = "go_baby_intro"
+            elif int(mission_id) in config.family_intro_mission:
+                task_type = "go_family_intro"
+            elif int(mission_id) in config.photo_mission_with_title_and_content:
+                task_type = "go_letter"
+            else:
+                task_type = "go_aside_text"
+
+            view = TaskSelectView(client, task_type, mission_id)
+            view.message = await message.channel.send(view=view)
+            save_task_entry_record(user_id, str(view.message.id), task_type, mission_id)
 
     return
 
