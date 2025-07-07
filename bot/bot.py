@@ -64,29 +64,24 @@ class MissionBot(discord.Client):
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT]
+            await interaction.response.defer(ephemeral=True)
+            is_in_mission_room = interaction.channel.id == config.MISSION_BOT_CHANNEL_ID
 
             if not is_in_mission_room:
-                target_channel = await self.fetch_user(interaction.user.id)
-                await interaction.response.send_message(
-                    f"📢 *你的課表已更新，請到 <@{interaction.channel.id}> 查看！*",
+                await interaction.followup.send(
+                    "🚫 *請在 [任務佈告欄] 頻道使用此指令！*",
                     ephemeral=True
                 )
-            else:
-                target_channel = interaction.channel
+                return
 
+            target_channel = interaction.channel
             old_control_message, control_panel_view, control_panel_embed = await load_control_panel_by_id(self, str(interaction.user.id), target_channel)
             if old_control_message:
                 await old_control_message.delete()
                 self.logger.info(f"Remove out-dated control panel of user ({interaction.user.id}).")
 
-            if is_in_mission_room:
-                await interaction.response.send_message(embed=control_panel_embed, view=control_panel_view)
-                message = await interaction.original_response()
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
-            else:
-                message = await target_channel.send(embed=control_panel_embed, view=control_panel_view)
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
+            message = await interaction.followup.send(embed=control_panel_embed, view=control_panel_view)
+            await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
 
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
