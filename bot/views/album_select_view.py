@@ -64,7 +64,7 @@ class PreviousButton(discord.ui.Button):
 
         embed = view.get_current_embed()
         view.update_album()
-        await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.response.edit_message(embed=embed, view=view)
 
 class NextButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -81,4 +81,4 @@ class NextButton(discord.ui.Button):
 
         embed = view.get_current_embed()
         view.update_album()
-        await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.response.edit_message(embed=embed, view=view)
