@@ -32,8 +32,6 @@ def setup_label(mission):
     title = ""
     if int(mission['mission_id']) in config.photo_mission_list:
         title += "📸"
-    elif int(mission['mission_id']) in config.record_mission_list:
-        title += "📝"
 
     title += f"{mission['mission_title']}"
     if mission['mission_status'] == 'Completed':

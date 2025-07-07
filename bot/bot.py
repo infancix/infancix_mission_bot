@@ -12,7 +12,6 @@ from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_mes
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
-from bot.handlers.utils import convert_image_to_preview
 from bot.views.mission import MilestoneSelectView
 from bot.views.photo_mission import PhotoTaskSelectView
 from bot.views.album_select_view import AlbumView
@@ -62,9 +61,9 @@ class MissionBot(discord.Client):
                 return
 
             await interaction.response.defer(ephemeral=True)
-            student_albums = await self.api_utils.get_student_growthalbums(str(interaction.user.id))
-            if len(student_albums) > 0:
-                view = PhotoTaskSelectView(self, str(interaction.user.id), student_albums)
+            incomplete_missions = await self.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id))
+            if len(incomplete_missions) > 0:
+                view = PhotoTaskSelectView(self, str(interaction.user.id), incomplete_missions)
                 message = await interaction.followup.send(
                     "🧩 **以下是您未完成的照片任務，按下方按鈕開始製作繪本**",
                     view=view,
@@ -83,10 +82,11 @@ class MissionBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
             album_view = AlbumView(self, album_status)
-            embed = album_view.get_current_embed()
+            embed, file = album_view.get_current_embed()
             message = await interaction.followup.send(
                 "📖 **以下是您的成長書櫃**\n點擊 ▶️ 查看下一本 | ◀️ 返回上一本",
                 embed=embed,
+                file=file if file else None,
                 view=album_view,
                 ephemeral=True
             )
@@ -106,22 +106,22 @@ class MissionBot(discord.Client):
 
         self.tree.add_command(
             app_commands.Command(
-                name="任務佈告欄",
-                description="查看任務里程碑進度🏆",
+                name="查看育兒里程碑",
+                description="查看五大照護育兒里程碑",
                 callback=self.call_mission_start
             )
         )
         self.tree.add_command(
             app_commands.Command(
-                name="製作繪本",
-                description="查看照片任務🧩",
+                name="補上傳照片",
+                description="查看未完成繪本任務🧩",
                 callback=self.call_photo_task
             )
         )
         self.tree.add_command(
             app_commands.Command(
-                name="瀏覽書櫃",
-                description="查看所有成長紀錄本📖",
+                name="瀏覽繪本進度",
+                description="查看繪本進度📖",
                 callback=self.browse_growth_album
             )
         )

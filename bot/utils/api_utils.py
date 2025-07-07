@@ -60,11 +60,11 @@ class APIUtils:
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
 
-    async def get_student_growthalbums(self, user_id, book_id=1):
-        response = await self._get_request(f'get_student_growth_albums?discord_id={user_id}&book_id={book_id}')
+    async def get_student_incomplete_photo_mission(self, user_id, book_id=None):
+        response = await self._get_request(f'photo_mission/incompleted_mission_list?discord_id={user_id}' + (f'&book_id={book_id}' if book_id else ''))
         if bool(response) == False:
             return None
-        return response["growth_albums"].get(str(book_id), {})
+        return response
 
     async def get_student_profile(self, user_id):
         response = await self._post_request('get_student_profile', {'discord_id': str(user_id)})
@@ -130,9 +130,6 @@ class APIUtils:
     async def get_baby_images(self, discord_id, mission_id, endpoint='photo_mission/canva_result'):
         return await self._get_request(f"{endpoint}?discord_id={discord_id}&mission_id={mission_id}")
 
-    async def get_baby_album(self, discord_id, book_id, endpoint='growth_album/album_result'):
-        return await self._get_request(f"{endpoint}?discord_id={discord_id}&book_id={book_id}")
-
     async def update_student_mission_status(self, user_id, mission_id, total_steps=4, current_step=0, score=None, thread_id=None, is_paused=False, **kwargs):
         # thread_id is none only if the status is complete
         if current_step == 0 and not isinstance(thread_id, str):
@@ -185,6 +182,20 @@ class APIUtils:
         if content:
             payload['content'] = content
 
+        return await self._post_request(endpoint, payload)
+
+    async def update_student_profile(self, user_id, student_name, gender, pregnancy_status, due_date, endpoint='student_optin'):
+        payload = {
+            'discord_id': str(user_id),
+            'student_name': student_name,
+            'pregnancy_status': pregnancy_status,
+            'due_date': due_date,
+        }
+        
+        if gender and gender in ['f', 'm']:
+            payload['gender'] = gender
+
+        self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
 
     async def update_student_baby_profile(self, user_id, baby_name, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
@@ -244,9 +255,6 @@ class APIUtils:
             return None
 
         return response.get('mission_status', 'Incompleted') == 'Completed'
-
-    async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
-        return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
     async def store_message(self, user_id, role, message, message_id=None):
         data = {

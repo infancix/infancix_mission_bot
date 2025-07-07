@@ -21,6 +21,7 @@ class Config:
         self.CONTENT_ASSISTANT = 'asst_ytMVwKFd6ik2rKpHOqepqohe'
         self.BABY_INTRO_ASSISTANT = 'asst_Cgeuvc8kSBtgqSlFY51QKTPZ'
         self.FAMILY_INTRO_ASSISTANT = 'asst_50zwOomgzQuwQvqPkKzeNfIj'
+        self.PRENGNANCY_TASK_ASSISTANT = 'asst_hP8Ist5VpL0XxxLfE8kvEHEo'
 
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
@@ -54,12 +55,11 @@ class Config:
             '1290138246273306755'
         ]
 
-        self.record_mission_list = [32, 39, 45, 54, 67]
         self.quiz_mission_with_photo_tasks = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
-        self.photo_mission_with_aside_text = [3, 4, 5, 15, 104, 105, 106, 999]
-        self.baby_intro_mission = [101]
-        self.family_intro_mission = [102, 103]
-        self.photo_mission_with_title_and_content = [100]
+        self.photo_mission_with_aside_text = [3, 4, 5, 15, 1004, 1005, 1006, 1007]
+        self.baby_intro_mission = [1001]
+        self.family_intro_mission = [1002, 1003]
+        self.photo_mission_with_title_and_content = [1008]
         self.photo_mission_list = set(
             self.quiz_mission_with_photo_tasks +
             self.photo_mission_with_aside_text +
@@ -69,9 +69,7 @@ class Config:
         )
     
     def get_assistant_id(self, mission_id):
-        if mission_id in self.record_mission_list:
-            return None
-        elif mission_id in self.quiz_mission_with_photo_tasks:
+        if mission_id in self.quiz_mission_with_photo_tasks:
             return self.PHOTO_TASK_ASSISTANT
         elif mission_id in self.photo_mission_with_aside_text:
             return self.ASIDE_TEXT_ASSISTANT

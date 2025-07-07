@@ -1,4 +1,6 @@
 import json
+from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from bot.config import config
 
@@ -10,7 +12,6 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 PHOTO_VIEW_LOG_PATH = DATA_DIR / "photo_view_records.json"
-PHOTO_MISSION_STATUS_LOG_PATH = DATA_DIR / "photo_mission_status.json"
 
 def load_quiz_message_records() -> dict:
     if QUIZ_MESSAGE_LOG_PATH.exists():
@@ -37,24 +38,21 @@ def load_task_entry_records() -> dict:
             return json.load(f)
     return {}
 
-def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, book_data=None, baby_data=None, max_records=5):
+def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, book_data=None, baby_data=None, max_records=10):
     records = load_task_entry_records()
     if user_id not in records:
-        records[user_id] = []
+        records[user_id] = defaultdict(dict)
     
-    records[user_id] = [record for record in records[user_id] if record['mission_id'] != mission_id]
-    records[user_id].append({
-        'message_id': message_id,
-        'task_type': task_type,
-        'mission_id': mission_id,
-    })
-    if book_data:
-        records[user_id][-1]['book_data'] = book_data
-    if baby_data:
-        records[user_id][-1]['baby_data'] = baby_data
+    records[user_id][str(mission_id)] = {
+        "message_id": message_id,
+        "task_type": task_type,
+        "book_data": book_data,
+        "baby_data": book_data,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
 
     if len(records[user_id]) > max_records:
-        records[user_id].pop(0)
+        records[user_id] = dict(sorted(records[user_id].items(), key=lambda x: x[1]['date'], reverse=True)[:max_records])
 
     with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
@@ -65,16 +63,9 @@ def load_photo_view_records() -> dict:
             return json.load(f)
     return {}
 
-def save_photo_view_record(user_id: str, message_id: str, mission_id: str, book_id: int = None, image: str = None, aside_text: str = None, content: str = None):
+def save_photo_view_record(user_id: str, message_id: str, mission_id: str):
     records = load_photo_view_records()
-    photo_info = {
-        'mission_id': mission_id,
-        'book_number': book_id,
-        'image': image,
-        'aside_text': aside_text,
-        'content': content
-    }
-    records[user_id] = (message_id, mission_id, photo_info)
+    records[user_id] = (message_id, mission_id)
     with open(PHOTO_VIEW_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
 
@@ -83,24 +74,4 @@ def delete_photo_view_record(user_id: str):
     if user_id in records:
         del records[user_id]
         with open(PHOTO_VIEW_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=4, ensure_ascii=False)
-
-def load_photo_mission_status() -> dict:
-    if PHOTO_MISSION_STATUS_LOG_PATH.exists():
-        with open(PHOTO_MISSION_STATUS_LOG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_photo_mission_status(user_id: str, mission_id: int):
-    records = load_photo_mission_status()    
-    records[user_id] = mission_id
-
-    with open(PHOTO_MISSION_STATUS_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=4, ensure_ascii=False)
-
-def delete_photo_mission_status(user_id: str):
-    records = load_photo_mission_status()
-    if user_id in records:
-        del records[user_id]
-        with open(PHOTO_MISSION_STATUS_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)

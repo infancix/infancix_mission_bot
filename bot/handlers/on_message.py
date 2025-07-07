@@ -3,9 +3,9 @@ import discord
 import re
 
 from bot.config import config
-from bot.handlers.record_check_mission_handler import handle_record_mission_start, handle_check_baby_records
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
 from bot.handlers.photo_mission_handler import handle_photo_mission_start, process_photo_mission_filling, process_photo_upload_and_summary
+from bot.handlers.pregnancy_mission_handler import handle_pregnancy_mission_start, process_message
 from bot.handlers.utils import handle_greeting_job, handle_notify_photo_ready_job, handle_notify_album_ready_job
 
 async def handle_background_message(client, message):
@@ -14,27 +14,26 @@ async def handle_background_message(client, message):
 
     if len(message.mentions) == 1 and message.mentions[0].id == config.MISSION_BOT and 'START_GREETING_ALL' in message.content:
         await handle_greeting_job(client)
-        return
     elif len(message.mentions) == 2 and message.mentions[0].id == config.MISSION_BOT and 'START_GREETING' in message.content:
         await handle_greeting_job(client, message.mentions[1].id)
-        return
     elif len(message.mentions) == 1:
         user_id = message.mentions[0].id
         mission_match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
-        photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)', message.content)
-        album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)', message.content)
+        photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
+        album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
         if mission_match:
             mission_id = int(mission_match.group(1))
             await handle_start_mission(client, user_id, mission_id)
         elif photo_match:
-            mission_id = int(photo_match.group(1))
-            await handle_notify_photo_ready_job(client, user_id, mission_id)
+            baby_id = int(photo_match.group(1))
+            mission_id = int(photo_match.group(2))
+            await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
         elif album_match:
-            book_id = int(album_match.group(1))
-            await handle_notify_album_ready_job(client, user_id, book_id)
-        return
-    else:
-        return
+            baby_id = int(album_match.group(1))
+            book_id = int(album_match.group(2))
+            await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
+    
+    return
 
 async def handle_direct_message(client, message):
     client.logger.debug(f"Message received: {message}")
@@ -76,7 +75,7 @@ async def handle_direct_message(client, message):
 
     # 影片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
-        await message.channel.send("汪～影片太重啦～ 加一沒法幫你處理喔！")
+        await message.channel.send("請提供照片喔！")
         return
     else:
         if not message.content.strip():
@@ -87,20 +86,30 @@ async def handle_direct_message(client, message):
     mission_id = int(student_mission_info['mission_id'])
     student_mission_info['user_id'] = user_id
     # dispatch question
-    if mission_id in config.record_mission_list:
-        await handle_check_baby_records(client, message, student_mission_info)
-    elif mission_id in config.quiz_mission_with_photo_tasks:
+    if mission_id in config.quiz_mission_with_photo_tasks:
         await process_photo_upload_and_summary(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
-    else:
+    elif mission_id == 101:
+        await handle_pregnancy_mission_start(client, user_id, mission_id)
+    elif mission_id < 65:
          await handle_class_question(client, message, student_mission_info)
+    else:
+        msg = (
+            "無法處理您的訊息，請確認任務是否正確\n"
+            "若有育兒問題，請找24小時AI育兒助手「喵喵」\n"
+            "或是聯絡客服。"
+        )
+        await message.channel.send(msg)
 
 async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
-    if mission_id in config.record_mission_list:
-        await handle_record_mission_start(client, user_id, mission_id)
-    elif mission_id not in config.photo_mission_list:
+    if mission_id >= 101 and mission_id <= 135:
+        await handle_pregnancy_mission_start(client, user_id, mission_id)
+    elif mission_id in config.photo_mission_list:
+        await handle_photo_mission_start(client, user_id, mission_id)
+    elif mission_id < 100 and mission_id not in config.photo_mission_list:
         await handle_quiz_mission_start(client, user_id, mission_id)
     else:
-        await handle_photo_mission_start(client, user_id, mission_id)
+        print(f"Unhandled mission ID: {mission_id}")
+        return
