@@ -82,11 +82,10 @@ class MissionBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
             album_view = AlbumView(self, album_status)
-            embed, file = album_view.get_current_embed()
+            embed = album_view.get_current_embed()
             message = await interaction.followup.send(
                 "📖 **以下是您的成長書櫃**\n點擊 ▶️ 查看下一本 | ◀️ 返回上一本",
                 embed=embed,
-                file=file if file else None,
                 view=album_view,
                 ephemeral=True
             )

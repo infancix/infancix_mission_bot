@@ -19,14 +19,14 @@ class GrowthPhotoView(discord.ui.View):
 
         self.message = None
 
-    def generate_embed(self, filename):
+    def generate_embed(self, baby_id, mission_id):
         embed = discord.Embed(
             title="製作完成預覽",
             description="📷 換照片：直接重新上傳即可\n💬 修改文字：在對話框輸入並送出(限30字)"
         )
 
         if self.image_url:
-            embed.set_image(url=f"attachment://{filename}")
+            embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.png")
 
         embed.set_footer(
             text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！"

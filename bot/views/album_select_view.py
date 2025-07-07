@@ -25,7 +25,7 @@ class AlbumView(discord.ui.View):
 
     def get_current_embed(self):
         album_info = self.album_info[self.current_page]
-        file, thumbnail = None, None
+        thumbnail = None
         if album_info.get('purchase_status', '未購買') == '未購買':
             link_target = album_info['purchase_url']
             desc = f"[點擊官網連結，購買繪本]({link_target})"
@@ -34,8 +34,7 @@ class AlbumView(discord.ui.View):
             code = encode_ids(album_info['baby_id'], album_info['book_id'])
             link_target = f"https://infancixbaby120.com/babiary/{code}"
             desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})"
-            file = discord.File(f"/home/ubuntu/canva_exports/{album_info['baby_id']}/book/{album_info['book_id']}/preview/2.png")
-            thumbnail = "attachment://2.png"
+            thumbnail = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png"
         else:
             desc = "繪本尚未生成，請透過「_/補上傳照片_」指令製作專屬繪本喔"
 
@@ -47,8 +46,8 @@ class AlbumView(discord.ui.View):
         if thumbnail:
             embed.set_thumbnail(url=thumbnail)
             embed.set_footer(text=album_info['page_progress'])
-        
-        return embed, file
+
+        return embed
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -63,12 +62,9 @@ class PreviousButton(discord.ui.Button):
         view = self.view
         view.current_page -= 1
 
-        embed, file = view.get_current_embed()
+        embed = view.get_current_embed()
         view.update_album()
-        if file:
-            await interaction.edit_original_response(embed=embed, view=view, attachments=[file])
-        else:
-            await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.edit_original_response(embed=embed, view=view)
 
 class NextButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -83,9 +79,6 @@ class NextButton(discord.ui.Button):
         view = self.view
         view.current_page += 1
 
-        embed, file = view.get_current_embed()
+        embed = view.get_current_embed()
         view.update_album()
-        if file:
-            await interaction.edit_original_response(embed=embed, view=view, attachments=[file])
-        else:
-            await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.edit_original_response(embed=embed, view=view)

@@ -79,10 +79,10 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
 
     embed = discord.Embed(
         title="🎉 知識挑戰結束！",
-        desc=quiz_summary,
+        description=quiz_summary,
         color=discord.Color.purple()
     )
-    
+
     await interaction.channel.send(quiz_summary)
     await interaction.client.api_utils.store_message(user_id, 'assistant', quiz_summary)
     await client.api_utils.add_gold(user_id, gold=int(reward))

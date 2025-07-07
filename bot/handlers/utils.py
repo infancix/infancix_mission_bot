@@ -125,14 +125,13 @@ async def load_photo_view_messages(client):
             client.logger.warning(f"⚠️ Failed to restore photo view for {user_id}: {e}")
 
 async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
-    file = discord.File(f"../canva_exports/{baby_id}/{mission_id}.png")
     view = GrowthPhotoView(client, user_id, mission_id)
-    embed = view.generate_embed(f"{mission_id}.png")
+    embed = view.generate_embed(baby_id, mission_id)
 
     try:
         # Send the photo message to the user    
         user = await client.fetch_user(user_id)
-        message = await user.send(embed=embed, file=file, view=view)
+        message = await user.send(embed=embed, view=view)
 
         # Save the message ID and mission ID for tracking
         save_photo_view_record(user_id, str(message.id), mission_id)
@@ -153,12 +152,12 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
         **album
     }]
     view = AlbumView(client, albums)
-    embed, file = view.get_current_embed()
+    embed = view.get_current_embed()
     embed.description += "\n\n繪本將於 10 個工作天寄出，請耐心等待！\n如果需要修改繪本內容，請聯絡客服(將酌收工本費200)。"
     try:
         # Send the album preview to the user
         user = await client.fetch_user(user_id)
-        await user.send(embed=embed, file=file)
+        await user.send(embed=embed)
 
         # Log the successful message send
         client.logger.info(f"Send album message to user {user_id}")
