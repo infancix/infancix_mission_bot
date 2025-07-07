@@ -1,16 +1,15 @@
 import discord
+import random
 from types import SimpleNamespace
-
 from bot.config import config
 
 class TaskSelectView(discord.ui.View):
-    def __init__(self, client, task_type, mission_id, book_data=None, baby_data=None, timeout=None):
+    def __init__(self, client, task_type, mission_id, mission_result=None, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.mission_id = mission_id
         self.message = None
-        self.book_data = book_data or {}
-        self.baby_data = baby_data or {}
+        self.result = mission_result or {}
         self.use_image_date_string_replace_aside_text = False
 
         if task_type == "go_quiz":
@@ -74,23 +73,23 @@ class TaskSelectView(discord.ui.View):
         await self.submit_image_data(interaction)
 
     async def submit_image_data(self, interaction):
-        if self.baby_data:
+        if self.result and self.mission_id in config.baby_intro_mission:
             payload = {
-                'baby_name': self.baby_data.get('baby_name'),
-                'gender': self.baby_data.get('gender'),
-                'birthday': self.baby_data.get('birthday'),
-                'height': self.baby_data.get('height'),
-                'weight': self.baby_data.get('weight'),
-                'head_circumference': self.baby_data.get('head_circumference'),
+                'baby_name': self.result.get('baby_name'),
+                'gender': self.result.get('gender'),
+                'birthday': self.result.get('birthday'),
+                'height': self.result.get('height'),
+                'weight': self.result.get('weight'),
+                'head_circumference': self.result.get('head_circumference'),
             }
             await self.client.api_utils.update_student_baby_profile(str(interaction.user.id), **payload)
 
-        if self.book_data:
-            photo_result = await self.client.s3_client.process_discord_attachment(self.book_data.get('image_url'))
+        if self.result and self.result.get('image'):
+            photo_result = await self.client.s3_client.process_discord_attachment(self.result.get('image'))
             if self.use_image_date_string_replace_aside_text:
-                self.book_data['aside_text'] = f"拍攝日期: {photo_result.get('capture_date_string', '未知日期')}"
+                self.result['aside_text'] = f"拍攝日期: {photo_result.get('capture_date_string', '未知日期')}"
             update_status = await self.client.api_utils.update_mission_image_content(
-                str(interaction.user.id), self.mission_id, image_url=photo_result.get('url'), aside_text=self.book_data.get('aside_text'), content=self.book_data.get('content')
+                str(interaction.user.id), self.mission_id, image_url=photo_result.get('s3_url'), aside_text=self.result.get('aside_text'), content=self.result.get('content')
             )
 
             if bool(update_status):
@@ -98,9 +97,8 @@ class TaskSelectView(discord.ui.View):
                 embed = discord.Embed(
                     title="繪本製作中，請稍等20秒"
                 )
-                file = discord.File(f"bot/resource/please_waiting.gif")
-                embed.set_image("attachment://please_waiting.gif")
-                await interaction.followup.send(embed=embed, file=file)
+                embed.set_image(url=self.get_loading_image())
+                await interaction.followup.send(embed=embed)
 
                 # Store the message
                 await self.client.api_utils.store_message(str(interaction.user.id), 'assistant', "繪本製作中，請稍等20秒")
@@ -117,3 +115,15 @@ class TaskSelectView(discord.ui.View):
                 print("❌ 訊息已刪除，無法更新")
 
         self.stop()
+
+    def get_loading_image():
+        loading_gifs = [
+            "https://infancixbaby120.com/discord_assets/loading1.gif",
+            "https://infancixbaby120.com/discord_assets/loading2.gif",
+            "https://infancixbaby120.com/discord_assets/loading3.gif",
+            "https://infancixbaby120.com/discord_assets/loading4.gif",
+            "https://infancixbaby120.com/discord_assets/loading5.gif"
+        ]
+
+        return random.choice(loading_gifs)
+

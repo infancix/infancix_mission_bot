@@ -69,44 +69,39 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             client.openai_utils.add_task_instruction(thread_id, task_request)
 
         # add user message
-        bot_response = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
-        
-    if bot_response.get('is_ready'):
-        # Handle mission status update
-        book_data = {
-            'mission_id': mission_id,
-            'image_url': bot_response.get('image'),
-            'aside_text': bot_response.get('aside_text'),
-            'content': bot_response.get('content')
-        }
+        mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
 
-        if int(mission_id) in config.baby_intro_mission:
-            baby_data = bot_response
+    # Get enough information to proceed
+    if mission_result.get('is_ready'):
+        if mission_id in config.baby_intro_mission:
+            embed = get_baby_data_confirmation_embed(mission_result)
         else:
-            baby_data = None
-
-        content = bot_response.get('aside_text') or bot_response.get('content')
-        if bot_response.get('image') and content:
-            confirmation_message = (
-                f"請確認您即將送出的內容，如果一切無誤，請點擊「送出」按鈕來提交！\n"
-                f"> {content}\n\n"
-                ""
-            )
-            view = TaskSelectView(client, "go_submit", mission_id, book_data=book_data, baby_data=baby_data)
-            view.message = await message.channel.send(confirmation_message, view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, book_data=book_data, baby_data=baby_data)
-
+            embed = get_comfirmation_embed(mission_result)
+        view = TaskSelectView(client, "go_submit", mission_id, mission_result=mission_result)
+        view.message = await message.channel.send(embed=embed, view=view)
+        save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
-        await message.channel.send(bot_response['message'])
-        if message.attachments:
-            embed = discord.Embed(
-                title="幫這張照片寫下一句回憶",
-                description="請直接於對話框輸入文字，限定30個字。\n✏️ 也可以寫下拍攝日期喔!\n💡 範例：第一次幫你按摩，你就拉了三次屎。",
-                color=discord.Color.blue()
-            )
-            view = TaskSelectView(client, 'go_skip', mission_id)
-            view.message = await message.channel.send(view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id)
+        if student_mission_info['current_step'] == 1:
+            # Send mission introduction
+            if mission_id in config.baby_intro_mission:
+                embed = get_baby_registration_embed()
+                await message.channel.send(embed=embed)
+            elif mission_id in config.photo_mission_with_title_and_content:
+                embed = get_content_embed(student_mission_info)
+                await message.channel.send(embed=embed)
+            else:
+                embed = get_aside_text_embed()
+                view = TaskSelectView(client, 'go_skip', mission_id, mission_result=mission_result)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id, result=mission_result)
+
+            # Update mission status
+            student_mission_info['current_step'] = 2
+            await client.api_utils.update_student_mission_status(**student_mission_info)
+
+        else:
+            # Continue to collect additional information
+            await message.channel.send(mission_result['message'])
 
     return
 
@@ -187,3 +182,66 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
                     files.append(file)
 
     return embed, files
+
+def get_baby_registration_embed():
+    embed = discord.Embed(
+        title="📝 寶寶資料登記",
+        description=(
+            "🎂 出生日期（例如：2025-05-01）\n"
+            "👤 性別（男/女）\n"
+            "📏 身高（cm）\n"
+            "⚖️ 體重（g）\n"
+            "🧠 頭圍（cm）\n\n"
+            "🤖 **繪本精靈AI 會協助您逐項填寫，請先輸入第一項即可！**"
+        ),
+        color=discord.Color.blue()
+    )
+    return embed
+
+def get_aside_text_embed():
+    embed = discord.Embed(
+        title="請輸入照片的旁白文字",
+        description="請直接於對話框輸入文字，限定30個字。\n✏️ 也可以寫下拍攝日期喔!\n💡 範例：第一次幫你按摩，你就拉了三次屎。",
+        color=discord.Color.blue()
+    )
+    return embed
+
+def get_content_embed(mission_info):
+    embed = discord.Embed(
+        title=mission_info['mission_introduction'] or "請輸入照片的內容",
+        description="請直接於對話框輸入文字，限定200個字。\n",
+        color=discord.Color.blue()
+    )
+    return embed
+
+def get_comfirmation_embed(mission_result):
+    content = mission_result.get('aside_text') or mission_result.get('content')
+    embed = discord.Embed(
+        title="確認您的任務內容",
+        description=f"> {content}",
+        color=discord.Color.blue()
+    )
+    embed.set_footer(text="如需修改，請直接輸入新內容")
+    return embed
+
+def get_baby_data_confirmation_embed(mission_result):
+    embed = discord.Embed(
+        title="📝 請確認寶寶資料",
+        description="請確認以下資料是否正確，確認無誤後點擊「確認送出」",
+        color=discord.Color.orange()
+    )
+
+    embed.add_field(
+        name="👶 寶寶資料",
+        value=(
+            f"🎂 出生日期：{mission_result.get('birth_date', '未設定')}\n"
+            f"👤 性別：{mission_result.get('gender', '未設定')}\n"
+            f"📏 身高：{mission_result.get('height', '未設定')} cm\n"
+            f"⚖️ 體重：{mission_result.get('weight', '未設定')} g\n"
+            f"🧠 頭圍：{mission_result.get('head_circumference', '未設定')} cm"
+        ),
+        inline=False
+    )
+
+    embed.set_footer(text="如需修改，請直接輸入新的資料")
+    return embed

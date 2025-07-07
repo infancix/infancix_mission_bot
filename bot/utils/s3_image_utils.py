@@ -397,7 +397,7 @@ class S3ImageUtils:
             self.logger.info(f"最終檔案大小: {result['file_size']} bytes")
 
             self.logger.info("開始上傳到 S3")
-            s3_result = self.s3_handler.upload_image(image_data, result.filename)
+            s3_result = self.s3_handler.upload_image(image_data, result['filename'])
             if s3_result:
                 result['s3_url'] = s3_result['url']
                 result['s3_key'] = s3_result['s3_key']

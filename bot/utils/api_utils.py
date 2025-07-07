@@ -34,8 +34,8 @@ class APIUtils:
 
         return response
 
-    async def get_mission_default_content_by_id(self, baby_id, mission_id, endpoint='photo_mission/default_mission_content'):
-        return await self._get_request(f"{endpoint}?baby_id={baby_id}&mission_id={mission_id}")
+    async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
+        return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
     async def get_student_album_purchase_status(self, user_id, endpoint='growth_album/get_browse_growth_albums'):
         return await self._get_request(f'{endpoint}?discord_id={user_id}')

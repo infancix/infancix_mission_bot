@@ -38,7 +38,7 @@ def load_task_entry_records() -> dict:
             return json.load(f)
     return {}
 
-def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, book_data=None, baby_data=None, max_records=10):
+def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, result=None, max_records=10):
     records = load_task_entry_records()
     if user_id not in records:
         records[user_id] = defaultdict(dict)
@@ -46,8 +46,7 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
         "task_type": task_type,
-        "book_data": book_data,
-        "baby_data": book_data,
+        "result": result,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
