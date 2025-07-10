@@ -4,8 +4,16 @@ import re
 
 from bot.config import config
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
-from bot.handlers.photo_mission_handler import handle_photo_mission_start, process_photo_mission_filling, process_photo_upload_and_summary
-from bot.handlers.pregnancy_mission_handler import handle_pregnancy_mission_start, process_message
+from bot.handlers.photo_mission_handler import (
+    handle_photo_mission_start,
+    process_baby_registrater_message,
+    process_photo_mission_filling,
+    process_photo_upload_and_summary
+) 
+from bot.handlers.pregnancy_mission_handler import (
+    handle_pregnancy_mission_start,
+    process_pregnancy_registrater_message
+)
 from bot.handlers.utils import handle_greeting_job, handle_notify_photo_ready_job, handle_notify_album_ready_job
 
 async def handle_background_message(client, message):
@@ -41,10 +49,10 @@ async def handle_direct_message(client, message):
     student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
 
     if not bool(student_mission_info):
-        client.api_utils.store_message(str(user_id), 'user', message.content)
+        await client.api_utils.store_message(str(user_id), 'user', message.content)
         reply_msg = "輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！"
         await message.channel.send(reply_msg)
-        client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
+        await client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return
 
     if message.stickers:
@@ -86,21 +94,30 @@ async def handle_direct_message(client, message):
     mission_id = int(student_mission_info['mission_id'])
     student_mission_info['user_id'] = user_id
     # dispatch question
-    if mission_id in config.quiz_mission_with_photo_tasks:
+    if mission_id == config.baby_register_mission:
+        await process_baby_registrater_message(client, message, student_mission_info)
+    elif mission_id == config.pregnancy_register_mission:
+        await process_pregnancy_registrater_message(client, message, student_mission_info)
+    elif mission_id in config.quiz_mission_with_photo_tasks:
         await process_photo_upload_and_summary(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
-    elif mission_id == 101:
-        await handle_pregnancy_mission_start(client, user_id, mission_id)
     elif mission_id < 65:
          await handle_class_question(client, message, student_mission_info)
+    elif mission_id >= 102 and mission_id <= 135:
+        msg = (
+            "孕期如果有任何問題，可以找24小時AI育兒助手「喵喵」\n"
+            "或是聯絡社群客服「阿福」。"
+        )
+        await message.channel.send(msg)
     else:
         msg = (
             "無法處理您的訊息，請確認任務是否正確\n"
             "若有育兒問題，請找24小時AI育兒助手「喵喵」\n"
-            "或是聯絡客服。"
+            "或是聯絡社群客服「阿福」。"
         )
         await message.channel.send(msg)
+    return
 
 async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
