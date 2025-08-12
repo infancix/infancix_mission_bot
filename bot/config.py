@@ -18,12 +18,13 @@ class Config:
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
         self.BABY_API_PORT = os.getenv('BABY_API_PORT')
         self.MISSION_BOT_ASSISTANT = 'asst_DlqSJaUKd9K118tbYvB4EbfD'
-        self.PHOTO_TASK_ASSISTANT = 'asst_NKABptwzFlKB9kZnm2f8QbAa'
+        #self.PHOTO_TASK_ASSISTANT = 'asst_NKABptwzFlKB9kZnm2f8QbAa'
         self.ASIDE_TEXT_ASSISTANT = 'asst_kWEM7k1s3S6670Vk7qVPKd9h'
         self.CONTENT_ASSISTANT = 'asst_ytMVwKFd6ik2rKpHOqepqohe'
         self.BABY_INTRO_ASSISTANT = 'asst_Cgeuvc8kSBtgqSlFY51QKTPZ'
         self.FAMILY_INTRO_ASSISTANT = 'asst_50zwOomgzQuwQvqPkKzeNfIj'
         self.PRENGNANCY_TASK_ASSISTANT = 'asst_hP8Ist5VpL0XxxLfE8kvEHEo'
+        self.ADD_ON_TASK_ASSISTANT = 'asst_YYN8nKyCQTdXOggwdh9TyKNx'
 
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
@@ -59,32 +60,34 @@ class Config:
 
         self.pregnancy_register_mission = 101
         self.baby_register_mission = 1001
-        self.quiz_mission_with_photo_tasks = [2, 6, 16, 20, 30, 38, 44, 50, 58, 65]
         self.photo_mission_with_aside_text = [3, 4, 5, 15, 1004, 1005, 1006, 1007]
         self.family_intro_mission = [1002, 1003]
         self.photo_mission_with_title_and_content = [1008]
+        self.add_on_photo_mission = [1009]
         self.photo_mission_list = set(
             [self.baby_register_mission] +
-            self.quiz_mission_with_photo_tasks +
             self.photo_mission_with_aside_text +
             self.family_intro_mission +
-            self.photo_mission_with_title_and_content
+            self.photo_mission_with_title_and_content +
+            self.add_on_photo_mission
         )
         self.first_mission_per_book = [1001]
     
-    def get_assistant_id(self, mission_id):
+    def get_assistant_id(self, mission_id, current_step=1):
+        #if current_step > 1:
+        #    return self.PHOTO_TASK_ASSISTANT
         if mission_id == self.baby_register_mission:
             return self.BABY_INTRO_ASSISTANT
         elif mission_id == self.pregnancy_register_mission:
             return self.PRENGNANCY_TASK_ASSISTANT
-        elif mission_id in self.quiz_mission_with_photo_tasks:
-            return self.PHOTO_TASK_ASSISTANT
         elif mission_id in self.photo_mission_with_aside_text:
             return self.ASIDE_TEXT_ASSISTANT
         elif mission_id in self.family_intro_mission:
             return self.FAMILY_INTRO_ASSISTANT
         elif mission_id in self.photo_mission_with_title_and_content:
             return self.CONTENT_ASSISTANT
+        elif mission_id in self.add_on_photo_mission:
+            return self.ADD_ON_TASK_ASSISTANT
         elif mission_id < 100:
             return self.MISSION_BOT_ASSISTANT
         else:

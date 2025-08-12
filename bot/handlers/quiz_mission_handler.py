@@ -51,7 +51,7 @@ async def handle_quiz_round(client, message, student_mission_info, current_round
     embed = discord.Embed(
         title=f"🏆 挑戰任務 - 第 {current_round+1} 題",
         description=task_request,
-        color=discord.Color.purple()
+        color=0xeeb2da
     )
 
     view = QuizView(client, mission_id, current_round, correct, student_mission_info)
@@ -67,32 +67,27 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
     total = 3
     reward = 20
 
-    quiz_summary = f"挑戰結束！🎉 答對 {correct}/{total} 題\n"
-    if correct >= 2:
-        quiz_summary += "恭喜掌握了這堂課的知識！🎓"
-    else:
-        quiz_summary += "加油！還有一些地方需要加強，別氣餒！"
-    quiz_summary += (
-        f"_\n"
-        f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n"
+    quiz_summary = (
+        f"🎉 答對 {correct}/{total} 題\n\n"
+        f"你獲得獎勵：🪙 金幣 Coin：+{reward}\n"
     )
 
     embed = discord.Embed(
-        title="🎉 知識挑戰結束！",
+        title="💫 挑戰結束",
         description=quiz_summary,
-        color=discord.Color.purple()
+        color=0xeeb2da
     )
 
-    await interaction.channel.send(quiz_summary)
+    await interaction.channel.send(embed=embed)
     await interaction.client.api_utils.store_message(user_id, 'assistant', quiz_summary)
-    await client.api_utils.add_gold(user_id, gold=int(reward))
+    await interaction.client.api_utils.add_gold(user_id, gold=int(reward))
 
     student_mission_info['current_step'] = 4
     student_mission_info['score'] = float(correct) / total
     await interaction.client.api_utils.update_student_mission_status(**student_mission_info)
 
     # Send log to Background channel
-    channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+    channel = interaction.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
     if channel is None or not isinstance(channel, discord.TextChannel):
         raise Exception('Invalid channel')
 
@@ -133,34 +128,39 @@ async def handle_class_question(client, message, student_mission_info):
 def build_quiz_mission_embed(mission_info=None, baby_info=None):
     # Prepare description based on style
     birthday = datetime.strptime(baby_info['birthdate'], '%Y-%m-%d').date()
-    age = (date.today() - birthday).days
-    author = f"🧸今天是 {baby_info['baby_name']} 出生滿 {age} 天"
-    title = "今日挑戰：答對 3 題送 20 金幣！"
+    diff = relativedelta(date.today(), birthday)
+    year = diff.years
+    months = diff.months
+    days = diff.days
+    if year > 0:
+        author = f"🧸今天{baby_info['baby_name']} 出生滿 {year} 年 {months} 個月 {days} 天"
+    elif months > 0:
+        author = f"🧸今天{baby_info['baby_name']} 出生滿 {months} 個月 {days} 天"
+    else:
+        author = f"🧸今天{baby_info['baby_name']} 出生滿 {days} 天"
+
+    video_url = mission_info.get('mission_video_contents', '').strip()
+    image_url = mission_info.get('mission_image_contents', '').strip()
+    instruction = ""
+    if video_url and image_url:
+        instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
+    elif video_url:
+        instruction = f"▶️ [教學影片]({video_url})\n"
+
     desc = (
-        "*📌 題目來自今日知識，點下方按鈕開始*\n"
-        "_\n"
-        f"🧠 科學育兒知識： {mission_info['mission_title']}\n"
+        f"{mission_info['mission_instruction']}\n\n"
+        f"{instruction}\n"
     )
-    
-    if int(mission_info['mission_id']) < 100:
-        video_url = mission_info.get('mission_video_contents', '').strip()
-        image_url = mission_info.get('mission_image_contents', '').strip()
-        if video_url and image_url:
-            desc += f"▶️[教學影片]({video_url})\u2003\u2003📂[圖文懶人包]({image_url})\n"
-        elif video_url:
-            desc += f"▶️[教學影片]({video_url})\n"
-
-    desc += "_\n❔輸入「 / 」 __補上傳照片__、__查看育兒里程碑__、__瀏覽繪本進度__"
-
     embed = discord.Embed(
-        title=title,
+        title=mission_info['mission_title'],
         description=desc,
-        color=discord.Color.blue(),
-        timestamp=datetime.now()
+        color=0xeeb2da
     )
     embed.set_author(name=author)
-    embed.set_footer(text=mission_info['mission_type'])
-
+    embed.set_footer(
+        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        text="點選下方 `指令` 可查看更多功能"
+    )
     return embed
 
 def add_task_instructions(client, mission, thread_id):
