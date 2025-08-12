@@ -4,6 +4,8 @@ import io
 import os
 import boto3
 import pyheif
+import piexif
+import io
 from PIL import Image, ExifTags
 from datetime import datetime, timedelta
 from typing import Optional, Union
@@ -227,6 +229,26 @@ class ImageProcessor:
             self.logger.error(f"獲取拍攝日期時出錯: {str(e)}")
             return None
 
+    def extract_heic_exif_capture_date(self, image_data: Union[bytes, io.BytesIO]) -> Optional[datetime]:
+        if isinstance(image_data, io.BytesIO):
+            image_bytes = image_data.getvalue()
+        else:
+            image_bytes = image_data
+
+        try:
+            heif_file = pyheif.read(image_bytes)
+            for meta in heif_file.metadata or []:
+                if meta['type'] == 'Exif':
+                    exif_dict = piexif.load(meta['data'])
+                    date_bytes = exif_dict['Exif'].get(36867) or exif_dict['0th'].get(306)
+                    if date_bytes:
+                        date_str = date_bytes.decode('utf-8')
+                        return datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
+            return None
+        except Exception as e:
+            self.logger.error(f"HEIC EXIF 解析日期失敗: {str(e)}")
+            return None
+
     def get_capture_date_string(self, image_data: Union[bytes, io.BytesIO, Image.Image], 
                                format_string: str = "%Y-%m-%d") -> Optional[str]:
         """
@@ -375,14 +397,6 @@ class S3ImageUtils:
             image_data = rotated_data
             self.logger.info("圖片旋轉處理完成")
 
-            self.logger.info("獲取圖片拍攝日期")
-            capture_date_string = self.image_processor.get_capture_date_string(image_data, "%Y-%m-%d %H:%M:%S")
-            if capture_date_string:
-                result['capture_date_string'] = capture_date_string
-                self.logger.info(f"拍攝日期: {capture_date_string}")
-            else:
-                self.logger.info("無法獲取圖片拍攝日期")
-
             self.logger.info("開始壓縮圖片")
             compressed_data = self.image_processor.compress_image(image_data)
             if not compressed_data:
@@ -407,8 +421,6 @@ class S3ImageUtils:
                 self.logger.info(f"S3 URL: {result['s3_url']}")
                 self.logger.info(f"S3 Key: {result['s3_key']}")
                 self.logger.info(f"檔案大小: {result['file_size']} bytes")
-                if result.get('capture_date_string'):
-                    self.logger.info(f"拍攝日期: {result['capture_date_string']}")
             else:
                 result['error_message'] = "S3 上傳失敗"
                 self.logger.error(result['error_message'])
