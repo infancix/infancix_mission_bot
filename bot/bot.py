@@ -8,7 +8,7 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_photo_view_messages
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -71,7 +71,7 @@ class MissionBot(discord.Client):
                 )
             else:
                 message = await interaction.followup.send(
-                    "恭喜你完成所有任務囉～\n",
+                    "您目前沒有未完成的任務喔\n",
                     ephemeral=True
                 )
         except Exception as e:
@@ -99,9 +99,6 @@ class MissionBot(discord.Client):
 
         await load_quiz_message(self)
         self.logger.info("Finished loading quiz messages")
-
-        await load_photo_view_messages(self)
-        self.logger.info("Finished loading photo view messages")
 
         self.tree.add_command(
             app_commands.Command(

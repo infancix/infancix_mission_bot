@@ -11,7 +11,6 @@ if config.ENV:
 
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
-PHOTO_VIEW_LOG_PATH = DATA_DIR / "photo_view_records.json"
 
 def load_quiz_message_records() -> dict:
     if QUIZ_MESSAGE_LOG_PATH.exists():
@@ -56,21 +55,11 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
     with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
 
-def load_photo_view_records() -> dict:
-    if PHOTO_VIEW_LOG_PATH.exists():
-        with open(PHOTO_VIEW_LOG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_photo_view_record(user_id: str, message_id: str, mission_id: str):
-    records = load_photo_view_records()
-    records[user_id] = (message_id, mission_id)
-    with open(PHOTO_VIEW_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=4, ensure_ascii=False)
-
-def delete_photo_view_record(user_id: str):
-    records = load_photo_view_records()
-    if user_id in records:
-        del records[user_id]
-        with open(PHOTO_VIEW_LOG_PATH, "w", encoding="utf-8") as f:
+def delete_task_entry_record(user_id: str, mission_id: str):
+    records = load_task_entry_records()
+    if user_id in records and mission_id in records[user_id]:
+        del records[user_id][mission_id]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
+        with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
