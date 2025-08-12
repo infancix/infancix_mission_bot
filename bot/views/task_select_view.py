@@ -1,7 +1,11 @@
 import discord
 import random
+import time
+from datetime import datetime
 from types import SimpleNamespace
+
 from bot.config import config
+from bot.utils.message_tracker import delete_task_entry_record
 
 class TaskSelectView(discord.ui.View):
     def __init__(self, client, task_type, mission_id, mission_result=None, timeout=None):
@@ -41,6 +45,45 @@ class TaskSelectView(discord.ui.View):
             )
             self.go_submit_button.callback = self.go_submit_button_callback
             self.add_item(self.go_submit_button)
+        
+        if task_type == "baby_born":
+            label = "寶寶還在肚子裡，不想退房"
+            self.baby_not_born_button = discord.ui.Button(
+                custom_id="baby_not_born_button",
+                label=label,
+                style=discord.ButtonStyle.danger
+            )
+            self.baby_not_born_button.callback = self.baby_not_born_button_callback
+            self.add_item(self.baby_not_born_button)
+
+            label = "我家寶寶出生了"
+            self.baby_born_button = discord.ui.Button(
+                custom_id="baby_born_button",
+                label=label,
+                style=discord.ButtonStyle.success
+            )
+            self.baby_born_button.callback = self.baby_born_button_callback
+            self.add_item(self.baby_born_button)
+        
+        if task_type == "baby_optin":
+            label = "送出"
+            self.baby_optin_button = discord.ui.Button(
+                custom_id="baby_optin_button",
+                label=label,
+                style=discord.ButtonStyle.success
+            )
+            self.baby_optin_button.callback = self.baby_optin_button_callback
+            self.add_item(self.baby_optin_button)
+
+        if task_type == "check_add_on":
+            label = "我要加購"
+            self.check_add_on_button = discord.ui.Button(
+                custom_id="check_add_on_button",
+                label=label,
+                style=discord.ButtonStyle.primary
+            )
+            self.check_add_on_button.callback = self.check_add_on_button_callback
+            self.add_item(self.check_add_on_button)
 
     async def go_quiz_button_callback(self, interaction):
         for item in self.children:
@@ -61,7 +104,11 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        self.use_image_date_string_replace_aside_text = True
+        if self.mission_id in config.photo_mission_with_aside_text:
+            self.use_image_date_string_replace_aside_text = True
+        else:
+            self.mission_result['content'] = "..."
+
         await self.submit_image_data(interaction)
 
     async def go_submit_button_callback(self, interaction):
@@ -72,36 +119,126 @@ class TaskSelectView(discord.ui.View):
 
         await self.submit_image_data(interaction)
 
-    async def submit_image_data(self, interaction):
-        if self.result and self.mission_id in config.baby_intro_mission:
-            payload = {
-                'baby_name': self.result.get('baby_name'),
-                'gender': self.result.get('gender'),
-                'birthday': self.result.get('birthday'),
-                'height': self.result.get('height'),
-                'weight': self.result.get('weight'),
-                'head_circumference': self.result.get('head_circumference'),
-            }
-            await self.client.api_utils.update_student_baby_profile(str(interaction.user.id), **payload)
+    async def baby_optin_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
 
+        await self.client.api_utils.update_student_profile(
+            str(interaction.user.id),
+            str(interaction.user.name),
+            '寶寶已出生'
+        )
+        await self.client.api_utils.update_student_registration_done(str(interaction.user.id))
+
+        # update baby profile
+        payload = {
+            'baby_name': self.result.get('baby_name'),
+            'gender': self.result.get('gender'),
+            'birthday': self.result.get('birthday'),
+            'height': self.result.get('height'),
+            'weight': self.result.get('weight'),
+            'head_circumference': self.result.get('head_circumference'),
+        }
+        response = await self.client.api_utils.update_student_baby_profile(str(interaction.user.id), **payload)
+        if not response:
+            await interaction.followup.send("更新寶寶資料失敗，請稍後再試。")
+            return
+        else:
+            from bot.handlers.photo_mission_handler import handle_photo_upload_instruction
+            await handle_photo_upload_instruction(self.client, self.user_id, self.mission_id)
+
+    async def baby_not_born_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+        await interaction.channel.send(f"等寶寶出生後再來製作繪本吧！")
+
+    async def submit_image_data(self, interaction):
         if self.result and self.result.get('image'):
             photo_result = await self.client.s3_client.process_discord_attachment(self.result.get('image'))
             if self.use_image_date_string_replace_aside_text:
-                self.result['aside_text'] = f"拍攝日期: {photo_result.get('capture_date_string', '未知日期')}"
+                today_str = datetime.today().strftime("%Y-%m-%d")
+                self.result['aside_text'] = f"製作日期: {today_str}"
             update_status = await self.client.api_utils.update_mission_image_content(
                 str(interaction.user.id), self.mission_id, image_url=photo_result.get('s3_url'), aside_text=self.result.get('aside_text'), content=self.result.get('content')
             )
 
             if bool(update_status):
                 await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
-                embed = discord.Embed(
-                    title="繪本製作中，請稍等20秒"
-                )
+                self.client.logger.info(f"送出繪本任務 {self.mission_id}")
+                embed = discord.Embed(title="繪本製作中，請稍等30秒")
                 embed.set_image(url=self.get_loading_image())
                 await interaction.followup.send(embed=embed)
 
-                # Store the message
-                await self.client.api_utils.store_message(str(interaction.user.id), 'assistant', "繪本製作中，請稍等20秒")
+    async def baby_born_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        await interaction.channel.send(f"🎉 恭喜你！寶寶已經出生了！可以製作您和寶寶的專屬繪本囉!")
+        await self.client.api_utils.update_student_profile(
+            str(interaction.user.id),
+            str(interaction.user.name),
+            '寶寶已出生'
+        )
+
+        # Call next mission
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+
+        msg_task = f"START_DEV_MISSION_1001 <@{str(interaction.user.id)}>"
+        await channel.send(msg_task)
+
+        # Delete task entry record
+        delete_task_entry_record(str(interaction.user.id), str(self.mission_id))
+
+    async def check_add_on_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        # Handle the add-on purchase logic here
+        student_profile = await self.client.api_utils.get_student_profile(str(interaction.user.id))
+        if not student_profile or student_profile.get('gold', 0) < 200:
+            embed = self.get_insufficient_coin_embed()
+            await interaction.followup.send(embed=embed)
+            return
+        else:
+            embed = self.get_add_on_photo_embed()
+            await interaction.followup.send(embed=embed)
+
+    def get_loading_image(self):
+        loading_gifs = [
+            f"https://infancixbaby120.com/discord_assets/loading1.gif",
+            f"https://infancixbaby120.com/discord_assets/loading2.gif"
+        ]
+        return random.choice(loading_gifs)
+    
+    def get_insufficient_coin_embed(self):
+        embed = discord.Embed(
+            title="👛 餘額不足",
+            color=0xeeb2da,
+        )
+        embed.add_field(name="🫰 如何獲得金幣", value="解任務、參與活動", inline=False)
+        embed.add_field(name="🔍︎ 查看金幣餘額", value="請至 <@1272828469469904937> 點選指令", inline=False)
+        embed.add_field(name="🥺 如何回來賺買", value="點選 `指令` > `補上傳照片` > `加購繪本單頁`", inline=False)
+        return embed
+
+    def get_add_on_photo_embed(self):
+        embed = discord.Embed(
+            title="💸 加購成功",
+            description="**製作加購頁**\n請上傳四張照片",
+            color=0xeeb2da,
+        )
+        embed.set_footer(text="可以一次上傳多張喔!")
+        embed.set_image(url=self.mission_result.get('mission_image_contents', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png'))
+        return embed
 
     async def on_timeout(self):
         for item in self.children:
@@ -115,15 +252,3 @@ class TaskSelectView(discord.ui.View):
                 print("❌ 訊息已刪除，無法更新")
 
         self.stop()
-
-    def get_loading_image():
-        loading_gifs = [
-            "https://infancixbaby120.com/discord_assets/loading1.gif",
-            "https://infancixbaby120.com/discord_assets/loading2.gif",
-            "https://infancixbaby120.com/discord_assets/loading3.gif",
-            "https://infancixbaby120.com/discord_assets/loading4.gif",
-            "https://infancixbaby120.com/discord_assets/loading5.gif"
-        ]
-
-        return random.choice(loading_gifs)
-

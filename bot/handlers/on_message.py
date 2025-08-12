@@ -6,13 +6,12 @@ from bot.config import config
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
-    process_baby_registrater_message,
-    process_photo_mission_filling,
-    process_photo_upload_and_summary
+    process_baby_registration_message,
+    process_photo_mission_filling
 ) 
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
-    process_pregnancy_registrater_message
+    process_pregnancy_registration_message
 )
 from bot.handlers.utils import handle_greeting_job, handle_notify_photo_ready_job, handle_notify_album_ready_job
 
@@ -26,7 +25,7 @@ async def handle_background_message(client, message):
         await handle_greeting_job(client, message.mentions[1].id)
     elif len(message.mentions) == 1:
         user_id = message.mentions[0].id
-        mission_match = re.search(rf'START_DEV_MISSION_(\d+)', message.content)
+        mission_match = re.search(rf'START_MISSION_(\d+)', message.content)
         photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
         album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
         if mission_match:
@@ -40,7 +39,6 @@ async def handle_background_message(client, message):
             baby_id = int(album_match.group(1))
             book_id = int(album_match.group(2))
             await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
-    
     return
 
 async def handle_direct_message(client, message):
@@ -50,7 +48,7 @@ async def handle_direct_message(client, message):
 
     if not bool(student_mission_info):
         await client.api_utils.store_message(str(user_id), 'user', message.content)
-        reply_msg = "輸入\"/任務佈告欄\" 即可透過儀表板重新解任務喔！"
+        reply_msg = "點選 `指令` > `補上傳照片` 重新解任務喔！"
         await message.channel.send(reply_msg)
         await client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return
@@ -95,11 +93,13 @@ async def handle_direct_message(client, message):
     student_mission_info['user_id'] = user_id
     # dispatch question
     if mission_id == config.baby_register_mission:
-        await process_baby_registrater_message(client, message, student_mission_info)
+        await process_baby_registration_message(client, message, student_mission_info)
     elif mission_id == config.pregnancy_register_mission:
-        await process_pregnancy_registrater_message(client, message, student_mission_info)
-    elif mission_id in config.quiz_mission_with_photo_tasks:
-        await process_photo_upload_and_summary(client, message, student_mission_info)
+        await process_pregnancy_registration_message(client, message, student_mission_info)
+    elif mission_id in config.family_intro_mission:
+        await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.add_on_photo_mission:
+        await process_add_on_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id < 65:

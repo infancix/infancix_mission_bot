@@ -31,14 +31,16 @@ class APIUtils:
         response = await self._post_request(endpoint, {'discord_id': str(user_id)})
         if bool(response) == False:
             return {}
-
         return response
 
     async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
-    async def get_student_album_purchase_status(self, user_id, endpoint='growth_album/get_browse_growth_albums'):
-        return await self._get_request(f'{endpoint}?discord_id={user_id}')
+    async def get_student_album_purchase_status(self, user_id, book_id=None, endpoint='growth_album/get_browse_growth_albums'):
+        response = await self._get_request(f'{endpoint}?discord_id={user_id}'+ (f'&book_id={book_id}' if book_id else ''))
+        if bool(response) == False:
+            return None
+        return response
 
     async def get_student_mission_status(self, user_id, mission_id, endpoint='get_student_mission_status'):
         response = await self._get_request(f'{endpoint}?discord_id={user_id}&mission_id={mission_id}')
@@ -63,7 +65,7 @@ class APIUtils:
     async def get_student_incomplete_photo_mission(self, user_id, book_id=None):
         response = await self._get_request(f'photo_mission/incompleted_mission_list?discord_id={user_id}' + (f'&book_id={book_id}' if book_id else ''))
         if bool(response) == False:
-            return None
+            return []
         return response
 
     async def get_student_profile(self, user_id):
@@ -159,17 +161,6 @@ class APIUtils:
         response = await self._post_request('update_student_current_class', data)
         return bool(response)
 
-    async def upload_baby_image(self, user_id, mission_id, milestone, image_url):
-        data = {
-            'discord_id': str(user_id),
-            'mission_id': mission_id,
-            'milestone': milestone,
-            'image_url': image_url,
-            'image_date': str(datetime.now().date())
-        }
-        response = await self._post_request('upload_baby_image', data)
-        return bool(response)
-
     async def update_mission_image_content(self, user_id, mission_id, image_url=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
         payload = {
             'discord_id': str(user_id),
@@ -182,30 +173,37 @@ class APIUtils:
         if content:
             payload['content'] = content
 
+        self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
         return await self._post_request(endpoint, payload)
 
-    async def update_student_profile(self, user_id, student_name, gender, pregnancy_status, due_date, endpoint='student_optin'):
+    async def update_student_profile(self, user_id, student_name, pregnancy_status, due_date=None, endpoint='student_optin'):
         payload = {
             'discord_id': str(user_id),
             'student_name': student_name,
             'pregnancy_status': pregnancy_status,
-            'due_date': due_date,
         }
-        
-        if gender and gender in ['f', 'm']:
-            payload['gender'] = gender
+        if due_date:
+            payload['due_date'] = due_date
 
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
 
+    async def update_student_registration_done(self, user_id, endpoint='update_student_data'):
+        payload = {
+            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
+            "discord_id": str(user_id),
+            "action": {
+                "type": "profile_update_status",
+                "status": status
+            }
+        }
+        return await self._post_request(endpoint, payload)
+
     async def update_student_baby_profile(self, user_id, baby_name, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
-        if gender:
-            if gender == '女孩':
-                gender = 'f'
-            elif gender == '男孩':
-                gender = 'm'
-            else:
-                gender = None
+        if gender in ['男孩', '女孩']:
+            gender = 'f' if gender == '女孩' else 'm'
+        else:
+            gender = None
 
         payload = {
             'discord_id': str(user_id),

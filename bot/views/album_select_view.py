@@ -1,4 +1,6 @@
 import discord
+import time
+
 from bot.config import config
 from bot.utils.id_utils import encode_ids
 
@@ -16,36 +18,36 @@ class AlbumView(discord.ui.View):
             self.update_album()
 
     def update_album(self):
-        self.clear_items()
+        for item in self.children[:]:
+            if isinstance(item, (PreviousButton, NextButton)):
+                self.remove_item(item)
 
         self.add_item(PreviousButton(self.current_page > 0))
         self.add_item(NextButton(self.current_page < self.total_pages - 1))
-        if self.current_page == self.total_pages - 1:
-            self.add_item(discord.ui.Button(label="查看更多繪本", url=f"https://www.canva.com/design/DAGmqP-18Qc/KLdARiNs6hcxrQyVy1qWNg/view?utm_content=DAGmqP-18Qc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h772b8e1103", row=2))
 
     def get_current_embed(self):
         album_info = self.album_info[self.current_page]
-        thumbnail = None
+        image = None
         if album_info.get('purchase_status', '未購買') == '未購買':
-            link_target = album_info['purchase_url']
-            desc = f"[點擊官網連結，購買繪本]({link_target})"
-            thumbnail = album_info['book_cover_url']
+            desc = f"👉 找社群客服「<@1272828469469904937>」購買繪本 "
+            image = album_info['book_cover_url']
         elif album_info.get('design_id'):
             code = encode_ids(album_info['baby_id'], album_info['book_id'])
             link_target = f"https://infancixbaby120.com/babiary/{code}"
-            desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})"
-            thumbnail = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png"
+            desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
+            image = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png?t={int(time.time())}"
         else:
-            desc = "繪本尚未生成，請透過「_/補上傳照片_」指令製作專屬繪本喔"
+            desc = "👉 點選 `指令` > `補上傳照片` 重新解任務喔！"
 
         embed = discord.Embed(
             title=album_info['book_title'],
             description=desc,
             color=discord.Color.blue()
         )
-        if thumbnail:
-            embed.set_thumbnail(url=thumbnail)
-            embed.set_footer(text=album_info['page_progress'])
+        if album_info.get('book_author'):
+            embed.set_author(name=album_info['book_author'])
+        if image:
+            embed.set_image(url=image)
 
         return embed
 
