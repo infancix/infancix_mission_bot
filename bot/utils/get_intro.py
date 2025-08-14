@@ -31,8 +31,9 @@ def get_western_zodiac(birthday, lang_version='zh') -> str:
 def get_baby_intro(baby_name, gender, birthday, lang_version='zh'):
     with open(os.path.join('bot', 'resource', f'baby_intro_{lang_version}.json'), 'r', encoding='utf-8') as file:
         baby_intro = json.load(file)
-    
-    gender = 'Girl' if gender == '女孩' else 'Boy'
+
+    if lang_version == 'en':
+        gender = 'Girl' if gender == '女孩' else 'Boy'
     zodiac_sign = get_western_zodiac(birthday, lang_version)
     if zodiac_sign in baby_intro.get(gender, {}):
         intro = baby_intro[gender][zodiac_sign]
@@ -46,11 +47,13 @@ def get_baby_intro(baby_name, gender, birthday, lang_version='zh'):
         formatted_birthday = birthday.strftime("%B %d, %Y")
         formatted_birthday = formatted_birthday.replace(birthday.strftime("%d"), str(int(birthday.strftime("%d"))))
 
-    return intro.format(name=baby_name, birthday=formatted_birthday)
+    return intro.format(baby_name=baby_name, birthday=formatted_birthday)
 
 def get_family_intro(mission_id, relation, lang_version='zh'):
     with open(os.path.join('bot', 'resource', f'family_intro_{lang_version}.json'), 'r', encoding='utf-8') as file:
         family_intro = json.load(file)
+
+    mission_id = str(mission_id)
     if relation in family_intro.get(mission_id, {}):
         return family_intro[mission_id][relation]
     else:
