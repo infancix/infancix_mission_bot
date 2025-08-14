@@ -69,7 +69,7 @@ async def process_pregnancy_registration_message(client, message, student_missio
             '懷孕中',
             mission_result['due_date']
         )
-        await client.api_utils.update_student_registration_done(str(interaction.user.id))
+        await client.api_utils.update_student_registration_done(user_id)
 
         # Mission end
         student_mission_info['current_step'] = 4

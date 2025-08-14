@@ -37,12 +37,17 @@ class AlbumView(discord.ui.View):
             desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
             image = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png?t={int(time.time())}"
         else:
-            desc = "👉 點選 `指令` > `補上傳照片` 重新解任務喔！"
+            image = album_info['book_cover_url']
+            desc = (
+                "目前任務尚未開放～\n"
+                "等時間到，系統會自動推播任務\n"
+                "也可以 👉 點選 `指令` > `補上傳照片` 查看"
+            )
 
         embed = discord.Embed(
             title=album_info['book_title'],
             description=desc,
-            color=discord.Color.blue()
+            ccolor=0xeeb2da,
         )
         if album_info.get('book_author'):
             embed.set_author(name=album_info['book_author'])

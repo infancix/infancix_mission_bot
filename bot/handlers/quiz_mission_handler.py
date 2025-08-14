@@ -1,5 +1,6 @@
 import discord
 from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 
 from bot.views.quiz import QuizView
 from bot.views.task_select_view import TaskSelectView
@@ -158,7 +159,7 @@ def build_quiz_mission_embed(mission_info=None, baby_info=None):
     )
     embed.set_author(name=author)
     embed.set_footer(
-        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
     return embed

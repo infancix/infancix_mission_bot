@@ -7,7 +7,8 @@ from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
     process_baby_registration_message,
-    process_photo_mission_filling
+    process_photo_mission_filling,
+    process_add_on_photo_mission_filling
 ) 
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
@@ -106,15 +107,15 @@ async def handle_direct_message(client, message):
          await handle_class_question(client, message, student_mission_info)
     elif mission_id >= 102 and mission_id <= 135:
         msg = (
-            "孕期如果有任何問題，可以找24小時AI育兒助手「喵喵」\n"
-            "或是聯絡社群客服「阿福」。"
+            "孕期如果有任何問題，可以找24小時AI育兒助手「喵喵 <@1287675308388126762>」\n"
+            "或是聯絡社群客服「阿福 <@1272828469469904937>」。"
         )
         await message.channel.send(msg)
     else:
         msg = (
             "無法處理您的訊息，請確認任務是否正確\n"
-            "若有育兒問題，請找24小時AI育兒助手「喵喵」\n"
-            "或是聯絡社群客服「阿福」。"
+            "若有育兒問題，請找24小時AI育兒助手「喵喵 <@1287675308388126762>」\n"
+            "或是聯絡社群客服「阿福 <@1272828469469904937>」。"
         )
         await message.channel.send(msg)
     return
