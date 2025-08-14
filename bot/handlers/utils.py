@@ -40,7 +40,7 @@ async def daily_job(client):
         try:
             user_id = mission['discord_id']
             mission_id = mission['mission_id']
-            await target_channel.send(f"START_DEV_MISSION_{mission_id} <@{user_id}>")
+            await target_channel.send(f"START_MISSION_{mission_id} <@{user_id}>")
             await asyncio.sleep(2)
         except Exception as e:
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
@@ -52,7 +52,7 @@ async def handle_greeting_job(client, user_id = None):
     )
 
     embed.set_footer(
-        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
 
@@ -102,7 +102,8 @@ async def load_quiz_message(client):
 
 async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
     try:
-        # Send the photo message to the user    
+        # Send the photo message to the user
+        client.logger.info(f"Send photo message to user {user_id}, baby_id: {baby_id}, mission {mission_id}")
         user = await client.fetch_user(user_id)
         view = GrowthPhotoView(client, user_id, mission_id)
         embed = view.generate_embed(baby_id, mission_id)

@@ -154,7 +154,7 @@ class MilestoneSelect(discord.ui.Select):
         if channel is None or not isinstance(channel, discord.TextChannel):
             raise Exception('Invalid channel')
 
-        start_task_msg = f"START_DEV_MISSION_{selected_mission_id} <@{interaction.user.id}>"
+        start_task_msg = f"START_MISSION_{selected_mission_id} <@{interaction.user.id}>"
         await channel.send(start_task_msg)
 
         if not isinstance(interaction.channel, discord.DMChannel):
