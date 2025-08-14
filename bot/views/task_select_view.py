@@ -119,6 +119,23 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
+        success = await self.submit_baby_data(interaction)
+        if success:
+            student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
+            student_mission_info['user_id'] = str(interaction.user.id)
+            message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+        
+            from bot.handlers.photo_mission_handler import handle_photo_upload_instruction
+            await handle_photo_upload_instruction(self.client, message, student_mission_info)
+
+    async def baby_not_born_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+        await interaction.channel.send(f"等寶寶出生後再來製作繪本吧！")
+
+    async def submit_baby_data(self, interaction):
         await self.client.api_utils.update_student_profile(
             str(interaction.user.id),
             str(interaction.user.name),
@@ -140,19 +157,7 @@ class TaskSelectView(discord.ui.View):
         if not response:
             await interaction.followup.send("更新寶寶資料失敗，請稍後再試。")
             return
-        
-        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
-        student_mission_info['user_id'] = str(interaction.user.id)
-        message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-        from bot.handlers.photo_mission_handler import handle_photo_upload_instruction
-        await handle_photo_upload_instruction(self.client, message, student_mission_info)
-
-    async def baby_not_born_button_callback(self, interaction):
-        await interaction.response.defer()
-        for item in self.children:
-            item.disabled = True
-        await interaction.edit_original_response(view=self)
-        await interaction.channel.send(f"等寶寶出生後再來製作繪本吧！")
+        return True
 
     async def submit_image_data(self, interaction):
         if self.result and self.result.get('image'):

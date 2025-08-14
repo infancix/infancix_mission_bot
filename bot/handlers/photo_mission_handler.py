@@ -41,7 +41,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         embed = get_add_on_photo_embed(mission)
         view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
         view.message = await user.send(embed=embed, view=view)
-        save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission_result)
+        save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
     else:
         embed, files = await build_photo_mission_embed(mission, baby)
         if send_weekly_report and files:
@@ -92,6 +92,8 @@ async def process_baby_registration_message(client, message, student_mission_inf
         client.logger.info(f"Assistant response: {mission_result}")
 
     if mission_result.get('step_1') and mission_result.get('step_2'):
+        if mission_result.get('baby_name'):
+            await submit_baby_data(client, message, student_mission_info, mission_result)
         mission_result['content'] = get_baby_intro(
             mission_result.get('baby_name', '小寶貝'),
             mission_result.get('gender', '女孩'),
@@ -150,7 +152,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
         if student_mission_info['current_step'] == 1:
-            if mission_id in get_relationship_embed():
+            if mission_id in config.family_intro_mission:
                 embed = get_relationship_embed()
                 await message.channel.send(embed=embed)
             else:
@@ -219,6 +221,7 @@ async def submit_image_data(client, message, student_mission_info, mission_resul
             urls.append(photo_result.get('s3_url'))
         s3_photo_url = ",".join(urls)
     else:
+        photo_result = await client.s3_client.process_discord_attachment(mission_result.get('image'))
         s3_photo_url = photo_result.get('s3_url')
 
     update_status = await client.api_utils.update_mission_image_content(
@@ -228,6 +231,30 @@ async def submit_image_data(client, message, student_mission_info, mission_resul
     if bool(update_status):
         await client.api_utils.submit_generate_photo_request(user_id, mission_id)
         client.logger.info(f"送出繪本任務 {mission_id}")
+
+async def submit_baby_data(client, message, student_mission_info, mission_result):
+    await client.api_utils.update_student_profile(
+        str(message.author.id),
+        str(message.author.name),
+        '寶寶已出生'
+    )
+    await client.api_utils.update_student_registration_done(str(message.author.id))
+
+    # update baby profile
+    payload = {
+        'baby_name': mission_result.get('baby_name', None),
+        'baby_name_en': mission_result.get('baby_name_en', None),
+        'gender': mission_result.get('gender', None),
+        'birthday': mission_result.get('birthday', None),
+        'height': mission_result.get('height', None),
+        'weight': mission_result.get('weight', None),
+        'head_circumference': mission_result.get('head_circumference', None),
+    }
+
+    response = await client.api_utils.update_student_baby_profile(str(message.author.id), **payload)
+    if not response:
+        await message.channel.send("更新寶寶資料失敗，請稍後再試。")
+        return
 
 # --------------------- Helper Functions ---------------------
 async def build_photo_mission_embed(mission_info=None, baby_info=None):

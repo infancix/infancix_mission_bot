@@ -1,7 +1,7 @@
 import discord
 import time
 from bot.config import config
-from bot.utils.message_tracker import delete_task_entry_record
+from bot.utils.message_tracker import delete_growth_photo_record
 
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_id, timeout=None):
@@ -101,7 +101,7 @@ class GrowthPhotoView(discord.ui.View):
                     await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
 
         # Delete the message record
-        delete_task_entry_record(str(interaction.user.id), str(self.mission_id))
+        delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
 
     async def change_photo_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -115,7 +115,7 @@ class GrowthPhotoView(discord.ui.View):
             return
 
         photo_number = custom_id
-        student_mission_info = await client.api_utils.get_student_is_in_mission(str(interaction.user.id))
+        student_mission_info = await self.client.api_utils.get_student_is_in_mission(str(interaction.user.id))
         thread_id = student_mission_info['thread_id']
         mission_instructions = f"使用者希望更換第 {photo_number} 張照片"
         self.client.openai_utils.add_task_instruction(thread_id, mission_instructions)

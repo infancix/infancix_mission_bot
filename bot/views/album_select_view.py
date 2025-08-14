@@ -47,7 +47,7 @@ class AlbumView(discord.ui.View):
         embed = discord.Embed(
             title=album_info['book_title'],
             description=desc,
-            ccolor=0xeeb2da,
+            color=0xeeb2da,
         )
         if album_info.get('book_author'):
             embed.set_author(name=album_info['book_author'])

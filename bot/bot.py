@@ -8,7 +8,7 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -55,7 +55,7 @@ class MissionBot(discord.Client):
         try:
             if not isinstance(interaction.channel, discord.channel.DMChannel):
                 message = await interaction.response.send_message(
-                    "嗨！請到「任務佈告欄」查看製作繪本任務喔🧩",
+                    "嗨！請到「繪本工坊」查看製作繪本任務喔🧩",
                     ephemeral=True
                 )
                 return
@@ -99,6 +99,9 @@ class MissionBot(discord.Client):
 
         await load_quiz_message(self)
         self.logger.info("Finished loading quiz messages")
+
+        await load_growth_photo_messages(self)
+        self.logger.info("Finished loading growth photo messages")
 
         self.tree.add_command(
             app_commands.Command(

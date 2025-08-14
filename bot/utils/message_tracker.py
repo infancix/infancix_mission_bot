@@ -11,6 +11,7 @@ if config.ENV:
 
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
+GROWTH_PHOTO_LOG_PATH = DATA_DIR / "growth_photo_records.json"
 
 def load_quiz_message_records() -> dict:
     if QUIZ_MESSAGE_LOG_PATH.exists():
@@ -55,11 +56,38 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
     with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
 
-def delete_task_entry_record(user_id: str, mission_id: str):
+def delete_task_entry_record(user_id: str, mission_id: int):
     records = load_task_entry_records()
-    if user_id in records and mission_id in records[user_id]:
-        del records[user_id][mission_id]
+    if user_id in records and str(mission_id) in records[user_id]:
+        del records[user_id][str(mission_id)]
         if not records[user_id]:  # Remove user entry if no missions left
             del records[user_id]
         with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=4, ensure_ascii=False)
+
+def load_growth_photo_records() -> dict:
+    if GROWTH_PHOTO_LOG_PATH.exists():
+        with open(GROWTH_PHOTO_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_growth_photo_records(user_id: str, message_id: str, mission_id: int):
+    records = load_growth_photo_records()
+    if user_id not in records:
+        records[user_id] = {}
+
+    records[user_id][str(mission_id)] = {
+        "message_id": message_id,
+    }
+
+    with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)
+
+def delete_growth_photo_record(user_id: str, mission_id: int):
+    records = load_growth_photo_records()
+    if user_id in records and str(mission_id) in records[user_id]:
+        del records[user_id][str(mission_id)]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
+        with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)

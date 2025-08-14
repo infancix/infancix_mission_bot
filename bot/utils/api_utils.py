@@ -200,20 +200,20 @@ class APIUtils:
         return await self._post_request(endpoint, payload)
 
     async def update_student_baby_profile(self, user_id, baby_name, baby_name_en, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
-        if gender in ['男孩', '女孩']:
+        if gender and gender in ['男孩', '女孩']:
             gender = 'f' if gender == '女孩' else 'm'
         else:
             gender = None
 
         payload = {
             'discord_id': str(user_id),
-            'baby_name': baby_name,
-            'baby_name_en': baby_name_en,
-            'gender': gender,
-            'birthdate': birthday,
-            'height': float(height),
-            'weight': round(float(weight)/1000, 4), # convert to kg
-            'head_circumference': float(head_circumference),
+            'baby_name': baby_name if baby_name else None,
+            'baby_name_en': baby_name_en if baby_name_en else None,
+            'gender': gender if gender else None,
+            'birthdate': birthday if birthday else None,
+            'height': str(float(height)) if height else None,
+            'weight': str(round(float(weight)/1000, 4)) if weight else None, # convert to kg
+            'head_circumference': str(float(head_circumference)) if head_circumference else None,
         }
 
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
