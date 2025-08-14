@@ -14,7 +14,7 @@ from bot.utils.drive_file_utils import create_file_from_url
 from bot.utils.get_intro import get_baby_intro, get_family_intro
 from bot.config import config
 
-async def handle_photo_mission_start(client, user_id, mission_id):
+async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=1):
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
     baby = await client.api_utils.get_baby_profile(user_id)
@@ -37,15 +37,16 @@ async def handle_photo_mission_start(client, user_id, mission_id):
     if int(mission_id) == config.baby_register_mission:
         embed = get_baby_registration_embed()
         await user.send(embed=embed)
-    elif int(mission_id) in config.photo_mission_with_title_and_content:
+    elif int(mission_id) in config.add_on_photo_mission:
         embed = get_add_on_photo_embed(mission)
-        view = TaskSelectView(client, "check_add_on", mission_id, mission=mission)
+        view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
         view.message = await user.send(embed=embed, view=view)
+        save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission_result)
     else:
         embed, files = await build_photo_mission_embed(mission, baby)
-        await user.send(embed=embed)
-        if files:
+        if send_weekly_report and files:
             await user.send(files=files)
+        await user.send(embed=embed)
 
     return
 
@@ -53,11 +54,10 @@ async def handle_photo_upload_instruction(client, message, student_mission_info)
     user_id = str(message.author.id)
 
     # Mission: photo upload instruction
-    embed = await build_photo_instruction_embed(mission)
+    embed = await build_photo_instruction_embed(student_mission_info)
     await message.channel.send(embed=embed)
 
     student_mission_info['current_step'] = 3
-    student_mission_info['assistant_id'] = config.get_assistant_id(student_mission_info['mission_id'], student_mission_info['current_step'])
     await client.api_utils.update_student_mission_status(**student_mission_info)
     return
 
@@ -72,7 +72,7 @@ async def process_baby_registration_message(client, message, student_mission_inf
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = student_mission_info.get('assistant_id', None) or config.get_assistant_id(mission_id)
+        assistant_id = config.get_assistant_id(mission_id)
         thread_id = student_mission_info.get('thread_id', None)
         if thread_id is None:
             thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
@@ -81,10 +81,17 @@ async def process_baby_registration_message(client, message, student_mission_inf
 
         # get reply message
         mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
+        for key in ['step_1', 'step_2', 'baby_name', 'birthday', 'image']:
+            if key not in mission_result:
+                task_request = "你的json output必須所有欄位都要提供"
+                mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, task_request)
         if not mission_result.get('image'):
-            mission_result['step2'] = False
+            mission_result['step_2'] = False
 
-    if mission_result.get('step1') and mission_result.get('step2'):
+        # Log the assistant's response
+        client.logger.info(f"Assistant response: {mission_result}")
+
+    if mission_result.get('step_1') and mission_result.get('step_2'):
         mission_result['content'] = get_baby_intro(
             mission_result.get('baby_name', '小寶貝'),
             mission_result.get('gender', '女孩'),
@@ -92,7 +99,7 @@ async def process_baby_registration_message(client, message, student_mission_inf
             lang_version=student_mission_info.get('lang_version', 'zh')
         )
         await submit_image_data(client, message, student_mission_info, mission_result)
-    elif mission_result.get('step1') and not mission_result.get('step2'):
+    elif mission_result.get('step_1') and not mission_result.get('step_2'):
         embed = get_baby_data_confirmation_embed(mission_result)
         # Save baby data to database
         view = TaskSelectView(client, "baby_optin", mission_id, mission_result=mission_result)
@@ -114,7 +121,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = student_mission_info.get('assistant_id', None) or config.get_assistant_id(mission_id)
+        assistant_id = config.get_assistant_id(mission_id)
         thread_id = student_mission_info.get('thread_id', None)
         if thread_id is None:
             thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
@@ -125,6 +132,9 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
         if mission_result.get('is_ready') and not mission_result.get('image'):
             mission_result['is_ready'] = False  # Ensure we don't proceed if no image is provided
+
+        # Log the assistant's response
+        client.logger.info(f"Assistant response: {mission_result}")
 
     # Get enough information to proceed
     if mission_result.get('is_ready'):
@@ -140,15 +150,17 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
         if student_mission_info['current_step'] == 1:
-            if mission_id in config.photo_mission_with_title_and_content:
-                embed = get_letter_embed()
-            elif mission_id in config.family_intro_mission:
+            if mission_id in get_relationship_embed():
                 embed = get_relationship_embed()
+                await message.channel.send(embed=embed)
             else:
-                embed = get_aside_text_embed()
-            view = TaskSelectView(client, 'go_skip', mission_id, mission_result=mission_result)
-            view.message = await message.channel.send(embed=embed, view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id, result=mission_result)
+                if mission_id in config.photo_mission_with_title_and_content:
+                    embed = get_letter_embed()
+                else:
+                    embed = get_aside_text_embed()
+                view = TaskSelectView(client, 'go_skip', mission_id, mission_result=mission_result)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id, result=mission_result)
 
             # Update mission status
             student_mission_info['current_step'] = 2
@@ -156,7 +168,6 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         else:
             # Continue to collect additional information
             await message.channel.send(mission_result['message'])
-
     return
 
 @exception_handler(user_friendly_message="照片上傳失敗了，或是尋求客服協助喔！")
@@ -171,7 +182,7 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = student_mission_info.get('assistant_id', None) or config.get_assistant_id(mission_id)
+        assistant_id = config.get_assistant_id(mission_id)
         thread_id = student_mission_info.get('thread_id', None)
         if thread_id is None:
             thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
@@ -183,30 +194,40 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
         if len(mission_result.get('image', [])) < 4:
             mission_result['is_ready'] = False
 
+        # Log the assistant's response
+        client.logger.info(f"Assistant response: {mission_result}")
+
     # Get enough information to proceed
     if mission_result.get('is_ready'):
-        await message.channel.send("照片上傳成功，正在處理中...")
+        embed = get_waiting_embed()
+        await message.channel.send(embed=embed)
+        await submit_image_data(client, message, student_mission_info, mission_result)
     else:
         # Continue to collect additional information
         await message.channel.send(mission_result['message'])
 
 # --------------------- Event Handlers ---------------------
-async def submit_image_data(self, client, message, student_mission_info, mission_result):
+async def submit_image_data(client, message, student_mission_info, mission_result):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
     # Process the image attachment
-    photo_result = await client.s3_client.process_discord_attachment(mission_result.get('image'))
+    urls = []
+    if isinstance(mission_result.get('image'), list):
+        for url in mission_result.get('image'):
+            photo_result = await client.s3_client.process_discord_attachment(url)
+            urls.append(photo_result.get('s3_url'))
+        s3_photo_url = ",".join(urls)
+    else:
+        s3_photo_url = photo_result.get('s3_url')
+
     update_status = await client.api_utils.update_mission_image_content(
-        user_id, mission_id, image_url=photo_result.get('s3_url'), aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
+        user_id, mission_id, image_url=s3_photo_url, aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
     )
 
     if bool(update_status):
         await client.api_utils.submit_generate_photo_request(user_id, mission_id)
         client.logger.info(f"送出繪本任務 {mission_id}")
-        embed = discord.Embed(title="繪本製作中，請稍等30秒")
-        embed.set_image(url="https://infancixbaby120.com/discord_assets/loading1.gif")
-        await message.channel.send(embed=embed)
 
 # --------------------- Helper Functions ---------------------
 async def build_photo_mission_embed(mission_info=None, baby_info=None):
@@ -257,7 +278,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
     embed.set_author(name=author)
     embed.set_image(url="https://infancixbaby120.com/discord_assets/photo_mission_instruction.png")
     embed.set_footer(
-        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
 
@@ -271,8 +292,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
 
     return embed, files
 
-async def build_photo_instruction_embed(mission_info=None):
-    title = f"**上傳{mission_info['photo_mission']}**"
+async def build_photo_instruction_embed(mission_info):
+    title = f"**{mission_info['photo_mission']}**"
     description = f"\n📎 點左下 **[+]** 上傳照片\n"
     embed = discord.Embed(
         title=title,
@@ -281,17 +302,17 @@ async def build_photo_instruction_embed(mission_info=None):
     )
     embed.set_image(url="https://infancixbaby120.com/discord_assets/photo_mission_instruction.png")
     embed.set_footer(
-        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
-
     return embed
 
 def get_baby_registration_embed():
     embed = discord.Embed(
         title="📝 寶寶出生資料登記",
         description=(
-            "🧸 寶寶暱稱\n"
+            "🧸 中文暱稱（建議2-3字）\n"
+            "🧸 英文暱稱\n"
             "🎂 出生日期（例如：2025-05-01）\n"
             "👤 性別（男/女）\n"
             "📏 身高（cm）\n"
@@ -316,8 +337,8 @@ def get_relationship_embed():
 
 def get_aside_text_embed():
     embed = discord.Embed(
-        title="請輸入照片的旁白文字",
-        description="請直接於對話框輸入文字，限定30個字。\n✏️ 也可以寫下拍攝日期喔!\n💡 範例：第一次幫你按摩，你就拉了三次屎。",
+        title="✏️ 寫下該照片的回憶",
+        description="請於對話框輸入文字(限定30個字)\n_範例：第一次幫你按摩，就解決了你的便秘。_",
         color=0xeeb2da,
     )
     return embed
@@ -351,7 +372,8 @@ def get_baby_data_confirmation_embed(mission_result):
     embed.add_field(
         name="👶 寶寶資料",
         value=(
-            f"🧸 寶寶暱稱：{mission_result.get('baby_name', '未設定')}\n"
+            f"🧸 中文暱稱：{mission_result.get('baby_name', '未設定')}\n"
+            f"🧸 英文名字：{mission_result.get('baby_name_en', '未設定')}\n"
             f"🎂 出生日期：{mission_result.get('birthday', '未設定')}\n"
             f"👤 性別：{mission_result.get('gender', '未設定')}\n"
             f"📏 身高：{mission_result.get('height', '未設定')} cm\n"
@@ -368,25 +390,33 @@ def get_add_on_photo_embed(mission):
     description = (
         "恭喜完成這個月成長繪本\n"
         "想要放更多照片留作紀念嗎?\n\n"
-        ">**商品**\n"
-        ">照片紀念頁\n"
+        "> **商品**\n"
+        "> 照片紀念頁\n"
         "> \n"
-        ">**內容說明**\n"
-        ">共 1 頁，內含 4 張照片\n"
+        "> **內容說明**\n"
+        "> 共 1 頁，內含 4 張照片\n"
         "> \n"
-        ">**售價**\n"
-        ">🪙 $200\n"
+        "> **售價**\n"
+        "> 🪙 $200\n"
     )
     embed = discord.Embed(
         title="📸 加購繪本單頁",
         description=description,
         color=0xeeb2da,
     )
-    embed.set_image(url=self.mission.get('mission_introduction_image_url', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png'))
+    embed.set_image(url=mission.get('mission_instruction_image_url', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png'))
     embed.set_footer(
-        url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
+    return embed
+
+def get_waiting_embed():
+    embed = discord.Embed(
+        title="繪本製作中，請稍等30秒",
+        color=0xeeb2da
+    )
+    embed.set_image(url=f"https://infancixbaby120.com/discord_assets/loading1.gif")
     return embed
 
 async def init_thread_and_add_task_instructions(client, student_mission_info):
@@ -394,7 +424,7 @@ async def init_thread_and_add_task_instructions(client, student_mission_info):
 
     # Add task instructions to the assistant's thread
     if student_mission_info['mission_id'] == config.baby_register_mission:
-        mission_instructions = f"請使用者輸入寶寶的出生資料，包含寶寶暱稱、出生日期、性別、身高、體重和頭圍。\n"
+        mission_instructions = f"請使用者輸入寶寶的出生資料，包含寶寶中文暱稱、英文名字、出生日期、性別、身高、體重和頭圍。\n"
     else:
         mission_instructions = (
             f"請使用者上傳照片，並根據任務要求提供相關的描述或旁白。\n"

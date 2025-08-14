@@ -33,7 +33,7 @@ class GrowthPhotoView(discord.ui.View):
     def generate_embed(self, baby_id, mission_id):
         if mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
-        elif mission_id in config.baby_register_mission or mission_id in config.family_intro_mission:
+        elif mission_id == config.baby_register_mission or mission_id in config.family_intro_mission:
             description = "📷 換照片：直接重新上傳即可"
         elif mission_id in config.photo_mission_with_title_and_content:
             description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出\n"
@@ -89,9 +89,10 @@ class GrowthPhotoView(discord.ui.View):
         # Check mission status
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         book_id = mission_info.get('book_id', 0)
+        self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
         if book_id is not None and book_id != 0:
             # If this is the very first mission of the book, generate the album immediately
-            if self.mission_id in config.first_mission_per_book:
+            if int(self.mission_id) in config.first_mission_per_book:
                 await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
             else:
                 incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)

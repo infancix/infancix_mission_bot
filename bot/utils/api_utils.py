@@ -194,12 +194,12 @@ class APIUtils:
             "discord_id": str(user_id),
             "action": {
                 "type": "profile_update_status",
-                "status": status
+                "status": '已完成'
             }
         }
         return await self._post_request(endpoint, payload)
 
-    async def update_student_baby_profile(self, user_id, baby_name, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
+    async def update_student_baby_profile(self, user_id, baby_name, baby_name_en, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
         if gender in ['男孩', '女孩']:
             gender = 'f' if gender == '女孩' else 'm'
         else:
@@ -208,6 +208,7 @@ class APIUtils:
         payload = {
             'discord_id': str(user_id),
             'baby_name': baby_name,
+            'baby_name_en': baby_name_en,
             'gender': gender,
             'birthdate': birthday,
             'height': float(height),
@@ -217,42 +218,6 @@ class APIUtils:
 
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
-
-    async def check_student_mission_eligible(self, user_id):
-        student = await self.get_student_profile(user_id)
-        baby = await self.get_baby_profile(user_id)
-        if not student and not baby:
-            return 'lack_baby_profile'
-        elif not baby and student.get('due_date', None) is not None:
-            if student.get('due_date') >= datetime.today().date():
-                return 'lack_baby_profile'
-            else:
-                return 'pregnancy_stage'
-        else:
-            return 'mission_eligible'
-
-    async def check_baby_records_in_two_weeks(self, user_id):
-        response = await self._post_request('get_baby_records', {'discord_id': str(user_id)})
-        if bool(response) == False:
-            return None
-
-        records = [
-            record
-            for record in response
-            if (datetime.today() - datetime.strptime(record['timestamp'], '%Y-%m-%d %H:%M')).days <= 14
-        ]
-
-        if len(records) > 0:
-            return True
-        else:
-            return False
-
-    async def check_user_photo_mission_status(self, user_id, mission_id):
-        response = await self._post_request('get_student_photo_mission_status', {'discord_id': str(user_id), 'mission_id': mission_id})
-        if bool(response) == False:
-            return None
-
-        return response.get('mission_status', 'Incompleted') == 'Completed'
 
     async def store_message(self, user_id, role, message, message_id=None):
         data = {
@@ -282,7 +247,7 @@ class APIUtils:
         data = {
             'discord_id': str(user_id),
             'action': 'like',
-            'channel_id': '任務佈告欄',
+            'channel_id': '繪本工坊',
             'page_id': '1281123155489984529',
             'content': emoji
         }

@@ -60,7 +60,7 @@ class Config:
 
         self.pregnancy_register_mission = 101
         self.baby_register_mission = 1001
-        self.photo_mission_with_aside_text = [3, 4, 5, 15, 1004, 1005, 1006, 1007]
+        self.photo_mission_with_aside_text = [2, 3, 5, 6, 1004, 1005, 1006, 1007]
         self.family_intro_mission = [1002, 1003]
         self.photo_mission_with_title_and_content = [1008]
         self.add_on_photo_mission = [1009]
@@ -71,7 +71,7 @@ class Config:
             self.photo_mission_with_title_and_content +
             self.add_on_photo_mission
         )
-        self.first_mission_per_book = [1001]
+        self.first_mission_per_book = [1004]
     
     def get_assistant_id(self, mission_id, current_step=1):
         #if current_step > 1:

@@ -75,7 +75,7 @@ class PhotoTaskSelect(discord.ui.Select):
         await interaction.response.edit_message(view=None)
 
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(self.client, self.user_id, selected_mission_id)
+        await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):

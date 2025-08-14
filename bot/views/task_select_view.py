@@ -14,7 +14,6 @@ class TaskSelectView(discord.ui.View):
         self.mission_id = mission_id
         self.message = None
         self.result = mission_result or {}
-        self.use_image_date_string_replace_aside_text = False
 
         if task_type == "go_quiz":
             label = "挑戰任務 GO!"
@@ -104,11 +103,6 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        if self.mission_id in config.photo_mission_with_aside_text:
-            self.use_image_date_string_replace_aside_text = True
-        else:
-            self.mission_result['content'] = "..."
-
         await self.submit_image_data(interaction)
 
     async def go_submit_button_callback(self, interaction):
@@ -135,6 +129,7 @@ class TaskSelectView(discord.ui.View):
         # update baby profile
         payload = {
             'baby_name': self.result.get('baby_name'),
+            'baby_name_en': self.result.get('baby_name_en'),
             'gender': self.result.get('gender'),
             'birthday': self.result.get('birthday'),
             'height': self.result.get('height'),
@@ -145,9 +140,12 @@ class TaskSelectView(discord.ui.View):
         if not response:
             await interaction.followup.send("更新寶寶資料失敗，請稍後再試。")
             return
-        else:
-            from bot.handlers.photo_mission_handler import handle_photo_upload_instruction
-            await handle_photo_upload_instruction(self.client, self.user_id, self.mission_id)
+        
+        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
+        student_mission_info['user_id'] = str(interaction.user.id)
+        message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+        from bot.handlers.photo_mission_handler import handle_photo_upload_instruction
+        await handle_photo_upload_instruction(self.client, message, student_mission_info)
 
     async def baby_not_born_button_callback(self, interaction):
         await interaction.response.defer()
@@ -159,9 +157,6 @@ class TaskSelectView(discord.ui.View):
     async def submit_image_data(self, interaction):
         if self.result and self.result.get('image'):
             photo_result = await self.client.s3_client.process_discord_attachment(self.result.get('image'))
-            if self.use_image_date_string_replace_aside_text:
-                today_str = datetime.today().strftime("%Y-%m-%d")
-                self.result['aside_text'] = f"製作日期: {today_str}"
             update_status = await self.client.api_utils.update_mission_image_content(
                 str(interaction.user.id), self.mission_id, image_url=photo_result.get('s3_url'), aside_text=self.result.get('aside_text'), content=self.result.get('content')
             )
@@ -169,9 +164,6 @@ class TaskSelectView(discord.ui.View):
             if bool(update_status):
                 await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
                 self.client.logger.info(f"送出繪本任務 {self.mission_id}")
-                embed = discord.Embed(title="繪本製作中，請稍等30秒")
-                embed.set_image(url=self.get_loading_image())
-                await interaction.followup.send(embed=embed)
 
     async def baby_born_button_callback(self, interaction):
         await interaction.response.defer()
@@ -191,7 +183,7 @@ class TaskSelectView(discord.ui.View):
         if channel is None or not isinstance(channel, discord.TextChannel):
             raise Exception('Invalid channel')
 
-        msg_task = f"START_DEV_MISSION_1001 <@{str(interaction.user.id)}>"
+        msg_task = f"START_MISSION_1001 <@{str(interaction.user.id)}>"
         await channel.send(msg_task)
 
         # Delete task entry record
@@ -212,13 +204,6 @@ class TaskSelectView(discord.ui.View):
         else:
             embed = self.get_add_on_photo_embed()
             await interaction.followup.send(embed=embed)
-
-    def get_loading_image(self):
-        loading_gifs = [
-            f"https://infancixbaby120.com/discord_assets/loading1.gif",
-            f"https://infancixbaby120.com/discord_assets/loading2.gif"
-        ]
-        return random.choice(loading_gifs)
     
     def get_insufficient_coin_embed(self):
         embed = discord.Embed(
@@ -237,7 +222,7 @@ class TaskSelectView(discord.ui.View):
             color=0xeeb2da,
         )
         embed.set_footer(text="可以一次上傳多張喔!")
-        embed.set_image(url=self.mission_result.get('mission_image_contents', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png'))
+        embed.set_image(url=self.result.get('mission_image_contents', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png'))
         return embed
 
     async def on_timeout(self):
