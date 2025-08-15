@@ -108,36 +108,89 @@ class OpenAIUtils:
             message = message.replace('}}', '}')
         return message
 
-    async def generate_quiz(self, mission, retry_count=1):
-        if retry_count <= 0:
-            return []
+    def load_prompt(self, file_path):
+        with open(file_path, "r") as file:
+            return file.read()
 
-        quiz_prompt = self.generate_quiz_prompt(mission)
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": quiz_prompt}],
-            temperature=0.7
-        )
-        response = response.choices[0].message.content.strip()
-        process_result = self.post_process(response)
-        if 'error' in process_result:
-            self.logger.error(f"Error generating quiz: {process_result['message']} (Retry: {retry_count})")
-            await self.generate_quiz(mission, retry_count-1)
-        else:
-            quiz = process_result['result'].get('quiz', [])
-            return quiz
+    def process_user_message(self, prompt_path, user_input, conversations=None, additional_context=None) -> dict:
+        try:
+            prompt = self.load_prompt(prompt_path)
+            if additional_context:
+                prompt = f"{additional_context}\n\n{prompt}"
 
-    def generate_quiz_prompt(self, mission):
-        with open("bot/resource/quiz_prompt.txt", "r") as file:
-            quiz_prompt = file.read()
-            quiz_prompt = quiz_prompt.replace("{mission_title}", mission['mission_title'])
-            quiz_prompt = quiz_prompt.replace("{transcription}", mission['transcription'])
-            self.logger.info(f"Quiz prompt loaded: {quiz_prompt}")
-        return quiz_prompt
+            # system prompt
+            messages = [
+                {
+                    "role": "system",
+                    "content": [{"type": "input_text", "text": prompt}]
+                }
+            ]
 
-    def generate_assistant_prompt(self):
-        with open("bot/resource/assistent_prompt.txt", "r") as file:
-            self.assistant_prompt = file.read()
-            self.logger.info(f"Assistant prompt loaded: {self.assistant_prompt}")
+            # history conversation
+            for turn in conversations or []:
+                role = turn.get("role")
+                msg = turn.get("message")
+                if not role or msg is None:
+                    continue
+                if role == "user":
+                    messages.append({
+                        "role": role,
+                        "content": [{"type": "input_text", "text": str(msg)}]
+                    })
+                elif role == "assistant":
+                    messages.append({
+                        "role": role,
+                        "content": [{"type": "output_text", "text": str(msg)}]
+                    })
 
-        return self.assistant_prompt
+            # current input
+            messages.append({
+                "role": "user",
+                "content": [{"type": "input_text", "text": str(user_input)}]
+            })
+
+            response = self.client.responses.create(
+                model="gpt-4o-mini",
+                input=messages
+            )
+
+            response_json = json.loads(response.output_text)
+            return response_json
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error parsing response JSON: {e}")
+            return {"message": response.output_text}
+        except Exception as e:
+            self.logger.error(f"Error processing user message: {e}")
+            return {"error": str(e)}
+
+    def process_photo_info(self, prompt_path, image_url) -> dict:
+        try:
+            prompt = self.load_prompt(prompt_path)
+            response = self.client.responses.create(
+                model="gpt-4.1",
+                input=[
+                    {
+                        "role": "system",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": prompt,
+                            }
+                        ]
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_image",
+                                "image_url": image_url
+                            }
+                        ]
+                    }
+                ],
+            )
+            return json.loads(response.output_text)
+
+        except Exception as e:
+            print(f"Error processing photo info: {e}")
+            return {"error": str(e)}

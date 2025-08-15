@@ -12,6 +12,7 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 GROWTH_PHOTO_LOG_PATH = DATA_DIR / "growth_photo_records.json"
+CONVERSATION_LOG_PATH = DATA_DIR / "conversation_records.json"
 
 def load_quiz_message_records() -> dict:
     if QUIZ_MESSAGE_LOG_PATH.exists():
@@ -90,4 +91,32 @@ def delete_growth_photo_record(user_id: str, mission_id: int):
         if not records[user_id]:  # Remove user entry if no missions left
             del records[user_id]
         with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=4, ensure_ascii=False)
+
+def load_conversations_records() -> dict:
+    if CONVERSATION_LOG_PATH.exists():
+        with open(CONVERSATION_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
+    records = load_conversations_records()
+    if user_id not in records:
+        records[user_id] = []
+
+    records[user_id].append({
+        "mission_id": mission_id,
+        "role": role,
+        "message": message,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+    with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)
+
+def delete_conversations_record(user_id: str, mission_id: int):
+    records = load_conversations_records()
+    if user_id in records:
+        del records[user_id]
+        with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)

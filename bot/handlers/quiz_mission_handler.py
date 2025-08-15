@@ -7,7 +7,10 @@ from bot.views.task_select_view import TaskSelectView
 from bot.handlers.utils import get_user_id
 from bot.utils.message_tracker import (
     save_quiz_message_record,
-    save_task_entry_record
+    save_task_entry_record,
+    load_conversations_records,
+    save_conversations_record,
+    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.config import config
@@ -95,35 +98,43 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
     msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
     await channel.send(msg_task)
 
-@exception_handler(user_friendly_message="加一暫時無法回答，請稍後再試一次喔！或是管理員協助處理。")
+    delete_conversations_record(user_id, mission_id)
+
+@exception_handler(user_friendly_message="暫時無法回答，請稍後再試一次喔！或是管理員協助處理。")
 async def handle_class_question(client, message, student_mission_info):
     user_id = get_user_id(message)
     mission_id = student_mission_info['mission_id']
-
-    assistant_id = student_mission_info.get('assistant_id', None)
-    thread_id = student_mission_info.get('thread_id', None)
-    if assistant_id is None or thread_id is None:
-        assistant_id = config.get_assistant_id(mission_id)
-        # create a new thread and add task-instructions
-        thread_id = client.openai_utils.load_thread()
-        student_mission_info['thread_id'] = thread_id
-        await client.api_utils.update_student_mission_status(**student_mission_info)
-
-        mission = await client.api_utils.get_mission_info(mission_id)
-        add_task_instructions(client, mission, thread_id)
+    prompt_path = config.get_prompt_file(mission_id)
 
     async with message.channel.typing():
-        response = await client.openai_utils.get_reply_message(assistant_id, thread_id, message.content)
+        mission = await client.api_utils.get_mission_info(mission_id)
+        mission_instructions = f"""
+            這是這次課程的主題和課程影片字幕：
+            ## 課程內容：{mission['mission_title']}
+            ## 影片字幕: {mission['transcription']}
+        """
+
+        records = load_conversations_records()
+        conversations = None
+        if user_id in records and records[user_id][0]['mission_id'] == mission_id:
+            conversations = records[user_id]
+        response = client.openai_utils.process_user_message(prompt_path, message.content, conversations=conversations, additional_context=mission_instructions)
         client.logger.info(f"Assitant response: {response}")
+        if 'error' in response:
+            await message.channel.send(f"抱歉目前沒辦法回答這個問題\n若有育兒問題，請找24小時AI育兒助手「喵喵 <@1287675308388126762>」\n或是聯絡社群客服「阿福 <@1272828469469904937>」。")
+            return
 
-    if student_mission_info['current_step'] < 4:
-        view = TaskSelectView(client, "go_quiz", mission_id)
-        view.message = await message.channel.send(response['message'], view=view)
-        save_task_entry_record(user_id, str(view.message.id), "go_quiz", mission_id)
-    else:
-        await message.channel.send(response['message'])
+        if student_mission_info['current_step'] < 4:
+            view = TaskSelectView(client, "go_quiz", mission_id)
+            view.message = await message.channel.send(response['message'], view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_quiz", mission_id)
+        else:
+            await message.channel.send(response['message'])
 
+    # save conversation
     await client.api_utils.store_message(user_id, 'assistant', response['message'])
+    save_conversations_record(user_id, mission_id, 'user', message.content)
+    save_conversations_record(user_id, mission_id, 'assistant', response['message'])
 
 # -------------------- Helper Functions --------------------
 def build_quiz_mission_embed(mission_info=None, baby_info=None):
@@ -163,11 +174,3 @@ def build_quiz_mission_embed(mission_info=None, baby_info=None):
         text="點選下方 `指令` 可查看更多功能"
     )
     return embed
-
-def add_task_instructions(client, mission, thread_id):
-    mission_instructions = f"""
-        這是這次課程的主題和課程影片字幕：
-        ## 課程內容：{mission['mission_title']}
-        ## 影片字幕: {mission['transcription']}
-    """
-    client.openai_utils.add_task_instruction(thread_id, mission_instructions)
