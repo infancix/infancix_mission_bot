@@ -8,7 +8,12 @@ from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 
 from bot.views.task_select_view import TaskSelectView
-from bot.utils.message_tracker import save_task_entry_record
+from bot.utils.message_tracker import (
+    save_task_entry_record,
+    load_conversations_records,
+    save_conversations_record,
+    delete_conversations_record
+)
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url
 from bot.utils.get_intro import get_baby_intro, get_family_intro
@@ -20,13 +25,10 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     baby = await client.api_utils.get_baby_profile(user_id)
     
     # Mission start
-    thread_id = await init_thread_and_add_task_instructions(client, mission)
     student_mission_info = {
         **mission,
         'user_id': user_id,
-        'assistant_id': config.get_assistant_id(mission_id),
-        'current_step': 1,
-        'thread_id': thread_id
+        'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
@@ -37,6 +39,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     if int(mission_id) == config.baby_register_mission:
         embed = get_baby_registration_embed()
         await user.send(embed=embed)
+        save_conversations_record(user_id, mission_id, 'assistant', "請使用者輸入寶寶的出生資料，包含寶寶中文暱稱、英文名字、出生日期、性別、身高、體重和頭圍。")
     elif int(mission_id) in config.add_on_photo_mission:
         embed = get_add_on_photo_embed(mission)
         view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
@@ -52,9 +55,11 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
 
 async def handle_photo_upload_instruction(client, message, student_mission_info):
     user_id = str(message.author.id)
+    mission_id = student_mission_info['mission_id']
 
     # Mission: photo upload instruction
     embed = await build_photo_instruction_embed(student_mission_info)
+    save_conversations_record(user_id, mission_id, 'assistant', "請使用者上傳寶寶的第一張照片")
     await message.channel.send(embed=embed)
 
     student_mission_info['current_step'] = 3
@@ -65,6 +70,13 @@ async def handle_photo_upload_instruction(client, message, student_mission_info)
 async def process_baby_registration_message(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
+    prompt_path = config.get_prompt_file(mission_id, student_mission_info.get('current_step', 1))
+
+    # getting user message
+    if student_mission_info.get('current_step', 1) ==1 and message.attachments:
+        await message.channel.send("要先完成寶寶出生資料登記，才能上傳照片喔！")
+        return
+
     if message.attachments:
         user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {message.attachments[0].url}"
     else:
@@ -72,45 +84,35 @@ async def process_baby_registration_message(client, message, student_mission_inf
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = config.get_assistant_id(mission_id)
-        thread_id = student_mission_info.get('thread_id', None)
-        if thread_id is None:
-            thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
-            student_mission_info['thread_id'] = thread_id
-            await client.api_utils.update_student_mission_status(**student_mission_info)
+        records = load_conversations_records()
+        conversations = None
+        if user_id in records and records[user_id][0]['mission_id'] == mission_id:
+            conversations = records[user_id]
 
         # get reply message
-        mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
-        for key in ['step_1', 'step_2', 'baby_name', 'birthday', 'image']:
-            if key not in mission_result:
-                task_request = "你的json output必須所有欄位都要提供"
-                mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, task_request)
-        if not mission_result.get('image'):
-            mission_result['step_2'] = False
-
-        # Log the assistant's response
+        mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
 
-    if mission_result.get('step_1') and mission_result.get('step_2'):
-        if mission_result.get('baby_name'):
-            await submit_baby_data(client, message, student_mission_info, mission_result)
-        mission_result['content'] = get_baby_intro(
-            mission_result.get('baby_name', '小寶貝'),
-            mission_result.get('gender', '女孩'),
-            mission_result.get('birthday', datetime.now().date().strftime('%Y-%m-%d')),
-            lang_version=student_mission_info.get('lang_version', 'zh')
-        )
-        await submit_image_data(client, message, student_mission_info, mission_result)
-    elif mission_result.get('step_1') and not mission_result.get('step_2'):
+    if student_mission_info.get('current_step', 1) == 1 and mission_result.get('is_ready', False) == True:
         embed = get_baby_data_confirmation_embed(mission_result)
         # Save baby data to database
         view = TaskSelectView(client, "baby_optin", mission_id, mission_result=mission_result)
         view.message = await message.channel.send(embed=embed, view=view)
         save_task_entry_record(user_id, str(view.message.id), "baby_optin", mission_id, result=mission_result)
+    elif student_mission_info.get('current_step', 1) > 1 and mission_result.get('is_ready', False) == True:
+        baby = await client.api_utils.get_baby_profile(user_id)
+        mission_result['content'] = get_baby_intro(
+            baby.get('baby_name', '小寶貝'),
+            baby.get('gender', 'f'),
+            baby.get('birthdate', datetime.now().date().strftime('%Y-%m-%d')),
+            lang_version=student_mission_info.get('lang_version', 'zh')
+        )
+        await submit_image_data(client, message, student_mission_info, mission_result)
     else:
         await message.channel.send(mission_result['message'])
-        await client.api_utils.store_message(user_id, assistant_id, mission_result['message'])
         client.logger.info(f"Assistant response: {mission_result}")
+        save_conversations_record(user_id, mission_id, 'user', user_message)
+        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試一次喔！")
 async def process_photo_mission_filling(client, message, student_mission_info):
@@ -445,19 +447,3 @@ def get_waiting_embed():
     )
     embed.set_image(url=f"https://infancixbaby120.com/discord_assets/loading1.gif")
     return embed
-
-async def init_thread_and_add_task_instructions(client, student_mission_info):
-    thread_id = client.openai_utils.load_thread()
-
-    # Add task instructions to the assistant's thread
-    if student_mission_info['mission_id'] == config.baby_register_mission:
-        mission_instructions = f"請使用者輸入寶寶的出生資料，包含寶寶中文暱稱、英文名字、出生日期、性別、身高、體重和頭圍。\n"
-    else:
-        mission_instructions = (
-            f"請使用者上傳照片，並根據任務要求提供相關的描述或旁白。\n"
-            f"任務名稱: {student_mission_info['photo_mission']}\n"
-        )
-
-    # Add task instructions to the thread
-    client.openai_utils.add_task_instruction(thread_id, mission_instructions)
-    return thread_id

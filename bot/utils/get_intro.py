@@ -2,6 +2,11 @@ import os
 import json
 from datetime import datetime, timedelta
 
+gender_map = {
+    'f': '女孩',
+    'm': '男孩'
+}
+
 def get_western_zodiac(birthday, lang_version='zh') -> str:
     """
     Get the Western zodiac sign based on the birth date.
@@ -32,6 +37,7 @@ def get_baby_intro(baby_name, gender, birthday, lang_version='zh'):
     with open(os.path.join('bot', 'resource', f'baby_intro_{lang_version}.json'), 'r', encoding='utf-8') as file:
         baby_intro = json.load(file)
 
+    gender = gender_map[gender]
     if lang_version == 'en':
         gender = 'Girl' if gender == '女孩' else 'Boy'
     zodiac_sign = get_western_zodiac(birthday, lang_version)

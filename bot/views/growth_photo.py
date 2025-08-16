@@ -1,7 +1,7 @@
 import discord
 import time
 from bot.config import config
-from bot.utils.message_tracker import delete_growth_photo_record
+from bot.utils.message_tracker import delete_growth_photo_record, delete_conversations_record
 
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_id, timeout=None):
@@ -102,6 +102,7 @@ class GrowthPhotoView(discord.ui.View):
 
         # Delete the message record
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
+        delete_conversations_record(str(interaction.user.id), str(self.mission_id))
 
     async def change_photo_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()

@@ -123,6 +123,8 @@ class TaskSelectView(discord.ui.View):
         if success:
             student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
             student_mission_info['user_id'] = str(interaction.user.id)
+            student_mission_info['current_step'] = 2
+            await self.client.api_utils.update_student_mission_status(**student_mission_info)
             message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
         
             from bot.handlers.photo_mission_handler import handle_photo_upload_instruction

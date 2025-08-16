@@ -16,13 +16,6 @@ class Config:
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
         self.BABY_API_PORT = os.getenv('BABY_API_PORT')
-        #self.MISSION_BOT_ASSISTANT = 'asst_DlqSJaUKd9K118tbYvB4EbfD'
-        #self.ASIDE_TEXT_ASSISTANT = 'asst_kWEM7k1s3S6670Vk7qVPKd9h'
-        #self.CONTENT_ASSISTANT = 'asst_ytMVwKFd6ik2rKpHOqepqohe'
-        self.BABY_INTRO_ASSISTANT = 'asst_Cgeuvc8kSBtgqSlFY51QKTPZ'
-        #self.FAMILY_INTRO_ASSISTANT = 'asst_50zwOomgzQuwQvqPkKzeNfIj'
-        self.PREGNANCY_INTRO_ASSISTANT = 'asst_hP8Ist5VpL0XxxLfE8kvEHEo'
-        #self.ADD_ON_TASK_ASSISTANT = 'asst_YYN8nKyCQTdXOggwdh9TyKNx'
 
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.DEV_BOT_ID = int(os.getenv('DEV_BOT_ID'))
@@ -46,14 +39,6 @@ class Config:
             self.add_on_photo_mission
         )
         self.first_mission_per_book = [1004]
-
-    def get_assistant_id(self, mission_id, current_step=1):
-        if mission_id == self.baby_register_mission:
-            return self.BABY_INTRO_ASSISTANT
-        elif mission_id == self.pregnancy_register_mission:
-            return self.PREGNANCY_INTRO_ASSISTANT
-        else:
-            return None
 
     def get_prompt_file(self, mission_id, current_step=1):
         base_path = "bot/resource/prompts"

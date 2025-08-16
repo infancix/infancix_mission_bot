@@ -47,16 +47,11 @@ async def handle_pregnancy_mission_start(client, user_id, mission_id):
 async def process_pregnancy_registration_message(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
+    prompt_path = config.get_prompt_file(mission_id)
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = config.get_assistant_id(mission_id)
-        thread_id = student_mission_info.get('thread_id', None)
-        if thread_id is None:
-            thread_id = client.openai_utils.load_thread()
-            student_mission_info['thread_id'] = thread_id
-            await client.api_utils.update_student_mission_status(**student_mission_info)
-        mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, message.content)
+        mission_result = client.openai_utils.process_user_message(prompt_path, message.content)
 
     if mission_result.get('is_ready', False) == False:
         await message.channel.send(mission_result['message'])

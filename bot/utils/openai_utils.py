@@ -154,7 +154,7 @@ class OpenAIUtils:
                 input=messages
             )
 
-            response_json = json.loads(response.output_text)
+            response_json = self.parsed_json(response.output_text)
             return response_json
         except json.JSONDecodeError as e:
             self.logger.error(f"Error parsing response JSON: {e}")
@@ -189,7 +189,7 @@ class OpenAIUtils:
                     }
                 ],
             )
-            return json.loads(response.output_text)
+            return self.parsed_json(response.output_text)
 
         except Exception as e:
             print(f"Error processing photo info: {e}")
