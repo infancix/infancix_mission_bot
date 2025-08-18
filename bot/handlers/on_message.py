@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import os
 import re
 
 from bot.config import config
@@ -75,10 +76,14 @@ async def handle_direct_message(client, message):
 
     # 照片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.heif')):
-        is_valid = await client.s3_client.check_discord_attachment(message.attachments[0])
-        if not is_valid:
-            await message.channel.send("請上傳照片，並確保照片大小不超過 8MB，格式為 JPG、PNG、GIF、WEBP、HEIC 或 HEIF。")
-            return
+        for e, attachment in enumerate(message.attachments):
+            file_ext = os.path.splitext(attachment.filename)[1].lower()
+            is_valid = file_ext in config.IMAGE_ALLOWED_EXTENSIONS
+            if not is_valid:
+                if len(message.attachments) > 1:
+                    await message.channel.send("第 {} 張照片格式不正確".format(e + 1))
+                await message.channel.send("請上傳照片，並確保照片大小不超過 8MB，格式為 JPG、PNG、GIF、WEBP、HEIC 或 HEIF。")
+                return
         message.content = "收到使用者的照片"
 
     # 影片

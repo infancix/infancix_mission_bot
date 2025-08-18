@@ -39,11 +39,14 @@ def load_task_entry_records() -> dict:
             return json.load(f)
     return {}
 
-def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, result=None, max_records=10):
+def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, result=None):
     records = load_task_entry_records()
     if user_id not in records:
-        records[user_id] = defaultdict(dict)
-    
+        records[user_id] = {}
+
+    if str(mission_id) not in records[user_id]:
+        records[user_id] = {} # remove all the previous records for this user
+
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
         "task_type": task_type,
@@ -101,11 +104,14 @@ def load_conversations_records() -> dict:
 
 def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
     records = load_conversations_records()
-    if user_id not in records:
-        records[user_id] = []
+    if str(user_id) not in records:
+        records[str(user_id)] = {}
 
-    records[user_id].append({
-        "mission_id": mission_id,
+    if str(mission_id) not in records[str(user_id)]:
+        records[str(user_id)] = {} # remove all the previous records for this user
+        records[str(user_id)][str(mission_id)] = []
+
+    records[str(user_id)][str(mission_id)].append({
         "role": role,
         "message": message,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -116,7 +122,9 @@ def save_conversations_record(user_id: str, mission_id: int, role: str, message:
 
 def delete_conversations_record(user_id: str, mission_id: int):
     records = load_conversations_records()
-    if user_id in records:
-        del records[user_id]
+    if user_id in records and str(mission_id) in records[user_id]:
+        del records[user_id][str(mission_id)]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
         with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
