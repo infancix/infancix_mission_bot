@@ -1,0 +1,8 @@
+收集使用者的預產期，並回傳 JSON：
+{
+  "message": "Assistant訊息",
+  "is_ready": true | false,
+  "due_date": "預產期 YYYY-MM-DD"
+}
+若缺少 due_date 則 is_ready 為 false。
+僅輸出 JSON，不要多餘文字。

@@ -4,10 +4,13 @@ import io
 import os
 import boto3
 import pyheif
+import piexif
+import io
 from PIL import Image, ExifTags
 from datetime import datetime, timedelta
 from typing import Optional, Union
 from pathlib import Path
+from urllib.parse import urlparse
 
 from bot.logger import setup_logger
 
@@ -167,6 +170,97 @@ class ImageProcessor:
                 return image_data
             return None
 
+    def get_capture_date(self, image_data: Union[bytes, io.BytesIO, Image.Image]) -> Optional[datetime]:
+        """
+        獲取圖片拍攝日期
+        輸入: bytes、BytesIO 對象或 PIL Image
+        輸出: datetime 對象，如果無法獲取則返回 None
+        """
+        try:
+            # 如果是 PIL Image，直接使用
+            if isinstance(image_data, Image.Image):
+                pil_image = image_data
+            else:
+                # 轉換為 BytesIO 再轉為 PIL Image
+                bytesio = self._ensure_bytesio(image_data)
+                pil_image = self._bytesio_to_pil(bytesio)
+                
+            if not pil_image:
+                self.logger.warning("無法轉換為 PIL Image，無法獲取拍攝日期")
+                return None
+
+            # 獲取 EXIF 數據
+            exif_data = pil_image._getexif()
+            if not exif_data:
+                self.logger.info("圖片沒有 EXIF 數據")
+                return None
+
+            # 查找拍攝日期相關的 EXIF 標籤
+            # 按優先順序嘗試不同的日期標籤
+            date_tags = [
+                'DateTime',           # 圖片修改日期
+                'DateTimeOriginal',   # 原始拍攝日期（最準確）
+                'DateTimeDigitized'   # 數位化日期
+            ]
+
+            for tag_name in date_tags:
+                # 找到對應的標籤 ID
+                tag_id = None
+                for orientation in ExifTags.TAGS.keys():
+                    if ExifTags.TAGS[orientation] == tag_name:
+                        tag_id = orientation
+                        break
+                
+                if tag_id and tag_id in exif_data:
+                    date_string = exif_data[tag_id]
+                    try:
+                        # EXIF 日期格式通常是 "YYYY:MM:DD HH:MM:SS"
+                        capture_date = datetime.strptime(date_string, "%Y:%m:%d %H:%M:%S")
+                        self.logger.info(f"成功獲取拍攝日期: {capture_date} (來源: {tag_name})")
+                        return capture_date
+                    except ValueError as e:
+                        self.logger.warning(f"無法解析日期格式 '{date_string}': {str(e)}")
+                        continue
+
+            self.logger.info("EXIF 數據中沒有找到拍攝日期信息")
+            return None
+
+        except Exception as e:
+            self.logger.error(f"獲取拍攝日期時出錯: {str(e)}")
+            return None
+
+    def extract_heic_exif_capture_date(self, image_data: Union[bytes, io.BytesIO]) -> Optional[datetime]:
+        if isinstance(image_data, io.BytesIO):
+            image_bytes = image_data.getvalue()
+        else:
+            image_bytes = image_data
+
+        try:
+            heif_file = pyheif.read(image_bytes)
+            for meta in heif_file.metadata or []:
+                if meta['type'] == 'Exif':
+                    exif_dict = piexif.load(meta['data'])
+                    date_bytes = exif_dict['Exif'].get(36867) or exif_dict['0th'].get(306)
+                    if date_bytes:
+                        date_str = date_bytes.decode('utf-8')
+                        return datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
+            return None
+        except Exception as e:
+            self.logger.error(f"HEIC EXIF 解析日期失敗: {str(e)}")
+            return None
+
+    def get_capture_date_string(self, image_data: Union[bytes, io.BytesIO, Image.Image], 
+                               format_string: str = "%Y-%m-%d") -> Optional[str]:
+        """
+        獲取圖片拍攝日期的字符串格式
+        輸入: 圖片數據和格式字符串
+        輸出: 格式化的日期字符串，如果無法獲取則返回 None
+        """
+        capture_date = self.get_capture_date(image_data)
+        if capture_date:
+            return capture_date.strftime(format_string)
+        return None
+
 class S3Handler:
     def __init__(self, bucket_name: str, logger):
         self.logger = logger
@@ -182,10 +276,6 @@ class S3Handler:
         return f"{self.ALLOWED_FOLDER}{uuid.uuid4()}{ext}"
 
     def upload_image(self, image_data: io.BytesIO, original_filename: str) -> Optional[str]:
-        """
-        上傳圖片到 S3
-        返回: 成功時返回 URL，失敗時返回 None
-        """
         try:
             if not isinstance(image_data, io.BytesIO):
                 self.logger.error(f"upload_image: 輸入不是 BytesIO 物件，而是 {type(image_data)}")
@@ -209,11 +299,15 @@ class S3Handler:
                     }
                 }
             )
+            upload_time = datetime.now()
 
-            # 返回公開 URL
             url = f"https://{self.bucket_name}.s3.amazonaws.com/{unique_filename}"
             self.logger.info(f"Successfully uploaded image: {url}")
-            return url
+            return {
+                'url': url,
+                's3_key': unique_filename,
+                'upload_date': upload_time.isoformat()
+            }
 
         except Exception as e:
             self.logger.error(f"Upload error: {str(e)}")
@@ -224,6 +318,19 @@ class S3ImageUtils:
         self.logger = setup_logger("S3ImageUtils")
         self.image_processor = ImageProcessor(self.logger)
         self.s3_handler = S3Handler(bucket_name, self.logger)
+    
+    def init_image_info(self):
+        return {
+            's3_url': None,
+            'filename': '',
+            'original_filename': '',
+            's3_key': '',
+            'file_size': 0,
+            'capture_date_string': None,
+            'upload_date': None,
+            'processed': False,
+            'error_message': None
+        }
 
     async def download_discord_attachment(self, attachment_url: str) -> Optional[io.BytesIO]:
         try:
@@ -239,57 +346,88 @@ class S3ImageUtils:
             self.logger.error(f"Download error: {str(e)}")
             return None
 
-    async def process_discord_attachment(self, attachment) -> Optional[str]:
-        try:
-            # 檢查是否為有效的圖片類型
-            file_ext = os.path.splitext(attachment.filename)[1].lower()
-            if file_ext not in self.image_processor.ALLOWED_EXTENSIONS:
-                self.logger.error(f"Invalid file type: {file_ext}")
-                return None
+    async def get_filename_and_extension_from_url(self, url):
+        parsed_url = urlparse(url)
+        path = parsed_url.path  # e.g. /attachments/.../IMG_1564.jpg
+        filename = os.path.basename(path)  # e.g. IMG_1564.jpg
+        name, ext = os.path.splitext(filename)
+        return filename, ext.lower()
 
-            # 下載圖片
-            image_data = await self.download_discord_attachment(attachment.url)
+    async def check_discord_attachment(self, attachment) -> bool:
+        file_ext = os.path.splitext(attachment.filename)[1].lower()
+        self.logger.info(f"處理文件: {attachment.filename}, 類型: {file_ext}")
+        if file_ext not in self.image_processor.ALLOWED_EXTENSIONS:
+            self.logger.error(f"Invalid file type: {file_ext}")
+            return False
+        else:
+            return True
+
+    async def process_discord_attachment(self, attachment_url) -> Optional[str]:
+        try:
+            result = self.init_image_info()
+
+            image_data = await self.download_discord_attachment(attachment_url)
             if not image_data:
                 self.logger.error("Image download failed")
-                return None
+                result['error_message'] = "圖片下載失敗"
+                return result
 
-            self.logger.info(f"處理文件: {attachment.filename}, 類型: {file_ext}")
+            original_filename, file_ext = await self.get_filename_and_extension_from_url(attachment_url)
+            self.logger.info(f"原始檔案: {original_filename}, 副檔名: {file_ext}")
+            result['original_filename'] = original_filename
+            result['filename'] = original_filename
 
-            # 處理 HEIC/HEIF 格式
-            if file_ext in ['.heic', '.heif']:
-                image_data = self.image_processor.convert_heic_to_jpeg(image_data)
-                if not image_data:
-                    self.logger.error("HEIC 轉換失敗")
-                    return None
+            if file_ext.lower() in ['.heic', '.heif']:
+                self.logger.info("檢測到 HEIC/HEIF 格式，開始轉換為 JPEG")
+                converted_data = self.image_processor.convert_heic_to_jpeg(image_data)
+                if not converted_data:
+                    result['error_message'] = "HEIC 轉換失敗"
+                    self.logger.error(result['error_message'])
+                    return result
+                image_data = converted_data
+                result['filename'] = os.path.splitext(original_filename)[0] + ".jpg"
+                self.logger.info(f"HEIC 轉換成功，新檔名: {result['filename']}")
 
-                filename = os.path.splitext(attachment.filename)[0] + ".jpg"
+            self.logger.info("開始旋轉圖片處理")
+            rotated_data = self.image_processor.rotate_image(image_data)
+            if not rotated_data:
+                result['error_message'] = "圖片旋轉失敗"
+                self.logger.error(result['error_message'])
+                return result
+            image_data = rotated_data
+            self.logger.info("圖片旋轉處理完成")
+
+            self.logger.info("開始壓縮圖片")
+            compressed_data = self.image_processor.compress_image(image_data)
+            if not compressed_data:
+                result['error_message'] = "圖片壓縮失敗"
+                self.logger.error(result['error_message'])
+                return result
+            image_data = compressed_data
+            self.logger.info("圖片壓縮完成")
+
+            image_data.seek(0)
+            result['file_size'] = len(image_data.getvalue())
+            self.logger.info(f"最終檔案大小: {result['file_size']} bytes")
+
+            self.logger.info("開始上傳到 S3")
+            s3_result = self.s3_handler.upload_image(image_data, result['filename'])
+            if s3_result:
+                result['s3_url'] = s3_result['url']
+                result['s3_key'] = s3_result['s3_key']
+                result['upload_date'] = s3_result['upload_date']
+                result['processed'] = True
+                self.logger.info(f"✅ 圖片處理完成!")
+                self.logger.info(f"S3 URL: {result['s3_url']}")
+                self.logger.info(f"S3 Key: {result['s3_key']}")
+                self.logger.info(f"檔案大小: {result['file_size']} bytes")
             else:
-                filename = attachment.filename
+                result['error_message'] = "S3 上傳失敗"
+                self.logger.error(result['error_message'])
 
-            # 旋轉圖片
-            image_data = self.image_processor.rotate_image(image_data)
-            if not image_data:
-                self.logger.error("Image rotate failed")
-                return None
-
-            # 壓縮圖片
-            image_data = self.image_processor.compress_image(image_data)
-            if not image_data:
-                self.logger.error("Image compression failed")
-                return None
-
-            # 使用現有的 S3Handler 上傳圖片
-            return self.s3_handler.upload_image(image_data, filename)
+            return result
 
         except Exception as e:
-            self.logger.error(f"Processing error: {str(e)}")
-            return None
-
-async def handle_discord_image(attachment):
-    handler = S3ImageHandler("infancix-app-storage-jp")
-    url = await handler.process_discord_attachment(attachment)
-    if url:
-        print(f"Successfully uploaded to: {url}")
-    else:
-        print("Upload failed")
-
+            result['error_message'] = f"處理過程發生錯誤: {str(e)}"
+            self.logger.error(result['error_message'], exc_info=True)
+            return result

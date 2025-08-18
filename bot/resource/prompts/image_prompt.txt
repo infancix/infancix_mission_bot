@@ -1,0 +1,12 @@
+收集使用者輸入中的照片attachment，並回傳 JSON：
+{
+  "message": "Assistant訊息",
+  "is_ready": true | false,
+  "attachment": {
+    "id": "attachment_id",
+    "url": "image_url", 
+    "filename": "filename"
+  }
+}
+若缺少圖片則 is_ready 為 false。
+僅輸出 JSON，不要多餘文字。

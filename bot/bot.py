@@ -1,16 +1,20 @@
 import discord
 from discord import app_commands
+from collections import defaultdict
 import schedule
 import asyncio
+import json
 
 from bot.config import config
 from bot.logger import setup_logger
-from bot.handlers.on_message import handle_dm
-from bot.handlers.utils import job, run_scheduler, load_active_control_panel, load_control_panel_by_id, load_greeting_message
+from bot.handlers.on_message import handle_background_message, handle_direct_message
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
-from bot.views.control_panel import ControlPanelView
+from bot.views.mission import MilestoneSelectView
+from bot.views.photo_mission import PhotoTaskSelectView
+from bot.views.album_select_view import AlbumView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -29,89 +33,95 @@ class MissionBot(discord.Client):
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
-        self.user_viewed_video = {}
+        self.growth_album = defaultdict(list)
 
-        if not config.MISSION_BOT_ASSISTANT:
-            config.MISSION_BOT_ASSISTANT = self.openai_utils.load_assistant('video_task')
-
-        if not config.PHOTO_TASK_ASSISTANT:
-            config.PHOTO_TASK_ASSISTANT = self.openai_utils.load_assistant('photo_task')
-
-    async def whisper_comment(self, interaction: discord.Interaction, message: str):
-        print(f"Interaction received: {interaction.channel}, {interaction.user.id}, {interaction.channel.id}")
-        try:
-            if isinstance(interaction.channel, discord.Thread):
-                if str(interaction.channel.parent_id) not in config.channel_map:
-                    return
-
-                channel_id = str(interaction.channel.parent_id)
-                await interaction.channel.send(message)
-                await interaction.response.send_message(f"訊息已成功發送到貼文: {interaction.channel.name}", ephemeral=True)
-
-            else: # TextChannel
-                if str(interaction.channel.id) not in config.channel_map:
-                    return
-
-                channel_id = str(interaction.channel.id)
-                await interaction.channel.send(message)
-                await interaction.response.send_message(f"訊息已成功發送到頻道: {interaction.channel.name}", ephemeral=True)
-
-            # Store message
-            await self.api_utils.store_comment(str(interaction.user.id), config.channel_map[channel_id], str(interaction.channel.id), message)
-
-        except Exception as e:
-            print(f"Error while sending message: {e}")
+        with open("bot/resource/mission_quiz.json", "r") as file:
+            self.mission_quiz = json.load(file)
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
-            is_in_mission_room = str(interaction.channel.id) in [config.MISSION_BOT]
+            await interaction.response.defer(ephemeral=True)
+            student_milestones = await self.api_utils.get_student_milestones(str(interaction.user.id))
+            milestone_view = MilestoneSelectView(self, str(interaction.user.id), student_milestones)
+            message = await interaction.followup.send(
+                "🏆 ** 以下是您的任務進度，按下方按鈕開始任務**",
+                view=milestone_view,
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"Error while sending message: {str(e)}")
 
-            if not is_in_mission_room:
-                target_channel = await self.fetch_user(interaction.user.id)
-                await interaction.response.send_message(
-                    f"📢 *你的課表已更新，請到 <@{interaction.channel.id}> 查看！*",
+    async def call_photo_task(self, interaction: discord.Interaction):
+        try:
+            if not isinstance(interaction.channel, discord.channel.DMChannel):
+                message = await interaction.response.send_message(
+                    "嗨！請到「繪本工坊」查看製作繪本任務喔🧩",
+                    ephemeral=True
+                )
+                return
+
+            await interaction.response.defer(ephemeral=True)
+            incomplete_missions = await self.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id))
+            if len(incomplete_missions) > 0:
+                view = PhotoTaskSelectView(self, str(interaction.user.id), incomplete_missions)
+                message = await interaction.followup.send(
+                    "🧩 **以下是您未完成的照片任務，按下方按鈕開始製作繪本**",
+                    view=view,
                     ephemeral=True
                 )
             else:
-                target_channel = interaction.channel
+                message = await interaction.followup.send(
+                    "您目前沒有未完成的任務喔\n",
+                    ephemeral=True
+                )
+        except Exception as e:
+            print(f"Error while sending message: {str(e)}")
 
-            old_control_message, control_panel_view, control_panel_embed = await load_control_panel_by_id(self, str(interaction.user.id), target_channel)
-            if old_control_message:
-                await old_control_message.delete()
-                self.logger.info(f"Remove out-dated control panel of user ({interaction.user.id}).")
-
-            if is_in_mission_room:
-                await interaction.response.send_message(embed=control_panel_embed, view=control_panel_view)
-                message = await interaction.original_response()
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
-            else:
-                message = await target_channel.send(embed=control_panel_embed, view=control_panel_view)
-                await self.api_utils.store_message(str(interaction.user.id), 'assistant', control_panel_view.embed_content, message_id=message.id)
-
+    async def browse_growth_album(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer(ephemeral=True)
+            album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
+            album_view = AlbumView(self, album_status)
+            embed = album_view.get_current_embed()
+            message = await interaction.followup.send(
+                "📖 **以下是您的成長書櫃**\n點擊 ▶️ 查看下一本 | ◀️ 返回上一本",
+                embed=embed,
+                view=album_view,
+                ephemeral=True
+            )
+            album_view.message = message
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
     async def setup_hook(self):
-        await load_active_control_panel(self)
-        self.logger.info("Finished loading control panel")
+        await load_task_entry_messages(self)
+        self.logger.info("Finished loading task entry messages")
 
-        await load_greeting_message(self)
-        self.logger.info("Finished loading greeting message")
+        await load_quiz_message(self)
+        self.logger.info("Finished loading quiz messages")
 
-        self.tree.add_command(
-            app_commands.Command(
-                name="加一說",
-                description="將訊息以加一的身份發送到指定的貼文中",
-                callback=self.whisper_comment
-            ),
-            guild=discord.Object(id=self.guild_id)
-        )
+        await load_growth_photo_messages(self)
+        self.logger.info("Finished loading growth photo messages")
 
         self.tree.add_command(
             app_commands.Command(
-                name="照護課表",
-                description="顯示照護課表",
+                name="查看育兒里程碑",
+                description="查看五大照護育兒里程碑",
                 callback=self.call_mission_start
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
+                name="補上傳照片",
+                description="查看未完成繪本任務🧩",
+                callback=self.call_photo_task
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
+                name="瀏覽繪本進度",
+                description="查看繪本進度📖",
+                callback=self.browse_growth_album
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))
@@ -121,7 +131,6 @@ class MissionBot(discord.Client):
     async def on_ready(self):
         self.loop.create_task(run_scheduler())
         self.logger.info(f'Logged in as {self.user.name} (ID: {self.user.id})')
-        #await job(self)
 
     async def on_reaction_add(self, reaction, user):
         if isinstance(reaction.message.channel, discord.DMChannel) and reaction.message.author == self.user:
@@ -129,7 +138,16 @@ class MissionBot(discord.Client):
             await self.api_utils.store_reaction(str(user.id), reaction.emoji)
 
     async def on_message(self, message):
-        await handle_dm(self, message)
+        if (
+            message.author == self.user
+            and message.channel.id != config.BACKGROUND_LOG_CHANNEL_ID
+        ):
+            return
+
+        if message.channel.id == config.BACKGROUND_LOG_CHANNEL_ID:
+            await handle_background_message(self, message)
+        elif isinstance(message.channel, discord.channel.DMChannel):
+            await handle_direct_message(self, message)
 
 def run_bot():
     if not isinstance(config.DISCORD_TOKEN, str):
@@ -137,6 +155,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(job(client)))
+    #schedule.every().day.at("10:00").do(lambda: asyncio.create_task(scheduled_job(client)))
 
     client.run(config.DISCORD_TOKEN)

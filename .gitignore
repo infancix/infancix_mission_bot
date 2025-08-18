@@ -1,13 +1,5 @@
 # Logs
 .git_history
-
-bot/resource/mission_quiz_bak.json
-
-__pycache__/
-
-node-red-data/.*.json
-
-*.jpg
 logs
 *.log
 npm-debug.log*
@@ -15,6 +7,20 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+
+bot/resource/mission_quiz_bak.json
+
+# Data
+bot/data
+cache
+*.jpg
+
+# config
+node-red-data/.*.json
+
+# python
+*.pyc
+__pycache__/
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

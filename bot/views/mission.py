@@ -32,8 +32,6 @@ def setup_label(mission):
     title = ""
     if int(mission['mission_id']) in config.photo_mission_list:
         title += "📸"
-    elif int(mission['mission_id']) in config.record_mission_list:
-        title += "📝"
 
     title += f"{mission['mission_title']}"
     if mission['mission_status'] == 'Completed':
@@ -43,7 +41,7 @@ def setup_label(mission):
     return f"{title}{spaces}{score_text}"
 
 class MilestoneSelectView(discord.ui.View):
-    def __init__(self, client, user_id, student_milestones, timeout=None):
+    def __init__(self, client, user_id, student_milestones, timeout=3600):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
@@ -118,7 +116,7 @@ class PageIndicator(discord.ui.Button):
 
 class MilestoneSelect(discord.ui.Select):
     def __init__(self, client, user_id, student_milestones):
-        warning = "  ⚠️ 寶寶年齡尚未符合要求"
+        warning = "⚠️ 寶寶年齡尚未符合要求"
         options = [
             discord.SelectOption(
                 label=setup_label(mission),
@@ -129,7 +127,7 @@ class MilestoneSelect(discord.ui.Select):
         ]
 
         super().__init__(
-            placeholder="檢視課程進度...",
+            placeholder="查看任務進度...",
             min_values=1,
             max_values=1,
             options=options
@@ -143,35 +141,13 @@ class MilestoneSelect(discord.ui.Select):
         print(selected_mission)
         selected_mission_id = int(selected_mission.split('_')[0])
         mission_available = int(selected_mission.split('_')[-1])
+        mission = await self.client.api_utils.get_mission_info(selected_mission_id)
 
-        # Stop View to prevent duplicate interactions
         self.view.stop()
-        is_ephemeral = interaction.message.flags.ephemeral
-        if is_ephemeral:
-            await interaction.response.edit_message(view=None)
-            if mission_available:
-                await interaction.followup.send(
-                    "汪～請交給我，讓加一馬上幫你準備新課程🐾\n會需要一點時間喔，請耐心等候😊",
-                    ephemeral=True
-                )
-            else:
-                await interaction.followup.send(
-                    "您的寶寶年齡還太小囉，還不能解這個任務喔",
-                    ephemeral=True
-                )
-        else:
-            if mission_available:
-                await interaction.message.edit(
-                    f"汪～請交給我，讓加一馬上幫你準備新課程🐾\n會需要一點時間喔，請耐心等候😊",
-                    view=None
-                )
-            else:
-                await interaction.message.edit(
-                    "您的寶寶年齡還太小囉，還不能解這個任務喔",
-                    view = None
-                )
-
+        await interaction.response.edit_message(content=f"選擇任務: {mission['mission_title']}", view=None)
+    
         if not mission_available:
+            await interaction.followup.send("您的寶寶年齡還太小囉，還不能解這個任務喔", ephemeral=True)
             return
 
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
@@ -181,4 +157,8 @@ class MilestoneSelect(discord.ui.Select):
         start_task_msg = f"START_MISSION_{selected_mission_id} <@{interaction.user.id}>"
         await channel.send(start_task_msg)
 
+        if not isinstance(interaction.channel, discord.DMChannel):
+            await interaction.followup.send("請去任務佈告欄查看！", ephemeral=True)
+
+        return
 
