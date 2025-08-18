@@ -156,9 +156,6 @@ class OpenAIUtils:
 
             response_json = self.parsed_json(response.output_text)
             return response_json
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Error parsing response JSON: {e}")
-            return {"message": response.output_text}
         except Exception as e:
             self.logger.error(f"Error processing user message: {e}")
             return {"error": str(e)}

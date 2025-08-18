@@ -45,6 +45,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
         view.message = await user.send(embed=embed, view=view)
         save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
+        save_conversations_record(user_id, mission_id, 'assistant', f"請使用者上傳[mission{'photo_mission'}]的照片")
     else:
         embed, files = await build_photo_mission_embed(mission, baby)
         if send_weekly_report and files:
@@ -78,21 +79,21 @@ async def process_baby_registration_message(client, message, student_mission_inf
         return
 
     if message.attachments:
-        user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {message.attachments[0].url}"
+        user_message = f"收到使用者的照片\n message attachment object: {message.attachments[0]}"
     else:
         user_message = message.content
 
     # getting assistant reply
     async with message.channel.typing():
         records = load_conversations_records()
-        conversations = None
-        if user_id in records and records[user_id][0]['mission_id'] == mission_id:
-            conversations = records[user_id]
+        conversations = records[user_id].get(str(mission_id), None) if user_id in records else None
 
         # get reply message
         mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
 
+    # log user message
+    save_conversations_record(user_id, mission_id, 'user', user_message)
     if student_mission_info.get('current_step', 1) == 1 and mission_result.get('is_ready', False) == True:
         embed = get_baby_data_confirmation_embed(mission_result)
         # Save baby data to database
@@ -111,40 +112,37 @@ async def process_baby_registration_message(client, message, student_mission_inf
     else:
         await message.channel.send(mission_result['message'])
         client.logger.info(f"Assistant response: {mission_result}")
-        save_conversations_record(user_id, mission_id, 'user', user_message)
         save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試一次喔！")
 async def process_photo_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
+    prompt_path = config.get_prompt_file(mission_id)
+
     if message.attachments:
-        user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {message.attachments[0].url}"
+        user_message = f"收到使用者的照片\n message attachment object: {message.attachments[0]}"
     else:
         user_message = message.content
 
-    # getting assistant reply
     async with message.channel.typing():
-        assistant_id = config.get_assistant_id(mission_id)
-        thread_id = student_mission_info.get('thread_id', None)
-        if thread_id is None:
-            thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
-            student_mission_info['thread_id'] = thread_id
-            await client.api_utils.update_student_mission_status(**student_mission_info)
+        records = load_conversations_records()
+        conversations = records[user_id].get(str(mission_id), None) if user_id in records else None
 
         # get reply message
-        mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
-        if mission_result.get('is_ready') and not mission_result.get('image'):
-            mission_result['is_ready'] = False  # Ensure we don't proceed if no image is provided
-
-        # Log the assistant's response
+        mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
 
     # Get enough information to proceed
+    save_conversations_record(user_id, mission_id, 'user', user_message)
+
     if mission_result.get('is_ready'):
         if mission_id in config.family_intro_mission:
             mission_result['aside_text'] = mission_result.get('relation', '家人')
             mission_result['content'] = get_family_intro(mission_id, mission_result['aside_text'], lang_version=student_mission_info.get('lang_version', 'zh'))
+            await submit_image_data(client, message, student_mission_info, mission_result)
+            return
+        elif mission_id in config.photo_mission_without_aside_text:
             await submit_image_data(client, message, student_mission_info, mission_result)
             return
         else:
@@ -157,11 +155,14 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             if mission_id in config.family_intro_mission:
                 embed = get_relationship_embed()
                 await message.channel.send(embed=embed)
+                save_conversations_record(user_id, mission_id, 'assistant', f"請使用者輸入照片中人物與寶寶的關係")
             else:
                 if mission_id in config.photo_mission_with_title_and_content:
                     embed = get_letter_embed()
+                    save_conversations_record(user_id, mission_id, 'assistant', f"請使用者寫下給寶寶的一封信")
                 else:
                     embed = get_aside_text_embed()
+                    save_conversations_record(user_id, mission_id, 'assistant', f"請使用者輸入aside_text")
                 view = TaskSelectView(client, 'go_skip', mission_id, mission_result=mission_result)
                 view.message = await message.channel.send(embed=embed, view=view)
                 save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id, result=mission_result)
@@ -172,34 +173,34 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         else:
             # Continue to collect additional information
             await message.channel.send(mission_result['message'])
+            save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
+
     return
 
 @exception_handler(user_friendly_message="照片上傳失敗了，或是尋求客服協助喔！")
 async def process_add_on_photo_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
+    prompt_path = config.get_prompt_file(mission_id)
+
     if message.attachments:
-        photo_urls = [attachment.url for attachment in message.attachments]
-        user_message = f"[mission_id: {mission_id}]: 收到使用者的照片: {', '.join(photo_urls)}"
+        user_message = f"收到使用者的照片\n message attachment object: {message.attachments}"
     else:
         user_message = message.content
 
     # getting assistant reply
     async with message.channel.typing():
-        assistant_id = config.get_assistant_id(mission_id)
-        thread_id = student_mission_info.get('thread_id', None)
-        if thread_id is None:
-            thread_id = await init_thread_and_add_task_instructions(client, student_mission_info)
-            student_mission_info['thread_id'] = thread_id
-            await client.api_utils.update_student_mission_status(**student_mission_info)
+        records = load_conversations_records()
+        conversations = records[user_id].get(str(mission_id), None) if user_id in records else None
 
         # get reply message
-        mission_result = client.openai_utils.get_reply_message(assistant_id, thread_id, user_message)
-        if len(mission_result.get('image', [])) < 4:
+        mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
+        client.logger.info(f"Assistant response: {mission_result}")
+        if len(mission_result.get('attachment', [])) < 4:
             mission_result['is_ready'] = False
 
-        # Log the assistant's response
-        client.logger.info(f"Assistant response: {mission_result}")
+    # log user message
+    save_conversations_record(user_id, mission_id, 'user', user_message)
 
     # Get enough information to proceed
     if mission_result.get('is_ready'):
@@ -209,6 +210,7 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
     else:
         # Continue to collect additional information
         await message.channel.send(mission_result['message'])
+        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 # --------------------- Event Handlers ---------------------
 async def submit_image_data(client, message, student_mission_info, mission_result):
@@ -216,18 +218,13 @@ async def submit_image_data(client, message, student_mission_info, mission_resul
     mission_id = student_mission_info['mission_id']
 
     # Process the image attachment
-    urls = []
-    if isinstance(mission_result.get('image'), list):
-        for url in mission_result.get('image'):
-            photo_result = await client.s3_client.process_discord_attachment(url)
-            urls.append(photo_result.get('s3_url'))
-        s3_photo_url = ",".join(urls)
+    if isinstance(mission_result.get('attachment'), list):
+        attachment_obj = mission_result.get('attachment')
     else:
-        photo_result = await client.s3_client.process_discord_attachment(mission_result.get('image'))
-        s3_photo_url = photo_result.get('s3_url')
+        attachment_obj = [mission_result.get('attachment')]
 
     update_status = await client.api_utils.update_mission_image_content(
-        user_id, mission_id, image_url=s3_photo_url, aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
+        user_id, mission_id, attachment_obj, aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
     )
 
     if bool(update_status):

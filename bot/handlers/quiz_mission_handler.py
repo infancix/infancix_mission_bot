@@ -25,7 +25,6 @@ async def handle_quiz_mission_start(client, user_id, mission_id):
     student_mission_info = {
         **mission,
         'user_id': user_id,
-        'assistant_id': config.get_assistant_id(mission_id),
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)

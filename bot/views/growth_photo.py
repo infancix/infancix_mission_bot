@@ -1,8 +1,11 @@
 import discord
 import time
 from bot.config import config
-from bot.utils.message_tracker import delete_growth_photo_record, delete_conversations_record
-
+from bot.utils.message_tracker import (
+    save_conversations_record,
+    delete_growth_photo_record,
+    delete_conversations_record
+)
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_id, timeout=None):
         super().__init__(timeout=timeout)
@@ -33,7 +36,7 @@ class GrowthPhotoView(discord.ui.View):
     def generate_embed(self, baby_id, mission_id):
         if mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
-        elif mission_id == config.baby_register_mission or mission_id in config.family_intro_mission:
+        elif mission_id == config.baby_register_mission or mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text:
             description = "📷 換照片：直接重新上傳即可"
         elif mission_id in config.photo_mission_with_title_and_content:
             description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出\n"
@@ -41,7 +44,7 @@ class GrowthPhotoView(discord.ui.View):
             description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出(限30字)\n"
 
         embed = discord.Embed(
-            title="製作完成預覽",
+            title="🤍 製作完成預覽",
             description=description,
             color=0xeeb2da,
         )
@@ -118,8 +121,8 @@ class GrowthPhotoView(discord.ui.View):
         photo_number = custom_id
         student_mission_info = await self.client.api_utils.get_student_is_in_mission(str(interaction.user.id))
         thread_id = student_mission_info['thread_id']
-        mission_instructions = f"使用者希望更換第 {photo_number} 張照片"
-        self.client.openai_utils.add_task_instruction(thread_id, mission_instructions)
+        mission_instructions = f"我要更換第 {photo_number} 張照片"
+        save_conversations_record(str(interaction.user.id), student_mission_info['mission_id'], 'user', mission_instructions)
 
         embed = discord.Embed(
             title="🔼 請上傳新照片",

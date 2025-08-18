@@ -161,13 +161,19 @@ class APIUtils:
         response = await self._post_request('update_student_current_class', data)
         return bool(response)
 
-    async def update_mission_image_content(self, user_id, mission_id, image_url=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
+    async def update_mission_image_content(self, user_id, mission_id, discord_attachments=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
         payload = {
             'discord_id': str(user_id),
             'mission_id': int(mission_id)
         }
-        if image_url:
-            payload['image_url'] = image_url
+        if discord_attachments:
+            payload['attachments'] = []
+            for attachment in discord_attachments:
+                payload['attachments'].append({
+                    'id': attachment['id'],
+                    'url': attachment['url'],
+                    'filename': attachment['filename']
+                })
         if aside_text:
             payload['aside_text'] = aside_text
         if content:

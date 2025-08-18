@@ -162,10 +162,10 @@ class TaskSelectView(discord.ui.View):
         return True
 
     async def submit_image_data(self, interaction):
-        if self.result and self.result.get('image'):
-            photo_result = await self.client.s3_client.process_discord_attachment(self.result.get('image'))
+        if self.result and self.result.get('attachment'):
+            attachment_obj = [self.result.get('attachment')]
             update_status = await self.client.api_utils.update_mission_image_content(
-                str(interaction.user.id), self.mission_id, image_url=photo_result.get('s3_url'), aside_text=self.result.get('aside_text'), content=self.result.get('content')
+                str(interaction.user.id), self.mission_id, attachment_obj, aside_text=self.result.get('aside_text'), content=self.result.get('content')
             )
 
             if bool(update_status):
