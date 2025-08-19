@@ -121,8 +121,8 @@ class OpenAIUtils:
             # system prompt
             messages = [
                 {
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": prompt}]
+                    "role": "developer",
+                    "content": prompt
                 }
             ]
 
@@ -135,18 +135,18 @@ class OpenAIUtils:
                 if role == "user":
                     messages.append({
                         "role": role,
-                        "content": [{"type": "input_text", "text": str(msg)}]
+                        "content": str(msg)
                     })
                 elif role == "assistant":
                     messages.append({
                         "role": role,
-                        "content": [{"type": "output_text", "text": str(msg)}]
+                        "content": str(msg)
                     })
 
             # current input
             messages.append({
                 "role": "user",
-                "content": [{"type": "input_text", "text": str(user_input)}]
+                "content": str(user_input)
             })
 
             response = self.client.responses.create(
