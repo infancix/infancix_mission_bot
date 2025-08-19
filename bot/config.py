@@ -42,6 +42,9 @@ class Config:
         )
         self.first_mission_per_book = [1004]
 
+        # theme story book
+        self.theme_mission_list = [7001, 7008, 7015, 7022, 7029, 7036]
+
     def get_prompt_file(self, mission_id, current_step=1):
         base_path = "bot/resource/prompts"
         if mission_id == self.baby_register_mission:
@@ -61,6 +64,8 @@ class Config:
             return f"{base_path}/image_with_content.txt"
         elif mission_id in self.add_on_photo_mission:
             return f"{base_path}/add_on_mission_prompt.txt"
+        elif mission_id >= 7001 and mission_id <= 7042:
+            return f"{base_path}/theme_mission_prompt.txt"
         else:
             return f"{base_path}/class_question.txt"
 

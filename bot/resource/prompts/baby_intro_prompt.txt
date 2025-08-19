@@ -18,7 +18,7 @@
 
 ## 回覆格式
 - 輸出需為 JSON 格式，並包含以下所有欄位：
-{{
+{
     "message": "Assistant訊息",
     "is_ready": true | false,
     "baby_name": "baby_name",
@@ -28,6 +28,6 @@
     "height": "height",
     "weight": "weight",
     "head_circumference": "head_circumference",
-}}
+}
 
 Do NOT include any explanations, notes, or formatting outside of the JSON.

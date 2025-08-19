@@ -8,19 +8,25 @@
 - 請務必回傳**正確的 JSON 格式**，嵌套需完全正確，否則會導致後端錯誤
 
 ## 輸入資訊
-- `attachment`: 使用者會傳入 Discord照片attachment, 請從attachment擷取需要的資訊 (id, url, filename)
+- 使用者會傳入 Discord 照片 attachment，請務必從 attachment 擷取以下資訊並保留原始字串：
+  1. id
+  2. filename
+  3. url （⚠️ 絕對不可修改或省略，必須完整輸出，包括 query string）
+- 輸出時請保持 attachment.url 的原始格式，不要截斷、不要省略參數。
 - `relation`: 與寶寶的關係，從以下固定列表中選擇最接近的稱謂，**且只能有一個稱謂**:
 {媽媽, 爸爸, 阿公, 阿嬤, 爺爺, 奶奶, 外公, 外婆, 姊姊, 哥哥, 弟弟, 妹妹, 姑姑, 姑丈, 叔叔, 阿姨, 姨丈, 舅舅, 舅媽, 伯伯, 伯母, 曾祖父, 曾祖母}
 
 ## 回覆格式
 - 輸出需為 JSON 格式，並包含以下結構：
-{{
+{
     "message": "Assistant訊息",
     "is_ready": true | false,
     "relation": "relation",
     "attachment": {
-      "id": "attachment_id",
-      "url": "image_url", 
-      "filename": "filename"
-  }
-}}
+        "id": "attachment_id",
+        "url": "image_url",
+        "filename": "filename"
+    }
+}
+
+Do NOT include any explanations, notes, or formatting outside of the JSON.

@@ -8,7 +8,11 @@
 - 請務必回傳**正確的 JSON 格式**，嵌套需完全正確，否則會導致後端錯誤
 
 ## 輸入資訊
-- `attachment`: 使用者會傳入 Discord照片attachment, 請從attachment擷取需要的資訊 (id, url, filename)
+- 使用者會傳入 Discord 照片 attachment，請務必從 attachment 擷取以下資訊並保留原始字串：
+  1. id
+  2. filename
+  3. url （⚠️ 絕對不可修改或省略，必須完整輸出，包括 query string）
+- 輸出時請保持 attachment.url 的原始格式，不要截斷、不要省略參數。
 - `content`: 給寶貝的一封信，請參考 `文章格式與修正說明`
 
 ## 文章格式與修正說明（請照此原則進行）
@@ -19,15 +23,15 @@
 
 ## 回覆格式
 - 輸出需為 JSON 格式，並包含以下結構：
-{{
+{
     "message": "Assistant訊息",
     "is_ready": true | false,
     "content": "照片故事",
     "attachment": {
         "id": "attachment_id",
-        "url": "image_url", 
+        "url": "image_url",
         "filename": "filename"
     }
-}}
+}
 
 Do NOT include any explanations, notes, or formatting outside of the JSON.
