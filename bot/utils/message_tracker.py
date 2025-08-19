@@ -41,10 +41,7 @@ def load_task_entry_records() -> dict:
 
 def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, result=None):
     records = load_task_entry_records()
-    if user_id not in records:
-        records[user_id] = {}
-
-    if str(mission_id) not in records[user_id]:
+    if user_id not in records or str(mission_id) not in records[user_id]:
         records[user_id] = {} # remove all the previous records for this user
 
     records[user_id][str(mission_id)] = {
@@ -53,9 +50,6 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
         "result": result,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-
-    if len(records[user_id]) > max_records:
-        records[user_id] = dict(sorted(records[user_id].items(), key=lambda x: x[1]['date'], reverse=True)[:max_records])
 
     with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
@@ -77,8 +71,8 @@ def load_growth_photo_records() -> dict:
 
 def save_growth_photo_records(user_id: str, message_id: str, mission_id: int):
     records = load_growth_photo_records()
-    if user_id not in records:
-        records[user_id] = {}
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = {} # remove all the previous records for this user
 
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
@@ -104,12 +98,8 @@ def load_conversations_records() -> dict:
 
 def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
     records = load_conversations_records()
-    if str(user_id) not in records:
-        records[str(user_id)] = {}
-
-    if str(mission_id) not in records[str(user_id)]:
-        records[str(user_id)] = {} # remove all the previous records for this user
-        records[str(user_id)][str(mission_id)] = []
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = defaultdict(list)  # remove all the previous records for this user
 
     records[str(user_id)][str(mission_id)].append({
         "role": role,

@@ -15,6 +15,10 @@ from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
 )
+from bot.handlers.theme_mission_handler import (
+    handle_theme_mission_start,
+    process_theme_mission_filling
+)
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
 from bot.utils.message_tracker import (
@@ -109,6 +113,8 @@ async def handle_direct_message(client, message):
         await process_add_on_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.theme_mission_list:
+        await process_theme_mission_filling(client, message, student_mission_info)
     elif mission_id < 65:
          await handle_class_question(client, message, student_mission_info)
     elif mission_id >= 102 and mission_id <= 135:
@@ -134,6 +140,8 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
         await handle_quiz_mission_start(client, user_id, mission_id)
+    elif mission_id in config.theme_mission_list:
+        await handle_theme_mission_start(client, user_id, mission_id)
     else:
         print(f"Unhandled mission ID: {mission_id}")
         return
@@ -147,8 +155,8 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
         embed = view.generate_embed(baby_id, int(mission_id))
         view.message = await user.send(embed=embed, view=view)
         # save and delete task status
-        save_growth_photo_records(user_id, view.message.id, mission_id)
-        delete_task_entry_record(user_id, mission_id)
+        save_growth_photo_records(str(user_id), view.message.id, mission_id)
+        delete_task_entry_record(str(user_id), mission_id)
         # Log the successful message send
         client.logger.info(f"Send photo message to user {user_id}, mission {mission_id}")
     except Exception as e:
