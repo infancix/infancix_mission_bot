@@ -31,6 +31,8 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
+    if user_id in client.add_on_mission_replace_index:
+        del client.add_on_mission_replace_index[user_id]
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -79,7 +81,7 @@ async def process_baby_registration_message(client, message, student_mission_inf
         return
 
     if message.attachments:
-        user_message = f"收到使用者的照片\n message attachment object: {message.attachments[0]}"
+        user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments[0]}"
     else:
         user_message = message.content
 
@@ -101,13 +103,6 @@ async def process_baby_registration_message(client, message, student_mission_inf
         view.message = await message.channel.send(embed=embed, view=view)
         save_task_entry_record(user_id, str(view.message.id), "baby_optin", mission_id, result=mission_result)
     elif student_mission_info.get('current_step', 1) > 1 and mission_result.get('is_ready', False) == True:
-        baby = await client.api_utils.get_baby_profile(user_id)
-        mission_result['content'] = get_baby_intro(
-            baby.get('baby_name', '小寶貝'),
-            baby.get('gender', 'f'),
-            baby.get('birthdate', datetime.now().date().strftime('%Y-%m-%d')),
-            lang_version=student_mission_info.get('lang_version', 'zh')
-        )
         await submit_image_data(client, message, student_mission_info, mission_result)
     else:
         await message.channel.send(mission_result['message'])
@@ -121,7 +116,11 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     prompt_path = config.get_prompt_file(mission_id)
 
     if message.attachments:
-        user_message = f"收到使用者的照片\n message attachment object: {message.attachments[0]}"
+        if user_id not in client.add_on_mission_replace_index:
+            user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments[0]}"
+            client.add_on_mission_replace_index[user_id] = 1
+        else:
+            user_message = f"User wants to replace photo.\n New uploaded attachment: {message.attachments[0]}"
     else:
         user_message = message.content
 
@@ -137,12 +136,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     save_conversations_record(user_id, mission_id, 'user', user_message)
 
     if mission_result.get('is_ready'):
-        if mission_id in config.family_intro_mission:
-            mission_result['aside_text'] = mission_result.get('relation', '家人')
-            mission_result['content'] = get_family_intro(mission_id, mission_result['aside_text'], lang_version=student_mission_info.get('lang_version', 'zh'))
-            await submit_image_data(client, message, student_mission_info, mission_result)
-            return
-        elif mission_id in config.photo_mission_without_aside_text:
+        if mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text:
             await submit_image_data(client, message, student_mission_info, mission_result)
             return
         else:
@@ -155,14 +149,11 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             if mission_id in config.family_intro_mission:
                 embed = get_relationship_embed()
                 await message.channel.send(embed=embed)
-                save_conversations_record(user_id, mission_id, 'assistant', f"請使用者輸入照片中人物與寶寶的關係")
             else:
                 if mission_id in config.photo_mission_with_title_and_content:
                     embed = get_letter_embed()
-                    save_conversations_record(user_id, mission_id, 'assistant', f"請使用者寫下給寶寶的一封信")
                 else:
                     embed = get_aside_text_embed()
-                    save_conversations_record(user_id, mission_id, 'assistant', f"請使用者輸入aside_text")
                 view = TaskSelectView(client, 'go_skip', mission_id, mission_result=mission_result)
                 view.message = await message.channel.send(embed=embed, view=view)
                 save_task_entry_record(user_id, str(view.message.id), "go_skip", mission_id, result=mission_result)
@@ -184,7 +175,15 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
     prompt_path = config.get_prompt_file(mission_id)
 
     if message.attachments:
-        user_message = f"收到使用者的照片\n message attachment object: {message.attachments}"
+        if user_id in client.add_on_mission_replace_index:
+            replace_index = client.add_on_mission_replace_index[user_id]
+            user_message = (
+                f"User wants to replace photo #{replace_index}.\n"
+                f"New uploaded attachment object: {message.attachments}"
+            )
+            del client.add_on_mission_replace_index[user_id]
+        else:
+            user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments}"
     else:
         user_message = message.content
 
@@ -196,7 +195,9 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
         # get reply message
         mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
-        if len(mission_result.get('attachment', [])) < 4:
+        if len(mission_result.get('attachment', [])) == 4:
+            mission_result['is_ready'] = True
+        elif len(mission_result.get('attachment', [])) < 4:
             mission_result['is_ready'] = False
 
     # log user message

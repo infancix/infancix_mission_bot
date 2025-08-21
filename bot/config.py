@@ -40,7 +40,7 @@ class Config:
             self.photo_mission_with_title_and_content +
             self.add_on_photo_mission
         )
-        self.first_mission_per_book = [1004]
+        self.first_mission_per_book = [1001]
 
         # theme story book
         self.theme_mission_list = [7001, 7008, 7015, 7022, 7029, 7036]
