@@ -53,8 +53,10 @@ async def process_theme_mission_filling(client, message, student_mission_info):
         await message.channel.send("請先完成主角寶寶姓名登記，再上傳照片喔！")
         return
 
-    if message.attachments:
-        user_message = f"收到使用者的照片\n message attachment object: {message.attachments}"
+    if student_mission_info.get('current_step', 1) == 2 and len(message.attachments) == 1:
+        user_message = f"New uploaded cover page object: {message.attachments[0]}"
+    elif message.attachments:
+        user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments}"
     else:
         user_message = message.content
 

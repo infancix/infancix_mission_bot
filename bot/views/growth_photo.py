@@ -2,7 +2,6 @@ import discord
 import time
 from bot.config import config
 from bot.utils.message_tracker import (
-    save_conversations_record,
     delete_growth_photo_record,
     delete_conversations_record
 )
@@ -90,18 +89,21 @@ class GrowthPhotoView(discord.ui.View):
         await channel.send(msg_task)
 
         # Check mission status
+        '''
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         book_id = mission_info.get('book_id', 0)
         self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
         if book_id is not None and book_id != 0:
             # If this is the very first mission of the book, generate the album immediately
             if int(self.mission_id) in config.first_mission_per_book:
-                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+                #await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+                pass
             else:
                 incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-                if len(incomplete_missions) == 0:
+                #if len(incomplete_missions) == 0:
                     # All photo missions are complete; generate the album
-                    await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+                    #await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+        '''
 
         # Delete the message record
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
@@ -119,10 +121,7 @@ class GrowthPhotoView(discord.ui.View):
             return
 
         photo_number = custom_id
-        student_mission_info = await self.client.api_utils.get_student_is_in_mission(str(interaction.user.id))
-        thread_id = student_mission_info['thread_id']
-        mission_instructions = f"我要更換第 {photo_number} 張照片"
-        save_conversations_record(str(interaction.user.id), student_mission_info['mission_id'], 'user', mission_instructions)
+        self.client.add_on_mission_replace_index[str(interaction.user.id)] = photo_number
 
         embed = discord.Embed(
             title="🔼 請上傳新照片",
