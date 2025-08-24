@@ -31,8 +31,8 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
-    if user_id in client.add_on_mission_replace_index:
-        del client.add_on_mission_replace_index[user_id]
+    if user_id in client.photo_mission_replace_index:
+        del client.photo_mission_replace_index[user_id]
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -41,7 +41,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     if int(mission_id) == config.baby_register_mission:
         embed = get_baby_registration_embed()
         await user.send(embed=embed)
-        save_conversations_record(user_id, mission_id, 'assistant', "請使用者輸入寶寶的出生資料，包含寶寶中文暱稱、英文名字、出生日期、性別、身高、體重和頭圍。")
+        save_conversations_record(user_id, mission_id, 'assistant', "請使用者輸入寶寶的出生資料，包含寶寶暱稱、出生日期、性別、身高、體重和頭圍。")
     elif int(mission_id) in config.add_on_photo_mission:
         embed = get_add_on_photo_embed(mission)
         view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
@@ -116,9 +116,9 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     prompt_path = config.get_prompt_file(mission_id)
 
     if message.attachments:
-        if user_id not in client.add_on_mission_replace_index:
+        if user_id not in client.photo_mission_replace_index:
             user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments[0]}"
-            client.add_on_mission_replace_index[user_id] = 1
+            client.photo_mission_replace_index[user_id] = 1
         else:
             user_message = f"User wants to replace photo.\n New uploaded attachment: {message.attachments[0]}"
     else:
@@ -175,13 +175,13 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
     prompt_path = config.get_prompt_file(mission_id)
 
     if message.attachments:
-        if user_id in client.add_on_mission_replace_index:
-            replace_index = client.add_on_mission_replace_index[user_id]
+        if user_id in client.photo_mission_replace_index:
+            replace_index = client.photo_mission_replace_index[user_id]
             user_message = (
                 f"User wants to replace photo #{replace_index}.\n"
                 f"New uploaded attachment object: {message.attachments}"
             )
-            del client.add_on_mission_replace_index[user_id]
+            del client.photo_mission_replace_index[user_id]
         else:
             user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments}"
     else:
@@ -338,8 +338,7 @@ def get_baby_registration_embed():
     embed = discord.Embed(
         title="📝 寶寶出生資料登記",
         description=(
-            "🧸 中文暱稱（建議2-3字）\n"
-            "🧸 英文暱稱\n"
+            "🧸 暱稱（建議2-3字）\n"
             "🎂 出生日期（例如：2025-05-01）\n"
             "👤 性別（男/女）\n"
             "📏 身高（cm）\n"
@@ -399,8 +398,7 @@ def get_baby_data_confirmation_embed(mission_result):
     embed.add_field(
         name="👶 寶寶資料",
         value=(
-            f"🧸 中文暱稱：{mission_result.get('baby_name', '未設定')}\n"
-            f"🧸 英文名字：{mission_result.get('baby_name_en', '未設定')}\n"
+            f"🧸 暱稱：{mission_result.get('baby_name', '未設定')}\n"
             f"🎂 出生日期：{mission_result.get('birthday', '未設定')}\n"
             f"👤 性別：{mission_result.get('gender', '未設定')}\n"
             f"📏 身高：{mission_result.get('height', '未設定')} cm\n"

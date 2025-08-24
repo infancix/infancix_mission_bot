@@ -33,7 +33,7 @@ class MissionBot(discord.Client):
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
-        self.add_on_mission_replace_index = defaultdict(int)
+        self.photo_mission_replace_index = defaultdict(int)
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)

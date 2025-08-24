@@ -7,6 +7,7 @@ class Config:
         load_dotenv()
 
         self.ENV = True if os.getenv('ENV') == 'dev' else False
+        self.ADMIN_USER_IDS = ['1281121934536605739']
         self.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
         self.DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
         self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
@@ -43,6 +44,14 @@ class Config:
         self.first_mission_per_book = [1001]
 
         # theme story book
+        self.theme_book_map = {
+            13: 7001,
+            14: 7008,
+            15: 7015,
+            16: 7022,
+            17: 7029,
+            18: 7036
+        }
         self.theme_mission_list = [7001, 7008, 7015, 7022, 7029, 7036]
 
     def get_prompt_file(self, mission_id, current_step=1):

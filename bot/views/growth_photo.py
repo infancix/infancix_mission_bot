@@ -121,7 +121,7 @@ class GrowthPhotoView(discord.ui.View):
             return
 
         photo_number = custom_id
-        self.client.add_on_mission_replace_index[str(interaction.user.id)] = photo_number
+        self.client.photo_mission_replace_index[str(interaction.user.id)] = photo_number
 
         embed = discord.Embed(
             title="🔼 請上傳新照片",
