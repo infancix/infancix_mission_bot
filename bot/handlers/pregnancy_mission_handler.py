@@ -87,7 +87,7 @@ async def process_pregnancy_registration_message(client, message, student_missio
         # Save task message
         await client.api_utils.store_message(user_id, 'assistant', msg)
 
-        if mission_id == pregnancy_register_mission:
+        if mission_id == config.pregnancy_register_mission:
             # Send log to Background channel
             channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
             if channel is None or not isinstance(channel, discord.TextChannel):

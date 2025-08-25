@@ -136,9 +136,16 @@ class SubmitButton(discord.ui.Button):
         await view.client.api_utils.update_student_mission_status(**student_mission_info)
 
         # Send completion message
+        description = (
+            "📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n"
+            "📦 Baby120 寄件說明\n"
+            "書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
+            "收檔後 15 個工作天內出貨。\n"
+            "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
+        )
         embed = discord.Embed(
             title="🎆 任務完成",
-            description=f"已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
+            description=description,
             color=0xeeb2da,
         )
         await interaction.response.send_message(embed=embed)

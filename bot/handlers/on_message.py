@@ -25,6 +25,7 @@ from bot.views.theme_book_view import ThemeBookView
 from bot.utils.message_tracker import (
     delete_task_entry_record,
     save_growth_photo_records,
+    load_theme_book_edit_records,
     save_theme_book_edit_record
 )
 
@@ -43,7 +44,10 @@ async def handle_background_message(client, message):
         elif photo_match:
             baby_id = int(photo_match.group(1))
             mission_id = int(photo_match.group(2))
-            await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
+            if mission_id < 7000:
+                await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
+            else:
+                await handle_notify_theme_book_change_page(client, user_id, baby_id)
         elif album_match:
             baby_id = int(album_match.group(1))
             book_id = int(album_match.group(2))
@@ -231,3 +235,22 @@ async def handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id):
     except Exception as e:
         client.logger.error(f"Failed to send theme book message to user {user_id}: {e}")
     return
+
+async def handle_notify_theme_book_change_page(client, user_id, baby_id):
+    records = load_theme_book_edit_records()
+    try:
+        if str(user_id) in records:
+            base_mission_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
+            channel = await client.fetch_user(user_id)
+            message = await channel.fetch_message(int(edit_status['message_id']))
+            await message.delete()
+
+            # Create a new one
+            book_info = edit_status.get('result', None)
+            view = ThemeBookView(client, book_info)
+            embed = view.get_current_embed(str(user_id))
+            view.message = await channel.send(embed=embed, view=view)
+            save_theme_book_edit_record(str(user_id), view.message.id, base_mission_id, book_info)
+            client.logger.info(f"✅ Restored theme book edits for user {user_id}")
+    except Exception as e:
+        client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
