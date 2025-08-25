@@ -53,7 +53,19 @@ async def process_theme_mission_filling(client, message, student_mission_info):
         await message.channel.send("請先完成主角寶寶姓名登記，再上傳照片喔！")
         return
 
-    if student_mission_info.get('current_step', 1) == 2 and len(message.attachments) == 1:
+    if user_id in client.photo_mission_replace_index and message.attachments:
+        offset = client.photo_mission_replace_index[user_id][0]
+        if offset == 0:
+            user_message = (
+                f"User wants to replace cover page.\n"
+                f"New uploaded cover page object: {message.attachments[0]}"
+            )
+        else:
+            user_message = (
+                f"User wants to replace photo #{offset}.\n"
+                f"New uploaded attachment object: {message.attachments[0]}"
+            )
+    elif student_mission_info.get('current_step', 1) == 2 and len(message.attachments) == 1:
         user_message = f"New uploaded cover page object: {message.attachments[0]}"
     elif message.attachments:
         user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments}"
@@ -68,28 +80,39 @@ async def process_theme_mission_filling(client, message, student_mission_info):
         # get reply message
         mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
+        if mission_result.get('attachment') and len(mission_result.get('attachment')) < 6:
+            mission_result['is_ready'] = False
 
     # log user message
     save_conversations_record(user_id, mission_id, 'user', user_message)
 
     # Get enough information to proceed
     if mission_result.get('is_ready'):
-        embed = get_waiting_embed()
+        embed = get_waiting_embed(watting_time='long')
         await message.channel.send(embed=embed)
-        if student_mission_info['current_step'] == 2 and mission_result.get('cover', {}).get('id', None):
-            await submit_image_data(client, user_id, mission_id, {'attachment': mission_result['cover']})
-        for image_number, attachment in enumerate(mission_result.get('attachment', []), 1):
-            # upload image one by one
-            if image_number <= 6:
-                successs = await submit_image_data(client, user_id, mission_id+image_number, {'attachment': attachment})
 
-        # start to generate album
-        #await client.api_utils.submit_generate_album_request(user_id, book_id)
+        # re-submit single page
+        if user_id in client.photo_mission_replace_index:
+            offset, resubmit_mission_id = client.photo_mission_replace_index[user_id]
+            success = await client.api_utils.update_mission_image_content(user_id, resubmit_mission_id, [mission_result['attachment'][offset-1]], aside_text=mission_result.get('aside_text'))
+            if bool(success):
+                await client.api_utils.submit_generate_photo_request(user_id, resubmit_mission_id)
+                client.logger.info(f"送出繪本任務 {resubmit_mission_id}")
+            else:
+                client.logger.warning(f"送出繪本任務 {resubmit_mission_id} 失敗")
+                await message.channel.send("照片上傳失敗了，請稍後再試，或是尋求客服協助喔！")
+        # Submit multiple pages
+        else:
+            success = await client.api_utils.update_mission_multiple_image_content(user_id, mission_id, mission_result.get('attachment'))
+            if bool(success):
+                # start to generate album
+                await client.api_utils.submit_generate_album_request(user_id, book_id)
+
     else:
         # Step1: baby name registration
         if student_mission_info.get('current_step', 1) == 1 and mission_result.get('baby_name'):
-            successs = await submit_baby_data(client, message, student_mission_info, mission_result)
-            if bool(successs):
+            success = await submit_baby_data(client, message, student_mission_info, mission_result)
+            if bool(success):
                 mission_info = await client.api_utils.get_mission_info(mission_id)
                 embed = get_cover_instruction_embed(mission_info)
                 await message.channel.send(embed=embed)
@@ -100,11 +123,8 @@ async def process_theme_mission_filling(client, message, student_mission_info):
 
         # Step2: cover photo upload
         elif student_mission_info.get('current_step', 1) == 2 and mission_result.get('cover', {}).get('id', None):
-            payload = {
-                'attachment': mission_result['cover'],
-            }
-            successs = await submit_image_data(client, user_id, mission_id, payload)
-            if bool(successs):
+            success = await client.api_utils.update_mission_image_content(user_id, mission_id, [mission_result['cover']])
+            if bool(success):
                 mission_info = await client.api_utils.get_mission_info(mission_id+1)
                 embed = get_story_pages_embed(mission_info)
                 await message.channel.send(embed=embed)
@@ -118,18 +138,6 @@ async def process_theme_mission_filling(client, message, student_mission_info):
             save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 # --------------------- Event Handlers ---------------------
-async def submit_image_data(client, user_id, mission_id, mission_result, submit_request=False):
-    # Process the image attachment
-    if isinstance(mission_result.get('attachment'), list):
-        attachment_obj = mission_result.get('attachment')
-    else:
-        attachment_obj = [mission_result.get('attachment')]
-
-    update_status = await client.api_utils.update_mission_image_content(
-        user_id, mission_id, attachment_obj, aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
-    )
-    return update_status
-
 async def submit_baby_data(client, message, student_mission_info, mission_result):
     response = await client.api_utils.update_student_baby_name(str(message.author.id), mission_result.get('baby_name', None))
     if not bool(response):
@@ -179,10 +187,16 @@ def get_story_pages_embed(mission_info):
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
-def get_waiting_embed():
-    embed = discord.Embed(
-        title=f"繪本準備中，請稍等一下",
-        color=0xeeb2da
-    )
+def get_waiting_embed(watting_time='short'):
+    if watting_time == 'long':
+        embed = discord.Embed(
+            title=f"繪本準備中，請稍 3 ~ 5 分鐘喔 !",
+            color=0xeeb2da
+        )
+    else:
+        embed = discord.Embed(
+            title=f"繪本準備中，請稍等一下",
+            color=0xeeb2da
+        )
     embed.set_image(url=f"https://infancixbaby120.com/discord_assets/loading2.gif")
     return embed

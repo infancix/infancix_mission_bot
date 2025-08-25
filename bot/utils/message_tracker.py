@@ -12,6 +12,7 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 GROWTH_PHOTO_LOG_PATH = DATA_DIR / "growth_photo_records.json"
+THEME_BOOK_EDIT_LOG_PATH = DATA_DIR / "theme_book_edit_records.json"
 CONVERSATION_LOG_PATH = DATA_DIR / "conversation_records.json"
 
 def load_quiz_message_records() -> dict:
@@ -117,4 +118,33 @@ def delete_conversations_record(user_id: str, mission_id: int):
         if not records[user_id]:  # Remove user entry if no missions left
             del records[user_id]
         with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=4, ensure_ascii=False)
+
+def load_theme_book_edit_records() -> dict:
+    if THEME_BOOK_EDIT_LOG_PATH.exists():
+        with open(THEME_BOOK_EDIT_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_theme_book_edit_record(user_id: str, message_id: str, mission_id: int, result=None):
+    records = load_theme_book_edit_records()
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = {}  # remove all the previous records for this user
+
+    records[user_id][str(mission_id)] = {
+        "message_id": message_id,
+        "result": result,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)
+
+def delete_theme_book_edit_record(user_id: str, mission_id: int):
+    records = load_theme_book_edit_records()
+    if user_id in records and str(mission_id) in records[user_id]:
+        del records[user_id][str(mission_id)]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
+        with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
