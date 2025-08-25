@@ -11,10 +11,12 @@ from bot.config import config
 from bot.utils.message_tracker import (
     load_quiz_message_records,
     load_task_entry_records,
-    load_growth_photo_records
+    load_growth_photo_records,
+    load_theme_book_edit_records
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
+from bot.views.theme_book_view import ThemeBookView
 from bot.views.quiz import QuizView
 
 async def run_scheduler():
@@ -85,6 +87,20 @@ async def load_quiz_message(client):
             client.logger.info(f"✅ Restored quiz for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore quiz for {user_id}: {e}")
+
+async def load_theme_book_edit_messages(client):
+    records = load_theme_book_edit_records()
+    for user_id in records:
+        try:
+            channel = await client.fetch_user(user_id)
+            for mission_id, edit_status in records[user_id].items():
+                message = await channel.fetch_message(int(edit_status['message_id']))
+                result = edit_status.get('result', None)
+                view = ThemeBookView(client, result)
+                await message.edit(view=view)
+            client.logger.info(f"✅ Restored theme book edits for user {user_id}")
+        except Exception as e:
+            client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
 
 def get_user_id(source: discord.Interaction | discord.Message) -> str:
     if isinstance(source, discord.Interaction):

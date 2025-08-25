@@ -44,18 +44,24 @@ class PhotoTaskSelectView(discord.ui.View):
 
         self.add_item(PreviousButton(self.page > 0))
         self.add_item(PageIndicator(self.page, self.sorted_tasks))
-        self.add_item(NextButton(self.page < self.sorted_tasks - 1))
-
+        self.add_item(NextButton(self.page < self.total_pages - 1))
 
 class PhotoTaskSelect(discord.ui.Select):
     def __init__(self, client, user_id, incomplete_missions):
-        options = [
-            discord.SelectOption(
-                label=f"📷{mission['mission_title']}",
-                description=mission['photo_mission'],
-                value=mission['mission_id'])
-            for mission in incomplete_missions
-        ]
+        options = []
+        for mission in incomplete_missions:
+            if int(mission['mission_id']) < 7000:
+                options.append(discord.SelectOption(
+                    label=f"📷{mission['mission_title']}",
+                    description=mission['photo_mission'],
+                    value=mission['mission_id']
+                ))
+            else:
+                options.append(discord.SelectOption(
+                    label=f"📷{mission['mission_title'].replace("_封面", "")}",
+                    description=mission['mission_type'],
+                    value=mission['mission_id']
+                ))
 
         super().__init__(
             placeholder="繪本任務",
@@ -65,7 +71,7 @@ class PhotoTaskSelect(discord.ui.Select):
         )
 
         self.client = client
-        self.user_id = user_id
+        self.user_id = str(user_id)
 
     async def callback(self, interaction: discord.Interaction):
         selected_mission_id = int(self.values[0])
@@ -74,8 +80,15 @@ class PhotoTaskSelect(discord.ui.Select):
         self.view.stop()
         await interaction.response.edit_message(view=None)
 
-        from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
+        if selected_mission_id <= 1008 or self.user_id in config.ADMIN_USER_IDS:
+            if selected_mission_id in config.theme_mission_list:
+                from bot.handlers.theme_mission_handler import handle_theme_mission_start
+                await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
+            else:
+                from bot.handlers.photo_mission_handler import handle_photo_mission_start
+                await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
+        else:
+            await interaction.response.send_message("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):

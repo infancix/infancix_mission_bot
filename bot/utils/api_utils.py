@@ -182,6 +182,26 @@ class APIUtils:
         self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
         return await self._post_request(endpoint, payload)
 
+    async def update_mission_multiple_image_content(self, user_id, mission_id, discord_attachments=None, aside_text=None, content=None, endpoint='photo_mission/update_multiple_mission_image_content'):
+        payload = {
+            'discord_id': str(user_id),
+            'mission_id': int(mission_id)
+        }
+
+        if discord_attachments:
+            payload['attachments'] = []
+            for attachment in discord_attachments:
+                payload['attachments'].append({
+                    'id': attachment['id'],
+                    'url': attachment['url'],
+                    'filename': attachment['filename']
+                })
+
+        # TODO
+        # aside_text and content
+        self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
+        return await self._post_request(endpoint, payload)
+
     async def update_student_profile(self, user_id, student_name, pregnancy_status, due_date=None, endpoint='student_optin'):
         payload = {
             'discord_id': str(user_id),
@@ -222,6 +242,14 @@ class APIUtils:
             'head_circumference': str(float(head_circumference)) if head_circumference else None,
         }
 
+        self.logger.info(f"User {user_id} call {endpoint} {payload}.")
+        return await self._post_request(endpoint, payload)
+
+    async def update_student_baby_name(self, user_id, baby_name, endpoint='baby_optin'):
+        payload = {
+            'discord_id': str(user_id),
+            'baby_name': baby_name
+        }
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
 
@@ -317,12 +345,15 @@ class APIUtils:
                 async with session.post(url, json=data) as response:
                     if response.status == 200:
                         response_data = await response.json()
-                        if endpoint == 'user_login':
-                            return response_data.get('url')
-                        elif endpoint == 'update_community_record':
+                        if endpoint == "baby_optin":
                             return response_data
                         elif endpoint.startswith('get_'):
                             return response_data.get('data') or response_data.get('records')
+                        elif endpoint == "update_mission_image_content":
+                            if response_data.get('status') == 'success':
+                                return True
+                            else:
+                                return False
                         else:
                             return response_data
                     else:
@@ -337,3 +368,4 @@ class APIUtils:
             self.logger.error(f"Error Traceback: {error_traceback}")
             self.logger.error(f"Caller Function: {caller_function}, Line: {caller_line}")
             return None
+

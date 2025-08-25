@@ -98,7 +98,7 @@ class OpenAIUtils:
                 'message': f"{str(e)}\n{response}"
             }
 
-        self.logger.info(f"Final reuslts: {parsed}")
+        self.logger.debug(f"Final reuslts: {parsed}")
         return parsed
 
     def clean_message(self, message):
@@ -121,8 +121,8 @@ class OpenAIUtils:
             # system prompt
             messages = [
                 {
-                    "role": "system",
-                    "content": [{"type": "input_text", "text": prompt}]
+                    "role": "developer",
+                    "content": prompt
                 }
             ]
 
@@ -135,59 +135,31 @@ class OpenAIUtils:
                 if role == "user":
                     messages.append({
                         "role": role,
-                        "content": [{"type": "input_text", "text": str(msg)}]
+                        "content": str(msg)
                     })
                 elif role == "assistant":
                     messages.append({
                         "role": role,
-                        "content": [{"type": "output_text", "text": str(msg)}]
+                        "content": str(msg)
                     })
 
             # current input
             messages.append({
                 "role": "user",
-                "content": [{"type": "input_text", "text": str(user_input)}]
+                "content": str(user_input)
             })
 
             response = self.client.responses.create(
                 model="gpt-4o-mini",
-                input=messages
+                input=messages,
+                text={
+                    "format": {
+                        "type": "json_object",
+                    }
+                }
             )
-
             response_json = self.parsed_json(response.output_text)
             return response_json
         except Exception as e:
             self.logger.error(f"Error processing user message: {e}")
-            return {"error": str(e)}
-
-    def process_photo_info(self, prompt_path, image_url) -> dict:
-        try:
-            prompt = self.load_prompt(prompt_path)
-            response = self.client.responses.create(
-                model="gpt-4.1",
-                input=[
-                    {
-                        "role": "system",
-                        "content": [
-                            {
-                                "type": "input_text",
-                                "text": prompt,
-                            }
-                        ]
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "input_image",
-                                "image_url": image_url
-                            }
-                        ]
-                    }
-                ],
-            )
-            return self.parsed_json(response.output_text)
-
-        except Exception as e:
-            print(f"Error processing photo info: {e}")
             return {"error": str(e)}

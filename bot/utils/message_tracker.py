@@ -12,6 +12,7 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 GROWTH_PHOTO_LOG_PATH = DATA_DIR / "growth_photo_records.json"
+THEME_BOOK_EDIT_LOG_PATH = DATA_DIR / "theme_book_edit_records.json"
 CONVERSATION_LOG_PATH = DATA_DIR / "conversation_records.json"
 
 def load_quiz_message_records() -> dict:
@@ -41,10 +42,7 @@ def load_task_entry_records() -> dict:
 
 def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission_id:int, result=None):
     records = load_task_entry_records()
-    if user_id not in records:
-        records[user_id] = {}
-
-    if str(mission_id) not in records[user_id]:
+    if user_id not in records or str(mission_id) not in records[user_id]:
         records[user_id] = {} # remove all the previous records for this user
 
     records[user_id][str(mission_id)] = {
@@ -53,9 +51,6 @@ def save_task_entry_record(user_id: str, message_id: str, task_type:str, mission
         "result": result,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-
-    if len(records[user_id]) > max_records:
-        records[user_id] = dict(sorted(records[user_id].items(), key=lambda x: x[1]['date'], reverse=True)[:max_records])
 
     with open(TASK_ENTRY_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
@@ -77,8 +72,8 @@ def load_growth_photo_records() -> dict:
 
 def save_growth_photo_records(user_id: str, message_id: str, mission_id: int):
     records = load_growth_photo_records()
-    if user_id not in records:
-        records[user_id] = {}
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = {} # remove all the previous records for this user
 
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
@@ -104,12 +99,8 @@ def load_conversations_records() -> dict:
 
 def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
     records = load_conversations_records()
-    if str(user_id) not in records:
-        records[str(user_id)] = {}
-
-    if str(mission_id) not in records[str(user_id)]:
-        records[str(user_id)] = {} # remove all the previous records for this user
-        records[str(user_id)][str(mission_id)] = []
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = defaultdict(list)  # remove all the previous records for this user
 
     records[str(user_id)][str(mission_id)].append({
         "role": role,
@@ -127,4 +118,33 @@ def delete_conversations_record(user_id: str, mission_id: int):
         if not records[user_id]:  # Remove user entry if no missions left
             del records[user_id]
         with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=4, ensure_ascii=False)
+
+def load_theme_book_edit_records() -> dict:
+    if THEME_BOOK_EDIT_LOG_PATH.exists():
+        with open(THEME_BOOK_EDIT_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_theme_book_edit_record(user_id: str, message_id: str, mission_id: int, result=None):
+    records = load_theme_book_edit_records()
+    if user_id not in records or str(mission_id) not in records[user_id]:
+        records[user_id] = {}  # remove all the previous records for this user
+
+    records[user_id][str(mission_id)] = {
+        "message_id": message_id,
+        "result": result,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)
+
+def delete_theme_book_edit_record(user_id: str, mission_id: int):
+    records = load_theme_book_edit_records()
+    if user_id in records and str(mission_id) in records[user_id]:
+        del records[user_id][str(mission_id)]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
+        with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)

@@ -15,11 +15,18 @@ from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
 )
+from bot.handlers.theme_mission_handler import (
+    handle_theme_mission_start,
+    process_theme_mission_filling
+)
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
+from bot.views.theme_book_view import ThemeBookView
 from bot.utils.message_tracker import (
     delete_task_entry_record,
-    save_growth_photo_records
+    save_growth_photo_records,
+    load_theme_book_edit_records,
+    save_theme_book_edit_record
 )
 
 async def handle_background_message(client, message):
@@ -37,11 +44,17 @@ async def handle_background_message(client, message):
         elif photo_match:
             baby_id = int(photo_match.group(1))
             mission_id = int(photo_match.group(2))
-            await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
+            if mission_id < 7000:
+                await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
+            else:
+                await handle_notify_theme_book_change_page(client, user_id, baby_id)
         elif album_match:
             baby_id = int(album_match.group(1))
             book_id = int(album_match.group(2))
-            await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
+            if book_id in config.theme_book_map:
+                await handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id)
+            else:
+                await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
     return
 
 async def handle_direct_message(client, message):
@@ -109,6 +122,8 @@ async def handle_direct_message(client, message):
         await process_add_on_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.theme_mission_list:
+        await process_theme_mission_filling(client, message, student_mission_info)
     elif mission_id < 65:
          await handle_class_question(client, message, student_mission_info)
     elif mission_id >= 102 and mission_id <= 135:
@@ -130,6 +145,8 @@ async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
     if mission_id >= 101 and mission_id <= 135:
         await handle_pregnancy_mission_start(client, user_id, mission_id)
+    elif mission_id in config.theme_mission_list:
+        await handle_theme_mission_start(client, user_id, mission_id)
     elif mission_id in config.photo_mission_list:
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
@@ -147,8 +164,8 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
         embed = view.generate_embed(baby_id, int(mission_id))
         view.message = await user.send(embed=embed, view=view)
         # save and delete task status
-        save_growth_photo_records(user_id, view.message.id, mission_id)
-        delete_task_entry_record(user_id, mission_id)
+        save_growth_photo_records(str(user_id), view.message.id, mission_id)
+        delete_task_entry_record(str(user_id), mission_id)
         # Log the successful message send
         client.logger.info(f"Send photo message to user {user_id}, mission {mission_id}")
     except Exception as e:
@@ -193,3 +210,47 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
         client.logger.error(f"Failed to send album message to user {user_id}: {e}")
 
     return
+
+async def handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id):
+    mission_id = config.theme_book_map.get(book_id)
+    book_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
+    mission_info = await client.api_utils.get_mission_info(mission_id)
+
+    book_info.update({
+        'user_id': str(user_id),
+        'book_id': book_id,
+        'mission_id': mission_id,
+        'book_author': mission_info['mission_type'],
+    })
+
+    view = ThemeBookView(client, book_info)
+    embed = view.get_current_embed(str(user_id))
+
+    try:
+        user = await client.fetch_user(user_id)
+        view.message = await user.send(embed=embed, view=view)
+        # Log the successful message send
+        client.logger.info(f"Send theme book message to user {user_id}, book {book_id}")
+        save_theme_book_edit_record(str(user_id), view.message.id, mission_id, book_info)
+    except Exception as e:
+        client.logger.error(f"Failed to send theme book message to user {user_id}: {e}")
+    return
+
+async def handle_notify_theme_book_change_page(client, user_id, baby_id):
+    records = load_theme_book_edit_records()
+    try:
+        if str(user_id) in records:
+            base_mission_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
+            channel = await client.fetch_user(user_id)
+            message = await channel.fetch_message(int(edit_status['message_id']))
+            await message.delete()
+
+            # Create a new one
+            book_info = edit_status.get('result', None)
+            view = ThemeBookView(client, book_info)
+            embed = view.get_current_embed(str(user_id))
+            view.message = await channel.send(embed=embed, view=view)
+            save_theme_book_edit_record(str(user_id), view.message.id, base_mission_id, book_info)
+            client.logger.info(f"✅ Restored theme book edits for user {user_id}")
+    except Exception as e:
+        client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
