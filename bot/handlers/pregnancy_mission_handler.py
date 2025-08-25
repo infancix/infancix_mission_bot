@@ -87,6 +87,14 @@ async def process_pregnancy_registration_message(client, message, student_missio
         # Save task message
         await client.api_utils.store_message(user_id, 'assistant', msg)
 
+        if mission_id == pregnancy_register_mission:
+            # Send log to Background channel
+            channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+            if channel is None or not isinstance(channel, discord.TextChannel):
+                raise Exception('Invalid channel')
+            msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
+            await channel.send(msg_task)
+
 # -------------------- Helper Functions --------------------
 def get_pregnancy_registration_embed():
     embed = discord.Embed(
