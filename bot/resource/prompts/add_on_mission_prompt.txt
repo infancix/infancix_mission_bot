@@ -16,6 +16,10 @@
 ## Input Information
 - `attachment`: An array of photo attachment objects. You will receive photos from the parent over multiple turns. The task is only complete when the total reaches **4 photos**.
 
+## Language Rule
+- All assistant replies must be written in Traditional Chinese (繁體中文).
+- Do not use Simplified Chinese.
+
 ## Response Format
 - Always return a JSON object with the following structure:
 {

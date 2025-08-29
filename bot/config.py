@@ -7,7 +7,7 @@ class Config:
         load_dotenv()
 
         self.ENV = True if os.getenv('ENV') == 'dev' else False
-        self.ADMIN_USER_IDS = ['1281121934536605739']
+        self.ADMIN_USER_IDS = os.getenv('ADMIN_USER_ID_LIST').split('_')
         self.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
         self.DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
         self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')

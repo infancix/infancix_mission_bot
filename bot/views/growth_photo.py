@@ -74,9 +74,18 @@ class GrowthPhotoView(discord.ui.View):
         else:
             embed = discord.Embed(
                 title="🎆 任務完成",
-                description=f"已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
+                description=f"📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n",
                 color=0xeeb2da,
             )
+            incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
+            if len(incomplete_missions) == 0:
+                embed.description += (
+                "📦 Baby120 寄件說明\n"
+                "書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
+                "收檔後 15 個工作天內出貨。\n"
+                "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
+            )
+
         await interaction.response.send_message(embed=embed)
         await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
 
@@ -89,21 +98,18 @@ class GrowthPhotoView(discord.ui.View):
         await channel.send(msg_task)
 
         # Check mission status
-        '''
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         book_id = mission_info.get('book_id', 0)
         self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
         if book_id is not None and book_id != 0:
             # If this is the very first mission of the book, generate the album immediately
             if int(self.mission_id) in config.first_mission_per_book:
-                #await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
-                pass
+                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
             else:
                 incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-                #if len(incomplete_missions) == 0:
+                if len(incomplete_missions) == 0:
                     # All photo missions are complete; generate the album
-                    #await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
-        '''
+                    await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
 
         # Delete the message record
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))

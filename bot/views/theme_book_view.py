@@ -3,17 +3,9 @@ import time
 
 from bot.config import config
 from bot.utils.id_utils import encode_ids
-from bot.utils.message_tracker import delete_theme_book_edit_record
+from bot.utils.message_tracker import load_theme_book_edit_records, delete_theme_book_edit_record
 
-PAGE_OFFSET_MAP = {
-    0: 0,
-    1: 2,
-    2: 3,
-    3: 4,
-    4: 5,
-    5: 6,
-    6: 7
-}
+THEME_BOOK_PAGES = [0, 1, 2, 3, 4, 5, 6]
 
 class ThemeBookView(discord.ui.View):
     def __init__(self, client, book_info, timeout=None):
@@ -25,24 +17,25 @@ class ThemeBookView(discord.ui.View):
         self.book_id = book_info['book_id']
         self.base_mission_id = int(book_info['mission_id'])
         self.current_page = 0
-        self.total_pages = len(PAGE_OFFSET_MAP)
+        self.total_pages = len(THEME_BOOK_PAGES)
 
         # Update the book-page display
         self.update_buttons()
 
     def update_buttons(self):
         for item in self.children[:]:
-            if isinstance(item, (PreviousButton, NextButton, SubmitButton)):
+            if isinstance(item, (PreviousButton, PageIndicator, NextButton, SubmitButton)):
                 self.remove_item(item)
 
         self.add_item(PreviousButton(self.current_page > 0))
+        self.add_item(PageIndicator(self.current_page, self.total_pages))
         self.add_item(NextButton(self.current_page < self.total_pages - 1))
         self.add_item(SubmitButton())
 
     def get_current_embed(self, user_id):
-        if self.current_page not in PAGE_OFFSET_MAP:
+        if self.current_page not in THEME_BOOK_PAGES:
             raise ValueError(f"Invalid current_page: {self.current_page}")
-        page_offset = PAGE_OFFSET_MAP[self.current_page]
+        page_offset = THEME_BOOK_PAGES[self.current_page]
         current_mission_id = self.base_mission_id + page_offset
         self.client.photo_mission_replace_index[user_id] = (page_offset, current_mission_id)
         current_page_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{current_mission_id}.png?t={int(time.time())}"
@@ -74,6 +67,19 @@ class ThemeBookView(discord.ui.View):
         )
         embed.set_author(name=self.book_info['book_author'])
         embed.set_image(url=current_page_url)
+        return embed
+
+    def get_preview_link_embed(self):
+        code = encode_ids(self.baby_id, self.book_id)
+        link_target = f"https://infancixbaby120.com/babiary/{code}"
+        desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
+        image = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{self.book_id}/2.png?t={int(time.time())}"
+        embed = discord.Embed(
+            title=self.book_info['book_author'],
+            description=desc,
+            color=0xeeb2da,
+        )
+        embed.set_image(url=image)
         return embed
 
 class PreviousButton(discord.ui.Button):
@@ -110,6 +116,15 @@ class NextButton(discord.ui.Button):
         view.update_buttons()
         await interaction.response.edit_message(embed=embed, view=view)
 
+class PageIndicator(discord.ui.Button):
+    def __init__(self, current_page, total_pages):
+        super().__init__(
+            style=discord.ButtonStyle.secondary,
+            label=f"{current_page + 1}/{total_pages}",
+            disabled=True,
+            row=1
+        )
+
 class SubmitButton(discord.ui.Button):
     def __init__(self):
         super().__init__(
@@ -122,7 +137,8 @@ class SubmitButton(discord.ui.Button):
         view = self.view
 
         # clear status
-        del view.client.photo_mission_replace_index[str(interaction.user.id)]
+        if str(interaction.user.id) in view.client.photo_mission_replace_index:
+            del view.client.photo_mission_replace_index[str(interaction.user.id)]
 
         mission_info = await view.client.api_utils.get_mission_info(view.base_mission_id)
         reward = mission_info.get('reward', 100)
@@ -134,6 +150,14 @@ class SubmitButton(discord.ui.Button):
             'score': 1
         }
         await view.client.api_utils.update_student_mission_status(**student_mission_info)
+
+        records = load_theme_book_edit_records()
+        if str(interaction.user.id) in records:
+            base_mission_id, edit_status = next(iter(records.get(str(interaction.user.id), {}).items()))
+            channel = await view.client.fetch_user(interaction.user.id)
+            message = await channel.fetch_message(int(edit_status['message_id']))
+            embed = view.get_preview_link_embed()
+            await message.edit(embed=embed, view=None)
 
         # Send completion message
         description = (

@@ -122,7 +122,14 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         else:
             user_message = f"User wants to replace photo.\n New uploaded attachment: {message.attachments[0]}"
     else:
-        user_message = message.content
+        if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
+            user_message = f"User provided aside text: {message.content}"
+        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
+            user_message = f"User provide the relation of the image: {message.content}"
+        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_title_and_content:
+            user_message = f"User provide the content: {message.content}"
+        else:
+            user_message = message.content
 
     async with message.channel.typing():
         records = load_conversations_records()
