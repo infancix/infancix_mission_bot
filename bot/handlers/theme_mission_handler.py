@@ -162,7 +162,7 @@ def get_baby_registration_embed():
     embed = discord.Embed(
         title="📝 主角登記",
         description=(
-            "🧸 中文暱稱（建議2-3字）\n"
+            "🧸 暱稱（建議2-3字）\n"
         ),
         color=0xeeb2da,
     )

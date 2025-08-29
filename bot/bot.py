@@ -8,7 +8,7 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages
+from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -102,6 +102,9 @@ class MissionBot(discord.Client):
 
         await load_growth_photo_messages(self)
         self.logger.info("Finished loading growth photo messages")
+
+        await load_theme_book_edit_messages(self)
+        self.logger.info("Finished loading theme book edit messages")
 
         self.tree.add_command(
             app_commands.Command(

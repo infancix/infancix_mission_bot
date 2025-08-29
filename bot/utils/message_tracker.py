@@ -70,13 +70,14 @@ def load_growth_photo_records() -> dict:
             return json.load(f)
     return {}
 
-def save_growth_photo_records(user_id: str, message_id: str, mission_id: int):
+def save_growth_photo_records(user_id: str, message_id: str, mission_id: int, result=None):
     records = load_growth_photo_records()
     if user_id not in records or str(mission_id) not in records[user_id]:
         records[user_id] = {} # remove all the previous records for this user
 
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
+        "result": result
     }
 
     with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:

@@ -80,7 +80,7 @@ class PhotoTaskSelect(discord.ui.Select):
         self.view.stop()
         await interaction.response.edit_message(view=None)
 
-        if selected_mission_id <= 1008 or self.user_id in config.ADMIN_USER_IDS:
+        if selected_mission_id <= 1008 or str(self.user_id) in config.ADMIN_USER_IDS:
             if selected_mission_id in config.theme_mission_list:
                 from bot.handlers.theme_mission_handler import handle_theme_mission_start
                 await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
@@ -88,7 +88,7 @@ class PhotoTaskSelect(discord.ui.Select):
                 from bot.handlers.photo_mission_handler import handle_photo_mission_start
                 await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
         else:
-            await interaction.response.send_message("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
+            await interaction.followup.send("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):

@@ -164,7 +164,9 @@ class APIUtils:
     async def update_mission_image_content(self, user_id, mission_id, discord_attachments=None, aside_text=None, content=None, endpoint='photo_mission/update_mission_image_content'):
         payload = {
             'discord_id': str(user_id),
-            'mission_id': int(mission_id)
+            'mission_id': int(mission_id),
+            "aside_text": aside_text,
+            "content": content
         }
         if discord_attachments:
             payload['attachments'] = []
@@ -174,10 +176,6 @@ class APIUtils:
                     'url': attachment['url'],
                     'filename': attachment['filename']
                 })
-        if aside_text:
-            payload['aside_text'] = aside_text
-        if content:
-            payload['content'] = content
 
         self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
         return await self._post_request(endpoint, payload)

@@ -159,12 +159,13 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
     try:
         # Send the photo message to the user
         client.logger.info(f"Send photo message to user {user_id}, baby_id: {baby_id}, mission {mission_id}")
+        mission_result = await client.api_utils.get_student_mission_status(str(user_id), mission_id)
         user = await client.fetch_user(user_id)
-        view = GrowthPhotoView(client, user_id, int(mission_id))
+        view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
         embed = view.generate_embed(baby_id, int(mission_id))
         view.message = await user.send(embed=embed, view=view)
         # save and delete task status
-        save_growth_photo_records(str(user_id), view.message.id, mission_id)
+        save_growth_photo_records(str(user_id), view.message.id, mission_id, result=mission_result)
         delete_task_entry_record(str(user_id), mission_id)
         # Log the successful message send
         client.logger.info(f"Send photo message to user {user_id}, mission {mission_id}")
@@ -186,17 +187,6 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     }]
     view = AlbumView(client, albums)
     embed = view.get_current_embed()
-
-    incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
-    if len(incomplete_missions) > 0:
-        embed.description += "\n\n你已完成第一步，太棒了！🌟\n繼續努力，完成所有任務就能收集一整本屬於你們的成長繪本📘"
-    else:
-        embed.description += (
-            "\n\n📦 Baby120 寄件說明\n"
-            "書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
-            "收檔後 15 個工作天內出貨。\n"
-            "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
-        )
 
     try:
         # Send the album preview to the user
