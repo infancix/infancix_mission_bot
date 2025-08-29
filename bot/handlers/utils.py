@@ -68,7 +68,7 @@ async def load_growth_photo_messages(client):
             channel = await client.fetch_user(user_id)
             for mission_id, photo_status in records[user_id].items():
                 message = await channel.fetch_message(int(photo_status['message_id']))
-                view = GrowthPhotoView(client, user_id, int(mission_id))
+                view = GrowthPhotoView(client, user_id, int(mission_id), photo_status.get('result', {}))
                 await message.edit(view=view)
             client.logger.info(f"✅ Restore growth photo for user {user_id}")
         except Exception as e:

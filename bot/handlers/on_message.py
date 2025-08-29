@@ -159,12 +159,13 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
     try:
         # Send the photo message to the user
         client.logger.info(f"Send photo message to user {user_id}, baby_id: {baby_id}, mission {mission_id}")
+        mission_result = await client.api_utils.get_student_mission_status(str(user_id), mission_id)
         user = await client.fetch_user(user_id)
-        view = GrowthPhotoView(client, user_id, int(mission_id))
+        view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
         embed = view.generate_embed(baby_id, int(mission_id))
         view.message = await user.send(embed=embed, view=view)
         # save and delete task status
-        save_growth_photo_records(str(user_id), view.message.id, mission_id)
+        save_growth_photo_records(str(user_id), view.message.id, mission_id, result=mission_result)
         delete_task_entry_record(str(user_id), mission_id)
         # Log the successful message send
         client.logger.info(f"Send photo message to user {user_id}, mission {mission_id}")

@@ -6,11 +6,12 @@ from bot.utils.message_tracker import (
     delete_conversations_record
 )
 class GrowthPhotoView(discord.ui.View):
-    def __init__(self, client, user_id, mission_id, timeout=None):
+    def __init__(self, client, user_id, mission_id, mission_result={}, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.user_id = user_id
         self.mission_id = mission_id
+        self.mission_result = mission_result
 
         if self.mission_id in config.add_on_photo_mission:
             for photo_number in range(1, 5):
@@ -22,10 +23,19 @@ class GrowthPhotoView(discord.ui.View):
                 self.change_photo_button.callback = self.change_photo_callback
                 self.add_item(self.change_photo_button)
 
+        if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
+            self.remove_aside_text_button = discord.ui.Button(
+                custom_id='remove_aside_text',
+                label="刪除文字方塊",
+                style=discord.ButtonStyle.secondary
+            )
+            self.remove_aside_text_button.callback = self.remove_aside_text_callback
+            self.add_item(self.remove_aside_text_button)
+
         self.complete_button = discord.ui.Button(
             custom_id='complete_photo',
             label="送出 (送出即無法修改)",
-            style=discord.ButtonStyle.secondary
+            style=discord.ButtonStyle.success
         )
         self.complete_button.callback = self.complete_callback
         self.add_item(self.complete_button)
@@ -35,12 +45,15 @@ class GrowthPhotoView(discord.ui.View):
     def generate_embed(self, baby_id, mission_id):
         if mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
-        elif mission_id == config.baby_register_mission or mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text:
-            description = "📷 換照片：直接重新上傳即可"
+        elif mission_id in config.photo_mission_with_aside_text:
+            if self.mission_result.get('aside_text', None):
+                description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出(限30字)\n ❌刪除文字: 點選刪除按鈕即可"
+            else:
+                description = "📷 換照片：請選擇要更換的照片\n💬 新增照片回憶(限30字)\n"
         elif mission_id in config.photo_mission_with_title_and_content:
             description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出\n"
         else:
-            description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出(限30字)\n"
+            description = "📷 換照片：直接重新上傳即可"
 
         embed = discord.Embed(
             title="🤍 製作完成預覽",
@@ -100,16 +113,12 @@ class GrowthPhotoView(discord.ui.View):
         # Check mission status
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         book_id = mission_info.get('book_id', 0)
-        self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
         if book_id is not None and book_id != 0:
-            # If this is the very first mission of the book, generate the album immediately
-            if int(self.mission_id) in config.first_mission_per_book:
+            self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
+            album_status = await self.client.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id)
+            incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
+            if album_status.get('design_id') is None or len(incomplete_missions) == 0:
                 await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
-            else:
-                incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-                if len(incomplete_missions) == 0:
-                    # All photo missions are complete; generate the album
-                    await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
 
         # Delete the message record
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
@@ -135,6 +144,17 @@ class GrowthPhotoView(discord.ui.View):
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)
+
+    async def remove_aside_text_callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        update_status = await self.client.api_utils.update_mission_image_content(str(interaction.user.id), self.mission_id, aside_text="[REMOVE_ASIDE_TEXT]")
+        if bool(update_status):
+            await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
+            self.client.logger.info(f"送出繪本任務 {self.mission_id}")
 
     async def on_timeout(self):
         for item in self.children:
