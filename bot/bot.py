@@ -93,6 +93,14 @@ class MissionBot(discord.Client):
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
+    async def initiate_baby_data_update(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.send_message("開始修改寶寶資料！", ephemeral=True)
+            from bot.handlers.photo_mission_handler import handle_photo_mission_start
+            await handle_photo_mission_start(self, str(interaction.user.id), mission_id=1001)
+        except Exception as e:
+            self.logger.error(f"Error while call_revise_baby_data: {str(e)}")
+
     async def setup_hook(self):
         await load_task_entry_messages(self)
         self.logger.info("Finished loading task entry messages")
@@ -105,6 +113,14 @@ class MissionBot(discord.Client):
 
         await load_theme_book_edit_messages(self)
         self.logger.info("Finished loading theme book edit messages")
+
+        self.tree.add_command(
+            app_commands.Command(
+                name="更新寶寶資料",
+                description="修改寶寶出生時的基本資料",
+                callback=self.initiate_baby_data_update
+            )
+        )
 
         self.tree.add_command(
             app_commands.Command(
@@ -158,6 +174,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    #schedule.every().day.at("10:00").do(lambda: asyncio.create_task(scheduled_job(client)))
+    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
 
     client.run(config.DISCORD_TOKEN)

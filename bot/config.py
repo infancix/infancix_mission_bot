@@ -26,6 +26,7 @@ class Config:
 
         self.IMAGE_ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
 
+        self.free_mission_list = [2, 3, 5, 6, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009]
         self.pregnancy_register_mission = 101
         self.baby_register_mission = 1001
         self.photo_mission_with_aside_text = [2, 3, 5, 6, 1004, 1006, 1007]

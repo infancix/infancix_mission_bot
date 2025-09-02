@@ -24,12 +24,6 @@ async def run_scheduler():
         schedule.run_pending()
         await asyncio.sleep(10)
 
-def scheduled_job(client):
-    today = datetime.datetime.now()
-
-    # Daily job
-    asyncio.create_task(daily_job(client))
-
 async def daily_job(client):
     client.logger.debug('Running job now...')
 
