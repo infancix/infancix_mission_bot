@@ -51,13 +51,7 @@ class APIUtils:
         return response
 
     async def get_all_students_mission_notifications(self):
-        return await self._get_request('get_student_mission_notification_list')
-
-    async def get_student_mission_notifications_by_id(self, user_id, endpoint='get_student_mission_notification_list'):
-        response = await self._get_request(f'{endpoint}?discord_id={user_id}')
-        if bool(response) == False:
-            return None
-        return response[user_id]
+        return await self._get_request('photo_mission/schedule/daily_mission')
 
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
@@ -224,8 +218,16 @@ class APIUtils:
         return await self._post_request(endpoint, payload)
 
     async def update_student_baby_profile(self, user_id, baby_name, baby_name_en, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):
-        if gender and gender in ['男孩', '女孩']:
-            gender = 'f' if gender == '女孩' else 'm'
+        gender_map = {
+            '男生': 'm',
+            '女生': 'f',
+            '男孩': 'm',
+            '女孩': 'f',
+            'Boy': 'm',
+            'Girl': 'f',
+        }
+        if gender and gender in gender_map:
+            gender = gender_map[gender]
         else:
             gender = None
 

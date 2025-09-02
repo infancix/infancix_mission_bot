@@ -16,7 +16,6 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url
-from bot.utils.get_intro import get_baby_intro, get_family_intro
 from bot.config import config
 
 async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -138,6 +137,9 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         # get reply message
         mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
+        if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
+            mission_result = client.openai_utils.process_aside_text_validation(mission_result)
+            client.logger.info(f"Processed aside text validation: {mission_result}")
 
     # Get enough information to proceed
     save_conversations_record(user_id, mission_id, 'user', user_message)

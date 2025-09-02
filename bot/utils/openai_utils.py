@@ -5,8 +5,45 @@ import os
 from openai import OpenAI
 from pathlib import Path
 from pydub import AudioSegment
+from typing import Dict, Any
 from bot.logger import setup_logger
 from bot.config import config
+
+_CH = re.compile(r'[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]')
+
+def count_chinese(s: str) -> int:
+    return len(_CH.findall(s or ""))
+
+def unit_length(ch: str) -> float:
+    """中文字算 1，英文/數字/空格/符號算 0.5"""
+    if _CH.match(ch):
+        return 1.0
+    return 0.5
+
+def line_count(s: str) -> int:
+    return 1 if not s else s.count("\n") + 1
+
+def normalize_aside_text(aside_text: str) -> str:
+    """
+    Line breaks:  
+     - If the input already contains `\n`, keep the user’s original line breaks (do not modify).  
+     - If the input contains no `\n`, and the text length exceeds **15 Chinese characters**, automatically insert a line break after the 15th character.  
+     - The text must not exceed **2 lines**.
+     """
+    def _insert_break(s: str, n = 15) -> str:
+        total_units = 0.0
+        for i, ch in enumerate(s):
+            total_units += unit_length(ch)
+            if total_units > 15:
+                return s[:i] + "\n" + s[i:]
+        return s
+
+    if aside_text is None:
+        return None
+    aside_text = aside_text.rstrip("\r")
+    if "\n" in aside_text:
+        return aside_text
+    return _insert_break(aside_text)
 
 class OpenAIUtils:
     def __init__(self, api_key: str):
@@ -71,6 +108,28 @@ class OpenAIUtils:
                 'is_ready': False,
                 'message': response
             }
+
+    def process_aside_text_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+        aside_text = assistant_result.get("aside_text")
+        att = assistant_result.get("attachment") or {}
+        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (aside_text is not None))
+
+        processed = normalize_aside_text(aside_text) if aside_text is not None else None
+
+        # revise message
+        msg = "✅ 已收到！"
+        if processed is not None and line_count(processed) > 2:
+            msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
+        return {
+            "message": msg,
+            "aside_text": processed,
+            "attachment": {
+                "id": att.get("id", ""),
+                "url": att.get("url", ""),
+                "filename": att.get("filename", "")
+            },
+            "is_ready": is_ready
+        }
 
     def parsed_json(self, response):
         start_index = response.find('{')
