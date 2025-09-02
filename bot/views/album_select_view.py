@@ -28,14 +28,14 @@ class AlbumView(discord.ui.View):
     def get_current_embed(self):
         album_info = self.album_info[self.current_page]
         image = None
-        if album_info.get('purchase_status', '未購買') == '未購買':
-            desc = f"👉 找社群客服「<@1272828469469904937>」購買繪本 "
-            image = album_info['book_cover_url']
-        elif album_info.get('design_id'):
+        if album_info.get('design_id'):
             code = encode_ids(album_info['baby_id'], album_info['book_id'])
             link_target = f"https://infancixbaby120.com/babiary/{code}"
             desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
             image = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png?t={int(time.time())}"
+        elif album_info.get('purchase_status', '未購買') == '未購買':
+            desc = f"👉 找社群客服「<@1272828469469904937>」購買繪本 "
+            image = album_info['book_cover_url']
         else:
             image = album_info['book_cover_url']
             desc = (

@@ -136,6 +136,12 @@ class SubmitButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         view = self.view
 
+        # defer the interaction response and disable the button
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
         # clear status
         if str(interaction.user.id) in view.client.photo_mission_replace_index:
             del view.client.photo_mission_replace_index[str(interaction.user.id)]
@@ -172,7 +178,7 @@ class SubmitButton(discord.ui.Button):
             description=description,
             color=0xeeb2da,
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         await view.client.api_utils.add_gold(str(interaction.user.id), gold=reward)
 
         # Send log to Background channel

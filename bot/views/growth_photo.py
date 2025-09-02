@@ -26,7 +26,7 @@ class GrowthPhotoView(discord.ui.View):
         if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
             self.remove_aside_text_button = discord.ui.Button(
                 custom_id='remove_aside_text',
-                label="刪除文字方塊",
+                label="刪除回憶文字",
                 style=discord.ButtonStyle.secondary
             )
             self.remove_aside_text_button.callback = self.remove_aside_text_callback
@@ -66,6 +66,11 @@ class GrowthPhotoView(discord.ui.View):
         return embed
 
     async def complete_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         self.reward = mission_info.get('reward', 20)
         # Mission Completed
@@ -98,8 +103,7 @@ class GrowthPhotoView(discord.ui.View):
                 "收檔後 15 個工作天內出貨。\n"
                 "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
             )
-
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
 
         # Send log to Background channel
@@ -117,7 +121,9 @@ class GrowthPhotoView(discord.ui.View):
             self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
             album_status = await self.client.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id)
             incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-            if album_status.get('design_id') is None or len(incomplete_missions) == 0:
+            if (book_id == 1 and album_status.get('design_id') is None) or len(incomplete_missions) == 0:
+                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+            elif album_status.get('purchase_status', '未購買') == '已購買' and album_status.get('design_id') is None:
                 await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
 
         # Delete the message record

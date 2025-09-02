@@ -10,7 +10,7 @@ class PhotoTaskSelectView(discord.ui.View):
         self.user_id = user_id
         self.incomplete_photo_tasks = incomplete_photo_tasks
         
-        self.items_per_page = 24
+        self.items_per_page = 20
         self.setup_records()
         self.page = 0
 
@@ -43,7 +43,7 @@ class PhotoTaskSelectView(discord.ui.View):
                 self.remove_item(item)
 
         self.add_item(PreviousButton(self.page > 0))
-        self.add_item(PageIndicator(self.page, self.sorted_tasks))
+        self.add_item(PageIndicator(self.page, self.total_pages))
         self.add_item(NextButton(self.page < self.total_pages - 1))
 
 class PhotoTaskSelect(discord.ui.Select):
@@ -80,15 +80,25 @@ class PhotoTaskSelect(discord.ui.Select):
         self.view.stop()
         await interaction.response.edit_message(view=None)
 
-        if selected_mission_id <= 1008 or str(self.user_id) in config.ADMIN_USER_IDS:
-            if selected_mission_id in config.theme_mission_list:
-                from bot.handlers.theme_mission_handler import handle_theme_mission_start
-                await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
-            else:
-                from bot.handlers.photo_mission_handler import handle_photo_mission_start
-                await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
+        if selected_mission_id in config.free_mission_list or str(self.user_id) in config.ADMIN_USER_IDS:
+            await self.call_mission_start(selected_mission_id)
         else:
-            await interaction.followup.send("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
+            # selected_mission_info
+            selected_mission_info = await self.client.api_utils.get_mission_info(selected_mission_id)
+            selected_book_id = selected_mission_info.get('book_id', 0)
+            album_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, selected_book_id)
+            if album_status.get('purchase_status', '未購買') in ['未購買', '已取消']:
+                await interaction.followup.send("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
+            else:
+                await self.call_mission_start(selected_mission_id)
+
+    async def call_mission_start(self, selected_mission_id):
+        if selected_mission_id in config.theme_mission_list:
+            from bot.handlers.theme_mission_handler import handle_theme_mission_start
+            await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
+        else:
+            from bot.handlers.photo_mission_handler import handle_photo_mission_start
+            await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):
