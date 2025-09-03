@@ -21,7 +21,10 @@ from bot.config import config
 async def handle_theme_mission_start(client, user_id, mission_id):
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
-    
+
+    # Delete conversion cache
+    delete_conversations_record(user_id, mission_id)
+
     # Mission start
     student_mission_info = {
         **mission,

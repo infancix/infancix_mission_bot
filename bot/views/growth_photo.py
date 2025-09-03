@@ -95,7 +95,7 @@ class GrowthPhotoView(discord.ui.View):
                 description=f"📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n",
                 color=0xeeb2da,
             )
-            incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
+            incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
             if len(incomplete_missions) == 0:
                 embed.description += (
                 "📦 Baby120 寄件說明\n"
@@ -121,7 +121,9 @@ class GrowthPhotoView(discord.ui.View):
             self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
             album_status = await self.client.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id)
             incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-            if (book_id == 1 and album_status.get('design_id') is None) or len(incomplete_missions) == 0:
+            if len(incomplete_missions) == 0:
+                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+            elif book_id == 1 and album_status.get('design_id') is None:
                 await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
             elif album_status.get('purchase_status', '未購買') == '已購買' and album_status.get('design_id') is None:
                 await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)

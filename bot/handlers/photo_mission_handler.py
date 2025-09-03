@@ -22,7 +22,10 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
     baby = await client.api_utils.get_baby_profile(user_id)
-    
+
+    # Delete conversion cache
+    delete_conversations_record(user_id, mission_id)
+
     # Mission start
     student_mission_info = {
         **mission,
@@ -357,16 +360,25 @@ def get_baby_registration_embed():
         color=0xeeb2da,
     )
     embed.set_author(name="成長繪本｜第 1 個月 - 恭喜寶寶出生了")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
+    embed.set_image(url="https://infancixbaby120.com/discord_assets/mission_1001_instruction.png")
     return embed
 
 def get_relationship_embed():
     embed = discord.Embed(
         title="📝 請問你和寶寶的關係是什麼呢?",
-        description="例如：媽媽、爸爸、阿嬤、姑姑、叔叔⋯⋯",
+        description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
         color=0xeeb2da,
     )
-    embed.set_author(name="成長繪本｜第 1 個月 - 紀錄家人")
+    embed.set_author(name="成長繪本｜紀錄家人")
+    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
+    return embed
+
+def get_questionnaire_embed():
+    embed = discord.Embed(
+        title="📝 問卷調查",
+        description="按摩/抱抱/念故事/唱歌/播音樂",
+        color=0xeeb2da,
+    )
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
