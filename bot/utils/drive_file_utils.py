@@ -24,6 +24,12 @@ def get_google_drive_download_url(file_id):
 def get_google_drive_preview_image_url(file_id):
     return f"https://drive.google.com/uc?export=view&id={file_id}"
 
+def create_preview_image_from_url(url):
+    file_id = extract_google_drive_file_id(url)
+    if not file_id:
+        return None
+    return get_google_drive_preview_image_url(file_id)
+
 async def create_file_from_url(url, cache_dir="cache"):
     file_id = extract_google_drive_file_id(url)
     if not file_id:

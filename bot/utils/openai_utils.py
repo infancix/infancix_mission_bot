@@ -31,12 +31,16 @@ def normalize_aside_text(aside_text: str) -> str:
      - The text must not exceed **2 lines**.
      """
     def _insert_break(s: str, n = 15) -> str:
-        total_units = 0.0
-        for i, ch in enumerate(s):
-            total_units += unit_length(ch)
-            if total_units > 15:
-                return s[:i] + "\n" + s[i:]
-        return s
+        result = ""
+        line_unit_count = 0.0
+        for ch in s:
+            char_units = unit_length(ch)
+            if line_unit_count + char_units > n and line_unit_count > 0:
+                result += "\n"
+                line_unit_count = 0.0
+            result += ch
+            line_unit_count += char_units
+        return result
 
     if aside_text is None:
         return None
@@ -120,6 +124,8 @@ class OpenAIUtils:
         msg = "✅ 已收到！"
         if processed is not None and line_count(processed) > 2:
             msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
+            is_ready = False
+
         return {
             "message": msg,
             "aside_text": processed,

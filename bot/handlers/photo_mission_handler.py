@@ -15,7 +15,7 @@ from bot.utils.message_tracker import (
     delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
-from bot.utils.drive_file_utils import create_file_from_url
+from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
 from bot.config import config
 
 async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -159,7 +159,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     else:
         if student_mission_info['current_step'] == 1:
             if mission_id in config.family_intro_mission:
-                embed = get_relationship_embed()
+                embed = get_relationship_embed(student_mission_info)
                 await message.channel.send(embed=embed)
             else:
                 if mission_id in config.photo_mission_with_title_and_content:
@@ -363,17 +363,17 @@ def get_baby_registration_embed():
     embed.set_image(url="https://infancixbaby120.com/discord_assets/mission_1001_instruction.png")
     return embed
 
-def get_relationship_embed():
+def get_relationship_embed(mission_info):
     embed = discord.Embed(
-        title="📝 請問你和寶寶的關係是什麼呢?",
+        title="📝 照片裡的人和寶寶關係是?",
         description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
         color=0xeeb2da,
     )
-    embed.set_author(name="成長繪本｜紀錄家人")
+    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
-def get_questionnaire_embed():
+def get_questionnaire_embed(mission_info):
     embed = discord.Embed(
         title="📝 問卷調查",
         description="按摩/抱抱/念故事/唱歌/播音樂",
@@ -450,7 +450,12 @@ def get_add_on_photo_embed(mission):
         description=description,
         color=0xeeb2da,
     )
-    embed.set_image(url=mission.get('mission_instruction_image_url', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png'))
+    instruction_url = mission.get('mission_instruction_image_url', '').split(',')[0]
+    if instruction_url:
+        instruction_url = create_preview_image_from_url(instruction_url)
+    else:
+        instruction_url = "https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png"
+    embed.set_image(url=instruction_url)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"

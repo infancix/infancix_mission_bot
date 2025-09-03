@@ -11,6 +11,10 @@ class GrowthPhotoView(discord.ui.View):
         self.client = client
         self.user_id = user_id
         self.mission_id = mission_id
+        self.book_id = mission_result.get('book_id', 0)
+        self.reward = mission_result.get('reward', 20)
+        self.purchase_status = mission_result.get('purchase_status', '未購買')
+        self.design_id = mission_result.get('design_id', None)
         self.mission_result = mission_result
 
         if self.mission_id in config.add_on_photo_mission:
@@ -71,8 +75,6 @@ class GrowthPhotoView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
-        self.reward = mission_info.get('reward', 20)
         # Mission Completed
         student_mission_info = {
             'user_id': self.user_id,
@@ -81,6 +83,9 @@ class GrowthPhotoView(discord.ui.View):
             'score': 1
         }
         await self.client.api_utils.update_student_mission_status(**student_mission_info)
+
+        # Check for incomplete missions
+        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, self.book_id)
 
         # Send completion message
         if self.reward > 0:
@@ -95,7 +100,6 @@ class GrowthPhotoView(discord.ui.View):
                 description=f"📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n",
                 color=0xeeb2da,
             )
-            incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
             if len(incomplete_missions) == 0:
                 embed.description += (
                 "📦 Baby120 寄件說明\n"
@@ -115,18 +119,12 @@ class GrowthPhotoView(discord.ui.View):
         await channel.send(msg_task)
 
         # Check mission status
-        mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
-        book_id = mission_info.get('book_id', 0)
-        if book_id is not None and book_id != 0:
-            self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {book_id}")
-            album_status = await self.client.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id)
-            incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
+        if self.book_id is not None and self.book_id != 0:
+            self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {self.book_id}")
             if len(incomplete_missions) == 0:
-                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
-            elif book_id == 1 and album_status.get('design_id') is None:
-                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
-            elif album_status.get('purchase_status', '未購買') == '已購買' and album_status.get('design_id') is None:
-                await self.client.api_utils.submit_generate_album_request(self.user_id, book_id)
+                await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
+            elif not self.design_id and (self.book_id == 1 or self.purchase_status == '已購買'):
+                await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
 
         # Delete the message record
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))

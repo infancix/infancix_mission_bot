@@ -49,7 +49,6 @@ class MilestoneSelectView(discord.ui.View):
         init_stage = student_milestones['current_stage']
         self.current_page = stage_to_page[init_stage]
         self.total_pages = 6
-        print("total_pages", self.total_pages, "current_page", self.current_page)
 
         self.update_select_menu()
         self.update_buttons()
@@ -117,14 +116,23 @@ class PageIndicator(discord.ui.Button):
 class MilestoneSelect(discord.ui.Select):
     def __init__(self, client, user_id, student_milestones):
         warning = "⚠️ 寶寶年齡尚未符合要求"
-        options = [
-            discord.SelectOption(
-                label=setup_label(mission),
-                description=(mission['mission_type'] + warning) if not mission['mission_available'] else mission['mission_type'],
-                value=f"{mission['mission_id']}_{mission['mission_available']}"
+        testing_warning = "⚠️ 公測期間，其餘任務暫不開放"
+        options = []
+        for mission in student_milestones:
+            if not mission['mission_available']:
+                description = mission['mission_type'] + warning
+            elif mission['notification_day'] > 30:
+                description = mission['mission_type'] + testing_warning
+                mission['mission_available'] = 0
+            else:
+                description = mission['mission_type']
+            options.append(
+                discord.SelectOption(
+                    label=setup_label(mission),
+                    description=description,
+                    value=f"{mission['mission_id']}_{mission['mission_available']}"
+                )
             )
-            for mission in student_milestones
-        ]
 
         super().__init__(
             placeholder="查看任務進度...",
@@ -138,7 +146,6 @@ class MilestoneSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_mission = self.values[0]
-        print(selected_mission)
         selected_mission_id = int(selected_mission.split('_')[0])
         mission_available = int(selected_mission.split('_')[-1])
         mission = await self.client.api_utils.get_mission_info(selected_mission_id)
@@ -147,7 +154,8 @@ class MilestoneSelect(discord.ui.Select):
         await interaction.response.edit_message(content=f"選擇任務: {mission['mission_title']}", view=None)
     
         if not mission_available:
-            await interaction.followup.send("您的寶寶年齡還太小囉，還不能解這個任務喔", ephemeral=True)
+            #await interaction.followup.send("您的寶寶年齡還太小囉，還不能解這個任務喔", ephemeral=True)
+            await interaction.followup.send("任務尚未開放，請稍後再試！", ephemeral=True)
             return
 
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
