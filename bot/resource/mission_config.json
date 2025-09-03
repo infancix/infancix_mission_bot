@@ -1,0 +1,32 @@
+{
+  "pregnancy_register_mission": 101,
+  "baby_register_mission": 1001,
+  "growth_book_missions": [
+    {
+      "month": 1,
+      "family_intro_mission": [1002, 1003],
+      "photo_mission_with_aside_text": [2, 3, 5, 6, 1004, 1006, 1007],
+      "photo_mission_without_aside_text": [1005],
+      "photo_mission_with_title_and_content": [1008],
+      "add_on_photo_mission": [1009]
+    },
+    {
+      "month": 2,
+      "family_intro_mission": [1010],
+      "audio_mission": [14],
+      "photo_mission_with_aside_text": [15, 16, 17, 21, 27, 28, 30, 31, 1011, 1012, 1013, 1014],
+      "photo_mission_without_aside_text": [],
+      "photo_mission_with_title_and_content": [],
+      "add_on_photo_mission": [1015]
+    },
+    {
+      "month": 3,
+      "questionnaire_mission": [41],
+      "family_intro_mission": [44],
+      "photo_mission_with_aside_text": [33, 36, 37, 38, 1016, 1017, 1018, 1019],
+      "photo_mission_without_aside_text": [],
+      "photo_mission_with_title_and_content": [],
+      "add_on_photo_mission": [1020]
+    }
+  ]
+}
