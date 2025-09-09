@@ -1,6 +1,7 @@
 import discord
 import time
 from bot.config import config
+from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     delete_growth_photo_record,
     delete_conversations_record
@@ -35,6 +36,15 @@ class GrowthPhotoView(discord.ui.View):
             )
             self.remove_aside_text_button.callback = self.remove_aside_text_callback
             self.add_item(self.remove_aside_text_button)
+
+        if self.mission_id in config.questionnaire_mission:
+            self.reselect_button = discord.ui.Button(
+                custom_id='reselect_button',
+                label="重新選擇",
+                style=discord.ButtonStyle.secondary
+            )
+            self.reselect_button.callback = self.reselect_button_callback
+            self.add_item(self.reselect_button)
 
         self.complete_button = discord.ui.Button(
             custom_id='complete_photo',
@@ -91,7 +101,7 @@ class GrowthPhotoView(discord.ui.View):
         if self.reward > 0:
             embed = discord.Embed(
                 title="🎉 任務完成！",
-                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}\n",
+                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}\n\n想更快完成屬於寶寶的一整本繪本嗎？點下方按鈕，馬上解鎖秘訣 🚀",
                 color=0xeeb2da,
             )
         else:
@@ -103,11 +113,14 @@ class GrowthPhotoView(discord.ui.View):
             if len(incomplete_missions) == 0:
                 embed.description += (
                 "📦 Baby120 寄件說明\n"
-                "書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
-                "收檔後 15 個工作天內出貨。\n"
-                "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
+                "將會於 10/1號 抽出 3 名幸運兒，送出精美繪本！"
+                #"書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
+                #"收檔後 15 個工作天內出貨。\n"
+                #"所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
             )
-        await interaction.followup.send(embed=embed)
+
+        view = TaskSelectView(self.client, "show_command_instruction", self.mission_id)
+        await interaction.followup.send(embed=embed, view=view)
         await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
 
         # Send log to Background channel
@@ -127,6 +140,7 @@ class GrowthPhotoView(discord.ui.View):
                 await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
 
         # Delete the message record
+        delete_questionnaire_record(user_id, mission_id)
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
         delete_conversations_record(str(interaction.user.id), str(self.mission_id))
 
@@ -150,6 +164,21 @@ class GrowthPhotoView(discord.ui.View):
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)
+
+    async def reselect_button_callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message("正在重新載入選項...", ephemeral=True)
+        try:
+            from bot.handlers.questionnaire_mission_handler import handle_questionnaire_round
+            message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+            student_mission_info = {
+                'user_id': str(interaction.user.id),
+                'mission_id': self.mission_id,
+                'current_step': 2
+            }
+            self.client.api_utils.update_student_mission_status(**student_mission_info)
+            await handle_questionnaire_round(self.client, message, student_mission_info, current_round=0, restart=True)
+        except Exception as e:
+            await interaction.response.send_message("❌ 發生錯誤，請稍後再試。", ephemeral=True)
 
     async def remove_aside_text_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()

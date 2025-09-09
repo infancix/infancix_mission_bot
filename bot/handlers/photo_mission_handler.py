@@ -25,6 +25,8 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
 
     # Delete conversion cache
     delete_conversations_record(user_id, mission_id)
+    if user_id in client.photo_mission_replace_index:
+        del client.photo_mission_replace_index[user_id]
 
     # Mission start
     student_mission_info = {
@@ -33,8 +35,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
-    if user_id in client.photo_mission_replace_index:
-        del client.photo_mission_replace_index[user_id]
+    await client.api_utils.add_to_testing_whiltlist(user_id)
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -370,15 +371,6 @@ def get_relationship_embed(mission_info):
         color=0xeeb2da,
     )
     embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
-    return embed
-
-def get_questionnaire_embed(mission_info):
-    embed = discord.Embed(
-        title="📝 問卷調查",
-        description="按摩/抱抱/念故事/唱歌/播音樂",
-        color=0xeeb2da,
-    )
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 

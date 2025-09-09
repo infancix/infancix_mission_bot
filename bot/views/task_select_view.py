@@ -85,6 +85,16 @@ class TaskSelectView(discord.ui.View):
             self.check_add_on_button.callback = self.check_add_on_button_callback
             self.add_item(self.check_add_on_button)
 
+        if task_type == "show_command_instruction":
+            label = "📖 解鎖繪本任務秘訣"
+            self.show_command_instruction_button = discord.ui.Button(
+                custom_id="show_command_instruction_button",
+                label=label,
+                style=discord.ButtonStyle.primary
+            )
+            self.show_command_instruction_button.callback = self.show_command_instruction_button_callback
+            self.add_item(self.show_command_instruction_button)
+
     async def go_quiz_button_callback(self, interaction):
         for item in self.children:
             item.disabled = True
@@ -212,6 +222,15 @@ class TaskSelectView(discord.ui.View):
         else:
             embed = self.get_add_on_photo_embed()
             await interaction.followup.send(embed=embed)
+
+    async def show_command_instruction_button_callback(self, interaction):
+        embed = discord.Embed(
+            title="快來試試看吧！",
+            color=0xeeb2da,
+        )
+        embed.set_image(url="https://infancixbaby120.com/discord_assets/command_instruction.jpg")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
 
     def get_insufficient_coin_embed(self):
         embed = discord.Embed(
