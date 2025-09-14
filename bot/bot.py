@@ -8,7 +8,9 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, daily_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages
+from bot.handlers.utils import (
+    run_scheduler, daily_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages, load_questionnaire_messages
+)
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -37,6 +39,9 @@ class MissionBot(discord.Client):
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)
+
+        with open("bot/resource/mission_questionnaire.json", "r") as file:
+            self.mission_questionnaire = json.load(file)
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
@@ -114,6 +119,9 @@ class MissionBot(discord.Client):
         await load_theme_book_edit_messages(self)
         self.logger.info("Finished loading theme book edit messages")
 
+        await load_questionnaire_messages(self)
+        self.logger.info("Finished loading questionnaire messages")
+
         self.tree.add_command(
             app_commands.Command(
                 name="更新寶寶資料",
@@ -131,7 +139,7 @@ class MissionBot(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="補上傳照片",
+                name="未完成照片任務",
                 description="查看未完成繪本任務🧩",
                 callback=self.call_photo_task
             )

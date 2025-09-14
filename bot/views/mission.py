@@ -153,7 +153,7 @@ class MilestoneSelect(discord.ui.Select):
         self.view.stop()
         await interaction.response.edit_message(content=f"選擇任務: {mission['mission_title']}", view=None)
     
-        if not mission_available:
+        if not mission_available and self.user_id not in config.ADMIN_USER_IDS:
             #await interaction.followup.send("您的寶寶年齡還太小囉，還不能解這個任務喔", ephemeral=True)
             await interaction.followup.send("任務尚未開放，請稍後再試！", ephemeral=True)
             return

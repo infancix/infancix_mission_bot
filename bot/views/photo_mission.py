@@ -96,6 +96,12 @@ class PhotoTaskSelect(discord.ui.Select):
         if selected_mission_id in config.theme_mission_list:
             from bot.handlers.theme_mission_handler import handle_theme_mission_start
             await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.audio_mission:
+            from bot.handlers.audio_mission_handler import handle_audio_mission_start
+            await handle_audio_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.questionnaire_mission:
+            from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
+            await handle_questionnaire_mission_start(self.client, self.user_id, selected_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
