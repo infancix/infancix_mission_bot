@@ -12,23 +12,19 @@ from bot.utils.message_tracker import (
     load_quiz_message_records,
     load_task_entry_records,
     load_growth_photo_records,
-    load_theme_book_edit_records
+    load_theme_book_edit_records,
+    load_questionnaire_records
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.theme_book_view import ThemeBookView
+from bot.views.questionnaire import QuestionnaireView
 from bot.views.quiz import QuizView
 
 async def run_scheduler():
     while True:
         schedule.run_pending()
         await asyncio.sleep(10)
-
-def scheduled_job(client):
-    today = datetime.datetime.now()
-
-    # Daily job
-    asyncio.create_task(daily_job(client))
 
 async def daily_job(client):
     client.logger.debug('Running job now...')
@@ -101,6 +97,25 @@ async def load_theme_book_edit_messages(client):
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
+
+async def load_questionnaire_messages(client):
+    records = load_questionnaire_records()
+    for user_id in records:
+        try:
+            channel = await client.fetch_user(user_id)
+            mission_id, entries = next(iter(records.get(str(user_id), {}).items()))
+            student_mission_info = await client.api_utils.get_student_mission_status(user_id, int(mission_id))
+            questionnaires = client.mission_questionnaire[str(mission_id)]
+            entry = entries[-1]
+            message = await channel.fetch_message(int(entry['message_id']))
+            clicked_options = set(entry.get('clicked_options', []))
+            student_mission_info['clicked_options'] = clicked_options
+            view = QuestionnaireView(client, int(mission_id), len(entries)-1, student_mission_info)
+            view.message = message
+            await message.edit(view=view)
+            client.logger.info(f"✅ Restored questionnaires for user {user_id}")
+        except Exception as e:
+            client.logger.warning(f"⚠️ Failed to restore questionnaires for {user_id}: {e}")
 
 def get_user_id(source: discord.Interaction | discord.Message) -> str:
     if isinstance(source, discord.Interaction):

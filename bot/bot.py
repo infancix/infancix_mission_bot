@@ -8,7 +8,9 @@ import json
 from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import run_scheduler, scheduled_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages
+from bot.handlers.utils import (
+    run_scheduler, daily_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages, load_questionnaire_messages
+)
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
@@ -37,6 +39,9 @@ class MissionBot(discord.Client):
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)
+
+        with open("bot/resource/mission_questionnaire.json", "r") as file:
+            self.mission_questionnaire = json.load(file)
 
     async def call_mission_start(self, interaction: discord.Interaction):
         try:
@@ -93,6 +98,14 @@ class MissionBot(discord.Client):
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
+    async def initiate_baby_data_update(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.send_message("開始修改寶寶資料！", ephemeral=True)
+            from bot.handlers.photo_mission_handler import handle_photo_mission_start
+            await handle_photo_mission_start(self, str(interaction.user.id), mission_id=1001)
+        except Exception as e:
+            self.logger.error(f"Error while call_revise_baby_data: {str(e)}")
+
     async def setup_hook(self):
         await load_task_entry_messages(self)
         self.logger.info("Finished loading task entry messages")
@@ -106,6 +119,17 @@ class MissionBot(discord.Client):
         await load_theme_book_edit_messages(self)
         self.logger.info("Finished loading theme book edit messages")
 
+        await load_questionnaire_messages(self)
+        self.logger.info("Finished loading questionnaire messages")
+
+        self.tree.add_command(
+            app_commands.Command(
+                name="更新寶寶資料",
+                description="修改寶寶出生時的基本資料",
+                callback=self.initiate_baby_data_update
+            )
+        )
+
         self.tree.add_command(
             app_commands.Command(
                 name="查看育兒里程碑",
@@ -115,7 +139,7 @@ class MissionBot(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="補上傳照片",
+                name="未完成照片任務",
                 description="查看未完成繪本任務🧩",
                 callback=self.call_photo_task
             )
@@ -158,6 +182,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    #schedule.every().day.at("10:00").do(lambda: asyncio.create_task(scheduled_job(client)))
+    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
 
     client.run(config.DISCORD_TOKEN)

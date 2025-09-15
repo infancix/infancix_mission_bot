@@ -2,11 +2,14 @@ import asyncio
 import discord
 import os
 import re
+import time
 
 from bot.config import config
-from bot.handlers.quiz_mission_handler import handle_quiz_mission_start, handle_class_question
+from bot.handlers.quiz_mission_handler import handle_quiz_mission_start
+from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
+    handle_baby_optin,
     process_baby_registration_message,
     process_photo_mission_filling,
     process_add_on_photo_mission_filling
@@ -14,6 +17,10 @@ from bot.handlers.photo_mission_handler import (
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
+)
+from bot.handlers.audio_mission_handler import (
+    handle_audio_mission_start,
+    process_audio_mission_filling
 )
 from bot.handlers.theme_mission_handler import (
     handle_theme_mission_start,
@@ -44,7 +51,9 @@ async def handle_background_message(client, message):
         elif photo_match:
             baby_id = int(photo_match.group(1))
             mission_id = int(photo_match.group(2))
-            if mission_id < 7000:
+            if mission_id == config.baby_pre_registration_mission:
+                await handle_first_photo_book(client, user_id, baby_id, book_id=1)
+            elif mission_id < 7000:
                 await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
             else:
                 await handle_notify_theme_book_change_page(client, user_id, baby_id)
@@ -64,7 +73,7 @@ async def handle_direct_message(client, message):
 
     if not bool(student_mission_info):
         await client.api_utils.store_message(str(user_id), 'user', message.content)
-        reply_msg = "點選 `指令` > `補上傳照片` 重新解任務喔！"
+        reply_msg = "點選 `指令` > `未完成照片任務` 重新解任務喔！"
         await message.channel.send(reply_msg)
         await client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return
@@ -112,20 +121,22 @@ async def handle_direct_message(client, message):
     mission_id = int(student_mission_info['mission_id'])
     student_mission_info['user_id'] = user_id
     # dispatch question
-    if mission_id == config.baby_register_mission:
+    if mission_id == config.baby_pre_registration_mission:
+        await handle_baby_optin(client, message, student_mission_info)
+    elif mission_id == config.baby_registration_mission:
         await process_baby_registration_message(client, message, student_mission_info)
-    elif mission_id == config.pregnancy_register_mission:
+    elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
     elif mission_id in config.family_intro_mission:
         await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.audio_mission:
+        await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
         await process_add_on_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.theme_mission_list:
         await process_theme_mission_filling(client, message, student_mission_info)
-    elif mission_id < 65:
-         await handle_class_question(client, message, student_mission_info)
     elif mission_id >= 102 and mission_id <= 135:
         msg = (
             "孕期如果有任何問題，可以找24小時AI育兒助手「喵喵 <@1287675308388126762>」\n"
@@ -134,7 +145,7 @@ async def handle_direct_message(client, message):
         await message.channel.send(msg)
     else:
         msg = (
-            "無法處理您的訊息，請確認任務是否正確\n"
+            "無法處理您的訊息，任務有什麼不清楚的部分\n"
             "若有育兒問題，請找24小時AI育兒助手「喵喵 <@1287675308388126762>」\n"
             "或是聯絡社群客服「阿福 <@1272828469469904937>」。"
         )
@@ -147,6 +158,10 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_pregnancy_mission_start(client, user_id, mission_id)
     elif mission_id in config.theme_mission_list:
         await handle_theme_mission_start(client, user_id, mission_id)
+    elif mission_id in config.audio_mission:
+        await handle_audio_mission_start(client, user_id, mission_id)
+    elif mission_id in config.questionnaire_mission:
+        await handle_questionnaire_mission_start(client, user_id, mission_id)
     elif mission_id in config.photo_mission_list:
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
@@ -244,3 +259,37 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
     except Exception as e:
         client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
+
+async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
+    baby_profile = await client.api_utils.get_baby_profile(user_id)
+    baby_name = baby_profile.get('baby_name', '寶寶')
+    embed = discord.Embed(
+        title=f"🌏 {baby_name}的地球冒險日記",
+        description=(
+            "📖 **用科學育兒，用愛紀錄**\n"
+            "恭喜你完成第一步驟，成功為寶寶製作第一本專屬繪本封面 🎉\n\n"
+            "接下來，讓我們一起為這本繪本寫下更多故事：\n"
+            "👉 點選 `指令` > `未完成照片任務`，上傳照片與小故事，一起完成寶寶的冒險篇章吧！"
+        ),
+        color=0xeeb2da,
+        )
+    image_url = f"https://infancixbaby120.com/discord_image/{baby_id}/{book_id}/2.jpg?t={int(time.time())}"
+    embed.set_image(url=image_url)
+    embed.set_footer(
+        icon_url="https://infancixbaby120.com/discord_assets/logo.png",
+        text="我們將陪你一起打造 0～3 歲共 64 本的成長冒險系列"
+    )
+    try:
+        user = await client.fetch_user(user_id)
+        await user.send(embed=embed)
+        client.logger.info(f"Send first photo book message to user {user_id}, book {book_id}")
+        student_mission_info = {
+            'user_id': user_id,
+            'mission_id': 1000,
+            'current_step': 1,
+            'total_steps': 1
+        }
+        client.api_utils.update_student_mission_status(**student_mission_info)
+    except Exception as e:
+        client.logger.error(f"Failed to send first photo book message to user {user_id}: {e}")
+    return

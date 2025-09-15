@@ -5,6 +5,7 @@ from datetime import datetime
 from types import SimpleNamespace
 
 from bot.config import config
+from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
 from bot.utils.message_tracker import delete_task_entry_record
 
 class TaskSelectView(discord.ui.View):
@@ -83,6 +84,16 @@ class TaskSelectView(discord.ui.View):
             )
             self.check_add_on_button.callback = self.check_add_on_button_callback
             self.add_item(self.check_add_on_button)
+
+        if task_type == "show_command_instruction":
+            label = "📖 解鎖繪本任務秘訣"
+            self.show_command_instruction_button = discord.ui.Button(
+                custom_id="show_command_instruction_button",
+                label=label,
+                style=discord.ButtonStyle.primary
+            )
+            self.show_command_instruction_button.callback = self.show_command_instruction_button_callback
+            self.add_item(self.show_command_instruction_button)
 
     async def go_quiz_button_callback(self, interaction):
         for item in self.children:
@@ -211,7 +222,16 @@ class TaskSelectView(discord.ui.View):
         else:
             embed = self.get_add_on_photo_embed()
             await interaction.followup.send(embed=embed)
-    
+
+    async def show_command_instruction_button_callback(self, interaction):
+        embed = discord.Embed(
+            title="快來試試看吧！",
+            color=0xeeb2da,
+        )
+        embed.set_image(url="https://infancixbaby120.com/discord_assets/command_instruction.jpg")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
     def get_insufficient_coin_embed(self):
         embed = discord.Embed(
             title="👛 餘額不足",
@@ -229,7 +249,12 @@ class TaskSelectView(discord.ui.View):
             color=0xeeb2da,
         )
         embed.set_footer(text="可以一次上傳多張喔!")
-        embed.set_image(url=self.result.get('mission_image_contents', 'https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png'))
+        instruction_url = self.result.get('mission_instruction_image_url', '').split(',')[-1]
+        if instruction_url:
+            instruction_url = create_preview_image_from_url(instruction_url)
+        else:
+            instruction_url = "https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png"
+        embed.set_image(url=instruction_url)
         return embed
 
     async def on_timeout(self):

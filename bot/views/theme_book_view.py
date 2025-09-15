@@ -38,7 +38,7 @@ class ThemeBookView(discord.ui.View):
         page_offset = THEME_BOOK_PAGES[self.current_page]
         current_mission_id = self.base_mission_id + page_offset
         self.client.photo_mission_replace_index[user_id] = (page_offset, current_mission_id)
-        current_page_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{current_mission_id}.png?t={int(time.time())}"
+        current_page_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{current_mission_id}.jpg?t={int(time.time())}"
         if page_offset == 0:
             title = "預覽：封面"
         else:
@@ -73,7 +73,7 @@ class ThemeBookView(discord.ui.View):
         code = encode_ids(self.baby_id, self.book_id)
         link_target = f"https://infancixbaby120.com/babiary/{code}"
         desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
-        image = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{self.book_id}/2.png?t={int(time.time())}"
+        image = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{self.book_id}/2.jpg?t={int(time.time())}"
         embed = discord.Embed(
             title=self.book_info['book_author'],
             description=desc,
@@ -136,6 +136,12 @@ class SubmitButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         view = self.view
 
+        # defer the interaction response and disable the button
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
         # clear status
         if str(interaction.user.id) in view.client.photo_mission_replace_index:
             del view.client.photo_mission_replace_index[str(interaction.user.id)]
@@ -172,7 +178,7 @@ class SubmitButton(discord.ui.Button):
             description=description,
             color=0xeeb2da,
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         await view.client.api_utils.add_gold(str(interaction.user.id), gold=reward)
 
         # Send log to Background channel
