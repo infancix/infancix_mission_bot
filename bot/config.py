@@ -28,7 +28,7 @@ class Config:
 
         self._load_mission_config()
         self.photo_mission_list = set(
-            [self.baby_register_mission] +
+            [self.baby_pre_registration_mission, self.baby_registration_mission] +
             self.family_intro_mission +
             self.photo_mission_with_aside_text +
             self.photo_mission_without_aside_text +
@@ -49,13 +49,15 @@ class Config:
 
     def get_prompt_file(self, mission_id, current_step=1):
         base_path = "bot/resource/prompts"
-        if mission_id == self.baby_register_mission:
+        if mission_id == self.baby_registration_mission:
             if current_step == 1:
                 return f"{base_path}/baby_intro_prompt.txt"
             else:
                 return f"{base_path}/image_prompt.txt"
-        elif mission_id == self.pregnancy_register_mission:
-            return f"{base_path}/pregnancy_register_prompt.txt"
+        elif mission_id == self.baby_pre_registration_mission:
+            return f"{base_path}/baby_name_registration_prompt.txt"
+        elif mission_id == self.pregnant_registration_mission:
+            return f"{base_path}/pregnant_registration_prompt.txt"
         elif mission_id in self.photo_mission_without_aside_text:
             return f"{base_path}/image_prompt.txt"
         elif mission_id in self.photo_mission_with_aside_text:
@@ -66,6 +68,8 @@ class Config:
             return f"{base_path}/image_with_content.txt"
         elif mission_id in self.add_on_photo_mission:
             return f"{base_path}/add_on_mission_prompt.txt"
+        elif mission_id in self.audio_mission:
+            return f"{base_path}/audio_mission_prompt.txt"
         elif mission_id >= 7001 and mission_id <= 7042:
             return f"{base_path}/theme_mission_prompt.txt"
         else:
@@ -75,8 +79,9 @@ class Config:
         with open("bot/resource/mission_config.json", "r") as f:
             mission_config = json.load(f)
 
-            self.pregnancy_register_mission = mission_config['pregnancy_register_mission']
-            self.baby_register_mission = mission_config['baby_register_mission']
+            self.pregnant_registration_mission = mission_config['pregnant_registration_mission']
+            self.baby_pre_registration_mission = mission_config['baby_pre_registration_mission']
+            self.baby_registration_mission = mission_config['baby_registration_mission']
             growth_book_missions = mission_config['growth_book_missions']
             self.family_intro_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('family_intro_mission', [])
@@ -101,7 +106,7 @@ class Config:
             ]
 
             # free mission for month 1
-            self.free_mission_list = [self.baby_register_mission] + [item for _, mission_list in growth_book_missions[0].items() if isinstance(mission_list, list)
+            self.free_mission_list = [self.baby_registration_mission, self.baby_registration_mission] + [item for _, mission_list in growth_book_missions[0].items() if isinstance(mission_list, list)
                 for item in mission_list
             ]
 

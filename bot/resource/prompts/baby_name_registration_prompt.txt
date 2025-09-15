@@ -1,0 +1,8 @@
+收集寶寶姓名，並回傳 JSON：
+{
+  "message": "Assistant訊息",
+  "is_ready": true | false,
+  "baby_name": "The baby’s nickname."
+}
+若缺少 baby_name 則 is_ready 為 false。
+僅輸出 JSON，不要多餘文字。

@@ -4,7 +4,8 @@ from bot.config import config
 from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     delete_growth_photo_record,
-    delete_conversations_record
+    delete_conversations_record,
+    delete_questionnaire_record
 )
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_id, mission_result={}, timeout=None):
@@ -74,7 +75,7 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.png?t={int(time.time())}")
+        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={int(time.time())}")
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
         return embed
@@ -140,7 +141,7 @@ class GrowthPhotoView(discord.ui.View):
                 await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
 
         # Delete the message record
-        delete_questionnaire_record(user_id, mission_id)
+        delete_questionnaire_record(str(interaction.user.id), str(self.mission_id))
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
         delete_conversations_record(str(interaction.user.id), str(self.mission_id))
 

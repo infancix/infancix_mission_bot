@@ -32,7 +32,7 @@ class AlbumView(discord.ui.View):
             code = encode_ids(album_info['baby_id'], album_info['book_id'])
             link_target = f"https://infancixbaby120.com/babiary/{code}"
             desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
-            image = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.png?t={int(time.time())}"
+            image = f"https://infancixbaby120.com/discord_image/{album_info['baby_id']}/{album_info['book_id']}/2.jpg?t={int(time.time())}"
         elif album_info.get('purchase_status', '未購買') == '未購買':
             desc = f"👉 找社群客服「<@1272828469469904937>」購買繪本 "
             image = album_info['book_cover_url']
@@ -41,7 +41,7 @@ class AlbumView(discord.ui.View):
             desc = (
                 "目前任務尚未開放～\n"
                 "等時間到，系統會自動推播任務\n"
-                "也可以 👉 點選 `指令` > `補上傳照片` 查看"
+                "也可以 👉 點選 `指令` > `未完成照片任務` 查看"
             )
 
         embed = discord.Embed(

@@ -23,7 +23,7 @@ async def handle_pregnancy_mission_start(client, user_id, mission_id):
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
-    if int(mission_id) == config.pregnancy_register_mission:
+    if int(mission_id) == config.pregnant_registration_mission:
         embed = get_pregnancy_registration_embed()
         await user.send(embed=embed)
     else:
@@ -87,7 +87,7 @@ async def process_pregnancy_registration_message(client, message, student_missio
         # Save task message
         await client.api_utils.store_message(user_id, 'assistant', msg)
 
-        if mission_id == config.pregnancy_register_mission:
+        if mission_id == config.pregnant_registration_mission:
             # Send log to Background channel
             channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
             if channel is None or not isinstance(channel, discord.TextChannel):
