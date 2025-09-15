@@ -137,6 +137,25 @@ class OpenAIUtils:
             "is_ready": is_ready
         }
 
+    def process_relationship_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+        relation = assistant_result.get("relation")
+        att = assistant_result.get("attachment") or {}
+        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (relation is not None))
+
+        # revise message
+        if is_ready:
+            msg = "✅ 已登記！"
+        return {
+            "message": msg,
+            "aside_text": relation or None,
+            "attachment": {
+                "id": att.get("id", ""),
+                "url": att.get("url", ""),
+                "filename": att.get("filename", "")
+            },
+            "is_ready": is_ready
+        }
+
     def parsed_json(self, response):
         start_index = response.find('{')
         end_index = response.rfind('}')
