@@ -162,11 +162,18 @@ def save_questionnaire_record(user_id: str, message_id: str, mission_id: int, cu
     if user_id not in records or str(mission_id) not in records[user_id]:
         records[user_id] = defaultdict(list)  # remove all the previous records for this user
 
-    records[user_id][str(mission_id)].append({
+    mission_records = records[user_id][str(mission_id)]
+    while len(mission_records) <= current_round:
+        mission_records.append({
+            "message_id": None,
+            "current_round": len(mission_records)
+        })
+
+    mission_records[current_round] = {
         "message_id": message_id,
         "current_round": current_round,
         "clicked_options": list(clicked_options),
-    })
+    }
 
     with open(QUESTIONNAIRE_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)

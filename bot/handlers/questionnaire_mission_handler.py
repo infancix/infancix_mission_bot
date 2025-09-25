@@ -79,10 +79,10 @@ async def handle_questionnaire_round(client, message, student_mission_info, curr
 async def send_questionnaire_end(client, message, student_mission_info):
     user_id = get_user_id(message)
     mission_id = student_mission_info['mission_id']
-    records = load_questionnaire_records().get(user_id, {}).get(str(mission_id), [])
+    records = load_questionnaire_records().get(str(user_id), {}).get(str(mission_id), [])
     last_entry = records[-1] if records else None
-    click_options = last_entry.get('click_options', []) if last_entry else []
-    click_summary = "、".join(opt.split('.')[-1] for opt in click_options)
+    clicked_options = last_entry.get('clicked_options', []) if last_entry else []
+    click_summary = "、".join(opt.split('.')[-1] for opt in clicked_options)
 
     update_status = await client.api_utils.update_mission_image_content(
         user_id, mission_id, discord_attachments=None, aside_text=click_summary
