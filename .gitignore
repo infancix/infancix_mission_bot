@@ -12,6 +12,7 @@ bot/resource/mission_quiz_bak.json
 
 # Data
 bot/data
+audio/
 cache
 *.jpg
 

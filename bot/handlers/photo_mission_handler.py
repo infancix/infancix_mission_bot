@@ -32,10 +32,12 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     student_mission_info = {
         **mission,
         'user_id': user_id,
-        'current_step': 1
+        'current_step': 1,
+        'total_steps': 4
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
     await client.api_utils.add_to_testing_whiltlist(user_id)
+    client.skip_aside_text = False
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -155,6 +157,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     else:
         if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
             user_message = f"User provided aside text: {message.content}"
+            client.skip_aside_text = False
         elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
             user_message = f"User provide the relation of the image: {message.content}"
         elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_title_and_content:
@@ -170,7 +173,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
         client.logger.info(f"Assistant response: {mission_result}")
         if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
-            mission_result = client.openai_utils.process_aside_text_validation(mission_result)
+            mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text)
             client.logger.info(f"Processed aside text validation: {mission_result}")
         elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
             mission_result = client.openai_utils.process_relationship_validation(mission_result)
@@ -180,7 +183,7 @@ async def process_photo_mission_filling(client, message, student_mission_info):
     save_conversations_record(user_id, mission_id, 'user', user_message)
 
     if mission_result.get('is_ready'):
-        if mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text:
+        if mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text or client.skip_aside_text:
             await submit_image_data(client, message, student_mission_info, mission_result)
             return
         else:

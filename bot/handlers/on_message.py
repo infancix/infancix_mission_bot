@@ -29,6 +29,7 @@ from bot.handlers.theme_mission_handler import (
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
 from bot.views.theme_book_view import ThemeBookView
+from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     delete_task_entry_record,
     save_growth_photo_records,
@@ -73,7 +74,7 @@ async def handle_direct_message(client, message):
 
     if not bool(student_mission_info):
         await client.api_utils.store_message(str(user_id), 'user', message.content)
-        reply_msg = "點選 `指令` > `未完成照片任務` 重新解任務喔！"
+        reply_msg = "點選 `指令` > `補上傳照片` 重新解任務喔！"
         await message.channel.send(reply_msg)
         await client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return
@@ -266,10 +267,8 @@ async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
     embed = discord.Embed(
         title=f"🌏 {baby_name}的地球冒險日記",
         description=(
-            "📖 **用科學育兒，用愛紀錄**\n"
-            "恭喜你完成第一步驟，成功為寶寶製作第一本專屬繪本封面 🎉\n\n"
-            "接下來，讓我們一起為這本繪本寫下更多故事：\n"
-            "👉 點選 `指令` > `未完成照片任務`，上傳照片與小故事，一起完成寶寶的冒險篇章吧！"
+            "恭喜你成功為寶寶製作第一本專屬繪本封面 🎉\n\n"
+            "想更快完成屬於寶寶的一整本繪本嗎？點下方按鈕，馬上解鎖秘訣 🚀"
         ),
         color=0xeeb2da,
         )
@@ -277,11 +276,12 @@ async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
     embed.set_image(url=image_url)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/logo.png",
-        text="我們將陪你一起打造 0～3 歲共 64 本的成長冒險系列"
+        text="用科學育兒，用愛紀錄成長"
     )
+    view = TaskSelectView(client, "show_command_instruction", 1000)
     try:
         user = await client.fetch_user(user_id)
-        await user.send(embed=embed)
+        await user.send(embed=embed, view=view)
         client.logger.info(f"Send first photo book message to user {user_id}, book {book_id}")
         student_mission_info = {
             'user_id': user_id,
@@ -289,7 +289,7 @@ async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
             'current_step': 1,
             'total_steps': 1
         }
-        client.api_utils.update_student_mission_status(**student_mission_info)
+        await client.api_utils.update_student_mission_status(**student_mission_info)
     except Exception as e:
         client.logger.error(f"Failed to send first photo book message to user {user_id}: {e}")
     return

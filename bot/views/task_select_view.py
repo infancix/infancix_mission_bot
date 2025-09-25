@@ -114,6 +114,7 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
+        self.client.skip_aside_text = True
         await self.submit_image_data(interaction)
 
     async def go_submit_button_callback(self, interaction):

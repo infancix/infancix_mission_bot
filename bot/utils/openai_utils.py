@@ -113,7 +113,7 @@ class OpenAIUtils:
                 'message': response
             }
 
-    def process_aside_text_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+    def process_aside_text_validation(self, assistant_result: Dict[str, Any], skip_aside_text: bool = False) -> Dict[str, Any]:
         aside_text = assistant_result.get("aside_text")
         att = assistant_result.get("attachment") or {}
         is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (aside_text is not None))
@@ -125,6 +125,9 @@ class OpenAIUtils:
         if processed is not None and line_count(processed) > 2:
             msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
             is_ready = False
+
+        if not is_ready and skip_aside_text:
+            is_ready = bool(att.get("id") and att.get("url"))
 
         return {
             "message": msg,
