@@ -1,8 +1,8 @@
 ## Task Objective
-Collect the photo `attachment` from the user's input and return a JSON object.
+Collect the audio `attachment` from the user's input and return a JSON object.
 
 ## Input Information
-- The user will provide a Discord photo attachment. You must extract and preserve the following information exactly as provided:
+- The user will provide a Discord audio attachment. You must extract and preserve the following information exactly as provided:
   1. id (The second numeric string in the URL path, after attachments. It must be returned as the exact string given, e.g., "1419939458802778162".)
   2. filename  
   3. url (⚠️ Do not modify or omit any part of the URL. It must be returned in full, including the query string.)  
@@ -15,7 +15,7 @@ Collect the photo `attachment` from the user's input and return a JSON object.
   "is_ready": true | false,
   "attachment": {
         "id": "attachment_id",
-        "url": "image_url",
+        "url": "audio_url",
         "filename": "filename"
     }
 }

@@ -58,7 +58,9 @@ class GrowthPhotoView(discord.ui.View):
         self.message = None
 
     def generate_embed(self, baby_id, mission_id):
-        if mission_id in config.add_on_photo_mission:
+        if self.mission_id in config.questionnaire_mission:
+            description = "請點選 重新選擇 或是 直接送出"
+        elif mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
         elif mission_id in config.photo_mission_with_aside_text:
             if self.mission_result.get('aside_text', None):
@@ -136,7 +138,8 @@ class GrowthPhotoView(discord.ui.View):
         if self.book_id is not None and self.book_id != 0:
             self.client.logger.info(f"GrowthPhotoView: Book ID for mission {self.mission_id} is {self.book_id}")
             if len(incomplete_missions) == 0:
-                await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
+                if self.book_id == 1:
+                    await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
             elif not self.design_id and (self.book_id == 1 or self.purchase_status == '已購買'):
                 await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
 

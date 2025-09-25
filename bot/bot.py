@@ -36,6 +36,7 @@ class MissionBot(discord.Client):
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
         self.photo_mission_replace_index = defaultdict(int)
+        self.skip_aside_text = False
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)
@@ -139,7 +140,7 @@ class MissionBot(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="未完成照片任務",
+                name="補上傳照片",
                 description="查看未完成繪本任務🧩",
                 callback=self.call_photo_task
             )
