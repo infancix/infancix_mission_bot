@@ -101,18 +101,25 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
 
 # -------------------- Helper Functions --------------------
 def build_quiz_mission_embed(mission_info=None, baby_info=None):
-    # Prepare description based on style
-    birthday = datetime.strptime(baby_info['birthdate'], '%Y-%m-%d').date()
-    diff = relativedelta(date.today(), birthday)
-    year = diff.years
-    months = diff.months
-    days = diff.days
-    if year > 0:
-        author = f"🧸今天{baby_info['baby_name']} 出生滿 {year} 年 {months} 個月 {days} 天"
-    elif months > 0:
-        author = f"🧸今天{baby_info['baby_name']} 出生滿 {months} 個月 {days} 天"
+    if baby_info is None:
+        author = "恭喜寶寶出生！"
     else:
-        author = f"🧸今天{baby_info['baby_name']} 出生滿 {days} 天"
+        try:
+            baby_info['birthdate'] = baby_info.get('birthdate') or baby_info.get('birthday')
+            birthday = datetime.strptime(baby_info['birthdate'], '%Y-%m-%d').date()
+            diff = relativedelta(date.today(), birthday)
+            year = diff.years
+            months = diff.months
+            days = diff.days
+            if year > 0:
+                author = f"🧸今天{baby_info['baby_name']} 出生滿 {year} 年 {months} 個月 {days} 天"
+            elif months > 0:
+                author = f"🧸今天{baby_info['baby_name']} 出生滿 {months} 個月 {days} 天"
+            else:
+                author = f"🧸今天{baby_info['baby_name']} 出生滿 {days} 天"
+        except Exception as e:
+            print(f"Error parsing birthday: {e}")
+            author = "恭喜寶寶出生！"
 
     video_url = mission_info.get('mission_video_contents', '').strip()
     image_url = mission_info.get('mission_image_contents', '').strip()
