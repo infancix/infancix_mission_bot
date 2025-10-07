@@ -30,11 +30,13 @@ from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
 from bot.views.theme_book_view import ThemeBookView
 from bot.views.task_select_view import TaskSelectView
+from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 from bot.utils.message_tracker import (
     delete_task_entry_record,
     save_growth_photo_records,
     load_theme_book_edit_records,
-    save_theme_book_edit_record
+    save_theme_book_edit_record,
+    save_confirm_growth_album_record
 )
 
 async def handle_background_message(client, message):
@@ -167,6 +169,8 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
         await handle_quiz_mission_start(client, user_id, mission_id)
+    elif mission_id in config.confirm_album_mission:
+        await handle_confirm_growth_album_mission_start(client, user_id, mission_id)
     else:
         print(f"Unhandled mission ID: {mission_id}")
         return
@@ -292,4 +296,21 @@ async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
         await client.api_utils.update_student_mission_status(**student_mission_info)
     except Exception as e:
         client.logger.error(f"Failed to send first photo book message to user {user_id}: {e}")
+    return
+
+async def handle_confirm_growth_album_mission_start(client, user_id, mission_id, book_id=1):
+    album_status = await client.api_utils.get_student_album_purchase_status(user_id, book_id=book_id)
+    client.logger.info(f"Album status for user {user_id}, book {book_id}: {album_status}")
+    if album_status and album_status.get("purchase_status", "未購買") == "已購買" and album_status.get("shipping_status", "待確認") == "待確認":
+        confirm_album_view = ConfirmGrowthAlbumView(client, user_id, album_result=album_status)
+        embed = confirm_album_view.preview_embed()
+
+        user = await client.fetch_user(user_id)
+        if user.dm_channel is None:
+            await user.create_dm()
+
+        message = await user.send(embed=embed, view=confirm_album_view)
+        confirm_album_view.message = message
+        save_confirm_growth_album_record(str(user_id), message.id, book_id, result=album_status)
+
     return

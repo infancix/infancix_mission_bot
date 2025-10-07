@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from collections import defaultdict
+from datetime import datetime
 import schedule
 import asyncio
 import json
@@ -9,7 +10,17 @@ from bot.config import config
 from bot.logger import setup_logger
 from bot.handlers.on_message import handle_background_message, handle_direct_message
 from bot.handlers.utils import (
-    run_scheduler, daily_job, load_task_entry_messages, load_quiz_message, load_growth_photo_messages, load_theme_book_edit_messages, load_questionnaire_messages
+    run_scheduler,
+    daily_job,
+    load_task_entry_messages,
+    load_quiz_message,
+    load_growth_photo_messages,
+    load_theme_book_edit_messages,
+    load_questionnaire_messages,
+    load_confirm_growth_album_messages
+)
+from bot.utils.message_tracker import (
+    save_confirm_growth_album_record
 )
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
@@ -17,6 +28,7 @@ from bot.utils.s3_image_utils import S3ImageUtils
 from bot.views.mission import MilestoneSelectView
 from bot.views.photo_mission import PhotoTaskSelectView
 from bot.views.album_select_view import AlbumView
+from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -37,6 +49,7 @@ class MissionBot(discord.Client):
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
         self.photo_mission_replace_index = defaultdict(int)
         self.skip_aside_text = False
+        self.submit_deadline = 9 # Default to 5th of each month
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)
@@ -99,6 +112,42 @@ class MissionBot(discord.Client):
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
+    async def call_confirm_photo_album_print(self, interaction: discord.Interaction):
+        try:
+            now = datetime.now()
+            current_month = now.month
+            current_day = now.day
+            if current_day > self.submit_deadline:
+                message = await interaction.response.send_message(
+                    "很抱歉，繪本送印時間只有在每月 1 號到 5 號喔！\n有任何問題歡迎隨時聯絡社群客服「阿福 <@1272828469469904937>」。",
+                    ephemeral=True
+                )
+                return
+            if not isinstance(interaction.channel, discord.channel.DMChannel):
+                message = await interaction.response.send_message(
+                    "嗨！請到「繪本工坊」使用「繪本送印」功能喔📚",
+                    ephemeral=True
+                )
+                return
+
+            # call the api to get confirmed albums view
+            await interaction.response.defer(ephemeral=True)
+            book_id = 1 # Hot fix for now, need to remove later
+            album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id=book_id)
+            if album_status and album_status.get("purchase_status", "未購買") == "已購買" and album_status.get("shipping_status", "待確認") == "待確認":
+                confirm_album_view = ConfirmGrowthAlbumView(self, str(interaction.user.id), album_result=album_status)
+                embed = confirm_album_view.preview_embed()
+                message = await interaction.followup.send(embed=embed, view=confirm_album_view)
+                confirm_album_view.message = message
+                save_confirm_growth_album_record(str(interaction.user.id), str(message.id), book_id, album_status)
+            else:
+                message = await interaction.followup.send(
+                    "目前沒有待確認送印的繪本喔\n",
+                    ephemeral=True
+                )
+        except Exception as e:
+            print(f"Error while sending message: {str(e)}")
+
     async def initiate_baby_data_update(self, interaction: discord.Interaction):
         try:
             await interaction.response.send_message("開始修改寶寶資料！", ephemeral=True)
@@ -122,6 +171,9 @@ class MissionBot(discord.Client):
 
         await load_questionnaire_messages(self)
         self.logger.info("Finished loading questionnaire messages")
+
+        await load_confirm_growth_album_messages(self)
+        self.logger.info("Finished loading confirm growth album messages")
 
         self.tree.add_command(
             app_commands.Command(
@@ -150,6 +202,13 @@ class MissionBot(discord.Client):
                 name="瀏覽繪本進度",
                 description="查看繪本進度📖",
                 callback=self.browse_growth_album
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
+                name="繪本送印",
+                description="確認繪本送印",
+                callback=self.call_confirm_photo_album_print
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))

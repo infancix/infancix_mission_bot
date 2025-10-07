@@ -3,6 +3,7 @@ import time
 from bot.config import config
 from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
+    delete_task_entry_record,
     delete_growth_photo_record,
     delete_conversations_record,
     delete_questionnaire_record
@@ -88,6 +89,10 @@ class GrowthPhotoView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
+        previous_status = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
+        if previous_status.get('mission_completion_percentage') >= 1:
+            self.reward = 0
+
         # Mission Completed
         student_mission_info = {
             'user_id': self.user_id,
@@ -104,27 +109,18 @@ class GrowthPhotoView(discord.ui.View):
         if self.reward > 0:
             embed = discord.Embed(
                 title="🎉 任務完成！",
-                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}\n\n想更快完成屬於寶寶的一整本繪本嗎？點下方按鈕，馬上解鎖秘訣 🚀",
+                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}",
                 color=0xeeb2da,
             )
+            await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
         else:
             embed = discord.Embed(
                 title="🎆 任務完成",
-                description=f"📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n",
+                description=f"📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
                 color=0xeeb2da,
             )
-            if len(incomplete_missions) == 0:
-                embed.description += (
-                "📦 Baby120 寄件說明\n"
-                "將會於 10/1號 抽出 3 名幸運兒，送出精美繪本！"
-                #"書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
-                #"收檔後 15 個工作天內出貨。\n"
-                #"所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
-            )
-
-        view = TaskSelectView(self.client, "show_command_instruction", self.mission_id)
-        await interaction.followup.send(embed=embed, view=view)
-        await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
+        embed.add_field(name="🚀小秘訣", value="在繪本送印確認前，您隨時可以透過 `指令` > `查看里程碑` 重新上傳照片喔", inline=False)
+        await interaction.followup.send(embed=embed)
 
         # Send log to Background channel
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
@@ -144,6 +140,7 @@ class GrowthPhotoView(discord.ui.View):
                 await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
 
         # Delete the message record
+        delete_task_entry_record(str(interaction.user.id), str(self.mission_id))
         delete_questionnaire_record(str(interaction.user.id), str(self.mission_id))
         delete_growth_photo_record(str(interaction.user.id), str(self.mission_id))
         delete_conversations_record(str(interaction.user.id), str(self.mission_id))
