@@ -10,11 +10,11 @@ from bot.utils.message_tracker import (
 )
 class ConfirmGrowthAlbumView(discord.ui.View):
     def __init__(self, client, user_id, album_result={}, timeout=None):
+        self.client = client
         if timeout is None:
             timeout = self._calculate_deadline_timeout()
         super().__init__(timeout=timeout)
 
-        self.client = client
         self.user_id = user_id
         self.baby_id = album_result.get('baby_id', 0)
         self.book_id = album_result.get('book_id', 0)
@@ -56,6 +56,13 @@ class ConfirmGrowthAlbumView(discord.ui.View):
         delete_confirm_growth_album_record(self.user_id, self.book_id)
         self.stop()
 
+        # Send log to Background channel
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+        msg_task = f"BOOK_{self.book_id}_CONFIRM_FINISHED <@{self.user_id}>"
+        await channel.send(msg_task)
+
     async def edit_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         for item in self.children:
@@ -70,7 +77,7 @@ class ConfirmGrowthAlbumView(discord.ui.View):
                 "3️⃣ 檢視整本繪本並再次確認送印"
             ),
             color=0xeeb2da,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now()
         )
         await interaction.followup.send(embed=embed, ephemeral=True)
         delete_confirm_growth_album_record(self.user_id, self.book_id)
@@ -86,11 +93,11 @@ class ConfirmGrowthAlbumView(discord.ui.View):
             description=(
                 f"請仔細檢查您的成長繪本內容\n"
                 f"[👉 點擊這裡預覽整本繪本]({preview_link})\n\n"
-                f"⏰ **重要提醒：修改截止日為 {current_month}/{self.client.submit_deadline} 23:59 UTC**\n"
+                f"⏰ **重要提醒：修改截止日為 {current_month}/{self.client.submit_deadline} 23:59**\n"
                 f"若未在期限內確認，將順延至 *{next_month_str}/1* 才能製作！"
             ),
             color=0xeeb2da,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now()
         )
         return embed
 
@@ -119,8 +126,7 @@ class ConfirmGrowthAlbumView(discord.ui.View):
 
         delete_confirm_growth_album_record(self.user_id, self.book_id)
 
-    @staticmethod
-    def _calculate_deadline_timeout():
+    def _calculate_deadline_timeout(self):
         """計算到本月 5 號 23:59:59 的剩餘秒數"""
         now = datetime.now()
         current_year = now.year
@@ -129,8 +135,7 @@ class ConfirmGrowthAlbumView(discord.ui.View):
         remaining_seconds = (deadline - now).total_seconds()
         return max(remaining_seconds, 0)
 
-    @staticmethod
-    def _calculate_next_month():
+    def _calculate_next_month(self):
         """計算下個月的月份和年份"""
         now = datetime.now()
         next_month = now.month + 1 if now.month < 12 else 1

@@ -17,7 +17,7 @@ from bot.handlers.utils import (
     load_growth_photo_messages,
     load_theme_book_edit_messages,
     load_questionnaire_messages,
-    load_confirm_growth_album_records
+    load_confirm_growth_album_messages
 )
 from bot.utils.message_tracker import (
     save_confirm_growth_album_record
@@ -172,8 +172,8 @@ class MissionBot(discord.Client):
         await load_questionnaire_messages(self)
         self.logger.info("Finished loading questionnaire messages")
 
-        await load_confirm_growth_album_records(self)
-        self.logger.info("Finished loading confirm growth album records")
+        await load_confirm_growth_album_messages(self)
+        self.logger.info("Finished loading confirm growth album messages")
 
         self.tree.add_command(
             app_commands.Command(

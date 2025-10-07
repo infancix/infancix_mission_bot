@@ -13,7 +13,8 @@ from bot.utils.message_tracker import (
     load_task_entry_records,
     load_growth_photo_records,
     load_theme_book_edit_records,
-    load_questionnaire_records
+    load_questionnaire_records,
+    load_confirm_growth_album_records
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
@@ -71,8 +72,8 @@ async def load_growth_photo_messages(client):
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore growth photo for {user_id}: {e}")
 
-async def load_confirm_growth_album_records(client):
-    records = load_growth_photo_records()
+async def load_confirm_growth_album_messages(client):
+    records = load_confirm_growth_album_records()
     for user_id in records:
         try:
             channel = await client.fetch_user(user_id)
@@ -80,7 +81,8 @@ async def load_confirm_growth_album_records(client):
                 if album_status.get('result', {}):
                     message = await channel.fetch_message(int(album_status['message_id']))
                     view = ConfirmGrowthAlbumView(client, user_id, album_status.get('result', {}))
-                    await message.edit(view=view)
+                    embed = view.preview_embed()
+                    await message.edit(embed=embed, view=view)
             client.logger.info(f"✅ Restore confirmed growth album for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore confirmed growth album for {user_id}: {e}")
