@@ -174,26 +174,6 @@ class APIUtils:
         self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
         return await self._post_request(endpoint, payload)
 
-    async def update_mission_multiple_image_content(self, user_id, mission_id, discord_attachments=None, aside_text=None, content=None, endpoint='photo_mission/update_multiple_mission_image_content'):
-        payload = {
-            'discord_id': str(user_id),
-            'mission_id': int(mission_id)
-        }
-
-        if discord_attachments:
-            payload['attachments'] = []
-            for attachment in discord_attachments:
-                payload['attachments'].append({
-                    'id': attachment['id'],
-                    'url': attachment['url'],
-                    'filename': attachment['filename']
-                })
-
-        # TODO
-        # aside_text and content
-        self.logger.info(f"User {user_id} call {endpoint} with payload: {payload}.")
-        return await self._post_request(endpoint, payload)
-
     async def update_student_profile(self, user_id, student_name, pregnancy_status, due_date=None, endpoint='student_optin'):
         payload = {
             'discord_id': str(user_id),
@@ -215,6 +195,15 @@ class APIUtils:
                 "status": '已完成'
             }
         }
+        return await self._post_request(endpoint, payload)
+
+    async def update_student_confirmed_growth_album(self, user_id, book_id, endpoint='growth_album/ship_status_update'):
+        payload = {
+            'discord_id': str(user_id),
+            'book_id': int(book_id),
+            'shipping_status': '已定稿'
+        }
+        self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
 
     async def update_student_baby_profile(self, user_id, baby_name, baby_name_en, gender, birthday, height, weight, head_circumference, endpoint='baby_optin'):

@@ -64,7 +64,7 @@ class PhotoTaskSelect(discord.ui.Select):
                 ))
 
         super().__init__(
-            placeholder="繪本任務",
+            placeholder="選擇要重新製作的照片任務...",
             min_values=1,
             max_values=1,
             options=options

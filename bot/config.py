@@ -105,6 +105,10 @@ class Config:
                 for item in month_data.get('audio_mission', [])
             ]
 
+            self.confirm_album_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('confirm_growth_album_mission', [])
+            ]
+
             # free mission for month 1
             self.free_mission_list = [self.baby_registration_mission, self.baby_registration_mission] + [item for _, mission_list in growth_book_missions[0].items() if isinstance(mission_list, list)
                 for item in mission_list
