@@ -5,11 +5,15 @@ import re
 import json
 from types import SimpleNamespace
 from datetime import datetime, date
+from typing import Dict, Optional, List
 from dateutil.relativedelta import relativedelta
 
 from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     save_task_entry_record,
+    get_mission_record,
+    save_mission_record,
+    delete_mission_record,
     load_conversations_records,
     save_conversations_record,
     delete_conversations_record
@@ -24,6 +28,7 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     baby = await client.api_utils.get_baby_profile(user_id)
 
     # Delete conversion cache
+    delete_mission_record(user_id)
     delete_conversations_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
@@ -215,40 +220,98 @@ async def process_photo_mission_filling(client, message, student_mission_info):
 
     return
 
+def prepare_api_request(client, message, student_mission_info):
+    user_id = str(message.author.id)
+    mission_id = student_mission_info['mission_id']
+
+    # Replace photo request
+    if user_id in client.photo_mission_replace_index and message.attachments:
+        photo_index = client.photo_mission_replace_index[user_id]
+        saved_result = get_mission_record(user_id, mission_id)
+        if not saved_result.get('attachment') or photo_index-1 >= len(saved_result['attachment']):
+            return {
+                'needs_ai_prediction': False,
+                'direct_action': 'error',
+                'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
+            }
+
+        replace_attachment = extract_attachment_info(message.attachments[0].url)
+        saved_result['attachment'][photo_index-1] = replace_attachment
+        saved_result['is_ready'] = True
+        return {
+            'needs_ai_prediction': False,
+            'direct_action': 'photo_replacement',
+            'direct_response': saved_result
+        }
+    elif message.attachments:
+        saved_result = get_mission_record(user_id, mission_id)
+        if len(saved_result.get('attachment') or []) + len(message.attachments) > 4:
+            return {
+                'needs_ai_prediction': False,
+                'direct_action': 'error',
+                'context': "已達到照片上限4張，請挑選後再上傳喔！"
+            }
+
+        if not saved_result.get('attachment'):
+            saved_result['attachment'] = []
+        for att in message.attachments:
+            attachment = extract_attachment_info(att.url)
+            saved_result['attachment'].append(attachment)
+        return {
+            'needs_ai_prediction': False,
+            'direct_action': 'photo_upload',
+            'direct_response': saved_result
+        }
+    else:
+        user_message = message.content
+
+    # Build full context for AI prediction
+    context = ""
+    saved_result = get_mission_record(user_id, mission_id)
+    if saved_result.get('attachment'):
+        context_parts = []
+        context_parts.append(f"Previous attachments: {len(saved_result['attachment'])} photos collected")
+        context_parts.append(f"Attachments detail: {saved_result['attachment']}")
+        context = "\n".join(context_parts)
+    else:
+        return ""
+
+    return {
+        'needs_ai_prediction': True,
+        'direct_action': None,
+        'context': context,
+        'user_message': user_message
+    }
+
 @exception_handler(user_friendly_message="照片上傳失敗了，或是尋求客服協助喔！")
 async def process_add_on_photo_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     prompt_path = config.get_prompt_file(mission_id)
 
-    if message.attachments:
-        if user_id in client.photo_mission_replace_index:
-            replace_index = client.photo_mission_replace_index[user_id]
-            user_message = (
-                f"User wants to replace photo #{replace_index}.\n"
-                f"New uploaded attachment object: {message.attachments}"
-            )
-            del client.photo_mission_replace_index[user_id]
-        else:
-            user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments}"
+    request_info = prepare_api_request(client, message, student_mission_info)
+    print(f"Request info: {request_info}")
+
+    if request_info.get('direct_action') == 'error':
+        await message.channel.send(request_info.get('context', '發生錯誤，請稍後再試。'))
+        return
+    elif request_info['needs_ai_prediction']:
+        prompt_path = config.get_prompt_file(mission_id)
+        async with message.channel.typing():
+            conversations = [{'role': 'user', 'message': request_info['context']}] if request_info['context'] else None
+            mission_result = client.openai_utils.process_user_message(prompt_path, request_info['user_message'], conversations=conversations)
+            client.logger.info(f"Assistant response: {mission_result}")
     else:
-        user_message = message.content
+        # Skip AI prediction, use direct response
+        mission_result = request_info.get('direct_response', {})
 
-    # getting assistant reply
-    async with message.channel.typing():
-        records = load_conversations_records()
-        conversations = records[user_id].get(str(mission_id), None) if user_id in records else None
-
-        # get reply message
-        mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
-        client.logger.info(f"Assistant response: {mission_result}")
-        if len(mission_result.get('attachment', [])) == 4:
-            mission_result['is_ready'] = True
-        elif len(mission_result.get('attachment', [])) < 4:
-            mission_result['is_ready'] = False
-
-    # log user message
-    save_conversations_record(user_id, mission_id, 'user', user_message)
+    # validate mission result
+    if len(mission_result.get('attachment', [])) == 4:
+        mission_result['is_ready'] = True
+    elif len(mission_result.get('attachment', [])) < 4:
+        mission_result['is_ready'] = False
+        mission_result['message'] = f"目前已收到 {len(mission_result.get('attachment', []))} 張照片，還可以再上傳 {4 - len(mission_result.get('attachment', []))} 張喔！"
+    save_mission_record(user_id, mission_id, mission_result)
 
     # Get enough information to proceed
     if mission_result.get('is_ready'):
@@ -306,6 +369,22 @@ async def submit_baby_data(client, message, student_mission_info, mission_result
     return True
 
 # --------------------- Helper Functions ---------------------
+def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
+    """Extracts attachment ID, filename, and full URL from a Discord attachment URL."""
+
+    pattern = r'https://cdn\.discordapp\.com/attachments/(\d+)/(\d+)/([^?]+)(\?.*)?'
+    match = re.match(pattern, attachment_url)
+    if not match:
+        return None
+
+    channel_id, attachment_id, filename, query_params = match.groups()
+    return {
+        "id": attachment_id,
+        "filename": filename,
+        "url": attachment_url,
+        "aside_text": None
+    }
+
 async def build_photo_mission_embed(mission_info=None, baby_info=None):
     if baby_info is None:
         author = "恭喜寶寶出生！"

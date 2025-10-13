@@ -63,6 +63,8 @@ class GrowthPhotoView(discord.ui.View):
             description = "請點選 重新選擇 或是 直接送出"
         elif mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
+        elif mission_id in config.audio_mission:
+            description = "🔊 重新錄製：點左下 [+] 重新錄音; 或是重新上傳錄音檔即可"
         elif mission_id in config.photo_mission_with_aside_text:
             if self.mission_result.get('aside_text', None):
                 description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出(限30字)\n ❌刪除文字: 點選刪除按鈕即可"
@@ -187,7 +189,8 @@ class GrowthPhotoView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        update_status = await self.client.api_utils.update_mission_image_content(str(interaction.user.id), self.mission_id, aside_text="[REMOVE_ASIDE_TEXT]")
+        update_status = await self.client.api_utils.update_mission_image_content(str(interaction.user.id), self.mission_id, aside_text="REMOVE_ASIDE_TEXT")
+        self.client.skip_aside_text = True
         if bool(update_status):
             await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
             self.client.logger.info(f"送出繪本任務 {self.mission_id}")
