@@ -99,6 +99,10 @@ async def handle_direct_message(client, message):
             await message.channel.send("語音訊息處理時發生錯誤，請稍後再試")
             return
 
+    # 錄音檔
+    elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp3', '.wav', '.m4a', '.flac', '.aac', '.wma')):
+        message.content = "收到使用者的錄音檔"
+
     # 照片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.heif')):
         for e, attachment in enumerate(message.attachments):

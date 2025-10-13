@@ -49,7 +49,7 @@ class MissionBot(discord.Client):
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
         self.photo_mission_replace_index = defaultdict(int)
         self.skip_aside_text = False
-        self.submit_deadline = 9 # Default to 5th of each month
+        self.submit_deadline = 5 # Default to 5th of each month
 
         with open("bot/resource/mission_quiz.json", "r") as file:
             self.mission_quiz = json.load(file)
@@ -136,8 +136,7 @@ class MissionBot(discord.Client):
             album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id=book_id)
             if album_status and album_status.get("purchase_status", "未購買") == "已購買" and album_status.get("shipping_status", "待確認") == "待確認":
                 confirm_album_view = ConfirmGrowthAlbumView(self, str(interaction.user.id), album_result=album_status)
-                embed = confirm_album_view.preview_embed()
-                message = await interaction.followup.send(embed=embed, view=confirm_album_view)
+                message = await interaction.followup.send(view=confirm_album_view)
                 confirm_album_view.message = message
                 save_confirm_growth_album_record(str(interaction.user.id), str(message.id), book_id, album_status)
             else:
