@@ -11,6 +11,10 @@ def setup_label(mission):
     title = ""
     if int(mission['mission_id']) in config.photo_mission_list:
         title += "📸"
+    elif int(mission['mission_id']) in config.audio_mission:
+        title += "🔊"
+    elif int(mission['mission_id']) in config.questionnaire_mission:
+        title += "📝"
 
     title += f"{mission['mission_title']}"
     if mission['mission_status'] == 'Completed':
@@ -124,19 +128,20 @@ class PageIndicator(discord.ui.Button):
 
 class MilestoneSelect(discord.ui.Select):
     def __init__(self, client, user_id, student_milestones):
-        warning = "⚠️ 寶寶年齡尚未符合要求"
-        testing_warning = "⚠️ 公測期間，其餘任務暫不開放"
+        warning = {
+            0: "⚠️ 任務尚未開放",
+            -1: "⚠️ 寶寶年齡尚未符合要求",
+            -2: "⚠️ 尚未購買繪本，請洽官網或是社團客服阿福",
+            -3: "⚠️ 繪本已進入送印階段，無法修改"
+        }
         options = []
         for mission in student_milestones:
             mission_id = int(mission['mission_id'])
             if user_id in config.ADMIN_USER_IDS:
                 description = mission['mission_type']
                 mission_available = 1
-            elif not mission['mission_available']:
-                description = mission['mission_type'] + warning
-                mission_available = 0
-            elif mission['notification_day'] > 30:
-                description = mission['mission_type'] + testing_warning
+            elif mission['mission_available'] in warning:
+                description = warning[mission['mission_available']]
                 mission_available = 0
             else:
                 description = mission['mission_type']
@@ -170,7 +175,6 @@ class MilestoneSelect(discord.ui.Select):
         await interaction.response.edit_message(content=f"選擇任務: {mission['mission_title']}", view=None)
     
         if not mission_available:
-            #await interaction.followup.send("您的寶寶年齡還太小囉，還不能解這個任務喔", ephemeral=True)
             await interaction.followup.send("任務尚未開放，請稍後再試！", ephemeral=True)
             return
 

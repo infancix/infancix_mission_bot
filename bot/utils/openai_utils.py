@@ -140,14 +140,69 @@ class OpenAIUtils:
             "is_ready": is_ready
         }
 
+    def process_baby_profile_validation(self, mission_id, assistant_result, skip_growth_info=False) -> Dict[str, Any]:
+        att = assistant_result.get("attachment") or {}
+        step_1, step_2, step_3 = False, False, False
+        for field in ["baby_name", "baby_name_en", "birthday", "gender", "height", "weight", "head_circumference"]:
+            if assistant_result.get(field) in ["null", "", None]:
+                assistant_result[field] = None
+
+        if mission_id == config.baby_pre_registration_mission:
+            is_ready = bool(assistant_result.get("baby_name"))
+        elif mission_id in config.baby_name_en_registration_missions:
+            is_ready = bool(assistant_result.get("baby_name_en"))
+        else:
+            step_1 = bool(assistant_result.get("baby_name") and \
+                assistant_result.get("birthday") and \
+                assistant_result.get("gender")
+            )
+            step_2 = skip_growth_info or \
+                assistant_result.get("height") or \
+                assistant_result.get("weight") or \
+                assistant_result.get("head_circumference")
+            step_3 = bool(att.get("id") and att.get("url") and att.get("filename"))
+            is_ready = step_1 and step_2 and step_3
+
+        # revise message
+        if is_ready:
+            msg = "✅ 已登記！"
+        elif (step_1 or step_2) and not step_3:
+            msg = "⚠️ 還差最後一步，請上傳寶寶照片呦！"
+        else:
+            msg = assistant_result.get("message") or "請依指示補上寶寶資料呦！"
+
+        return {
+            "message": msg,
+            "baby_name": assistant_result.get("baby_name", None),
+            "baby_name_en": assistant_result.get("baby_name_en", None),
+            "birthday": assistant_result.get("birthday", None),
+            "gender": assistant_result.get("gender", None),
+            "height": assistant_result.get("height", None), 
+            "weight": assistant_result.get("weight", None),
+            "head_circumference": assistant_result.get("head_circumference", None),
+            "attachment": {
+                "id": att.get("id", ""),
+                "url": att.get("url", ""),
+                "filename": att.get("filename", "")
+            },
+            "is_ready": is_ready,
+            "step_1_completed": step_1,
+            "step_2_completed": step_2,
+            "step_3_completed": step_3,
+        }
+
     def process_relationship_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
-        relation = assistant_result.get("relation")
+        relation = assistant_result.get("relation_or_name")
         att = assistant_result.get("attachment") or {}
         is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (relation is not None))
 
         # revise message
         if is_ready:
             msg = "✅ 已登記！"
+        elif not relation:
+            msg = "⚠️ 還差最後一步，請補上與寶寶的關係或暱稱呦！"
+        else:
+            msg = "請依指示上傳照片呦！"
         return {
             "message": msg,
             "aside_text": relation or None,
@@ -157,6 +212,22 @@ class OpenAIUtils:
                 "filename": att.get("filename", "")
             },
             "is_ready": is_ready
+        }
+
+    def process_theme_book_validation(self, book_id: int, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+        # All of books need baby_name and cover and 6 attachments
+        attachments = [att for att in assistant_result.get("attachment", []) if att.get("id") and att.get("url") and att.get("filename")]
+        is_ready = bool(assistant_result.get("baby_name") and assistant_result.get("cover") and attachments and len(attachments) >= 6)
+
+        aside_texts = [att.get("aside_text") for att in assistant_result.get("attachment", []) if att.get("aside_text")]
+        if book_id in [13, 14, 15, 16]:
+            is_ready = is_ready and (len(aside_texts) == len(attachments))
+
+        return {
+            "is_ready": is_ready,
+            "baby_name": assistant_result.get("baby_name", None),
+            "cover": assistant_result.get("cover", {}),
+            "attachment": attachments or [],
         }
 
     def parsed_json(self, response):

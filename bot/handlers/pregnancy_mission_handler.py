@@ -43,7 +43,7 @@ async def handle_pregnancy_mission_start(client, user_id, mission_id):
             save_task_entry_record(user_id, str(view.message.id), "baby_born", mission_id)
             await client.api_utils.store_message(user_id, 'assistant', f"[任務{mission_id}] 傳送[懷孕狀態登記]給使用者")
 
-@exception_handler(user_friendly_message="登記失敗，請稍後再試一次！或是尋求客服協助喔！")
+@exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可尋求社群客服「阿福 <@1272828469469904937>」協助。")
 async def process_pregnancy_registration_message(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']

@@ -13,15 +13,28 @@
   2. filename  
   3. url (⚠️ Do not modify or omit any part of the URL. It must be returned in full, including the query string.)
 - Always keep the original `attachment.url` format. Do not truncate or remove query parameters.
-- `relation`: The relationship to the baby, selected from the following fixed list. **Only one value is allowed**:  
-{媽媽, 爸爸, 阿公, 阿嬤, 爺爺, 奶奶, 外公, 外婆, 姊姊, 哥哥, 弟弟, 妹妹, 姑姑, 姑丈, 叔叔, 阿姨, 姨丈, 舅舅, 舅媽, 伯伯, 伯母, 曾祖父, 曾祖母}
+- relation_or_name:
+  1. The input may be a relationship title or a personal name.  
+  2. If it matches or可合理轉換為下列親屬稱謂之一，請轉成對應稱謂：
+  {媽媽, 爸爸, 阿公, 阿嬤, 爺爺, 奶奶, 外公, 外婆, 姊姊, 哥哥, 弟弟, 妹妹, 姑姑, 姑丈, 叔叔, 阿姨, 姨丈, 舅舅, 舅媽, 伯伯, 伯母, 曾祖父, 曾祖母}
+
+### 暱稱轉換規則
+- 媽咪、媽麻、馬麻 → 媽媽
+- 爹地、老爸、拔拔 → 爸爸
+- 阿祖 → 曾祖父／曾祖母（根據上下文性別，但若無法判斷，預設曾祖母）
+- 外婆婆、阿婆 → 外婆
+- 爺爺爺 → 爺爺
+- 其他明顯為親屬暱稱的字詞亦轉換為最接近的清單稱謂
+
+### 保留規則
+- 如果輸入不屬於以上任何稱謂或暱稱，直接保留原始名字。
 
 ## Response Format
 - Always return a JSON object with the following structure:
 {
     "message": "Assistant's reply",
     "is_ready": true | false,
-    "relation": "relation",
+    "relation_or_name": "relation_or_name",
     "attachment": {
         "id": "attachment_id",
         "url": "image_url",
