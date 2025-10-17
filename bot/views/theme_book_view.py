@@ -3,7 +3,13 @@ import time
 
 from bot.config import config
 from bot.utils.id_utils import encode_ids
-from bot.utils.message_tracker import load_theme_book_edit_records, delete_theme_book_edit_record
+from bot.utils.message_tracker import (
+    load_theme_book_edit_records,
+    delete_theme_book_edit_record,
+    delete_mission_record,
+    delete_conversations_record,
+    delete_task_entry_record
+)
 
 THEME_BOOK_PAGES = [0, 1, 2, 3, 4, 5, 6]
 
@@ -32,12 +38,17 @@ class ThemeBookView(discord.ui.View):
         self.add_item(NextButton(self.current_page < self.total_pages - 1))
         self.add_item(SubmitButton())
 
+    def disable_all_buttons(self):
+        for item in self.children:
+            item.disabled = True
+        self.stop()
+
     def get_current_embed(self, user_id):
         if self.current_page not in THEME_BOOK_PAGES:
             raise ValueError(f"Invalid current_page: {self.current_page}")
         page_offset = THEME_BOOK_PAGES[self.current_page]
         current_mission_id = self.base_mission_id + page_offset
-        self.client.photo_mission_replace_index[user_id] = (page_offset, current_mission_id)
+        self.client.photo_mission_replace_index[user_id] = page_offset
         current_page_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{current_mission_id}.jpg?t={int(time.time())}"
         if page_offset == 0:
             title = "預覽：封面"
@@ -67,19 +78,6 @@ class ThemeBookView(discord.ui.View):
         )
         embed.set_author(name=self.book_info['book_author'])
         embed.set_image(url=current_page_url)
-        return embed
-
-    def get_preview_link_embed(self):
-        code = encode_ids(self.baby_id, self.book_id)
-        link_target = f"https://infancixbaby120.com/babiary/{code}"
-        desc = f"[👉點擊這裡瀏覽整本繪本]({link_target})\n_\n📖 最佳閱覽效果提示\n跳轉至Safari或Chrome，並將手機橫向觀看。"
-        image = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{self.book_id}/2.jpg?t={int(time.time())}"
-        embed = discord.Embed(
-            title=self.book_info['book_author'],
-            description=desc,
-            color=0xeeb2da,
-        )
-        embed.set_image(url=image)
         return embed
 
 class PreviousButton(discord.ui.Button):
@@ -138,9 +136,9 @@ class SubmitButton(discord.ui.Button):
 
         # defer the interaction response and disable the button
         await interaction.response.defer()
-        for item in self.children:
+        for item in view.children:
             item.disabled = True
-        await interaction.edit_original_response(view=self)
+        await interaction.edit_original_response(view=view)
 
         # clear status
         if str(interaction.user.id) in view.client.photo_mission_replace_index:
@@ -157,25 +155,10 @@ class SubmitButton(discord.ui.Button):
         }
         await view.client.api_utils.update_student_mission_status(**student_mission_info)
 
-        records = load_theme_book_edit_records()
-        if str(interaction.user.id) in records:
-            base_mission_id, edit_status = next(iter(records.get(str(interaction.user.id), {}).items()))
-            channel = await view.client.fetch_user(interaction.user.id)
-            message = await channel.fetch_message(int(edit_status['message_id']))
-            embed = view.get_preview_link_embed()
-            await message.edit(embed=embed, view=None)
-
         # Send completion message
-        description = (
-            "📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本\n\n"
-            "📦 Baby120 寄件說明\n"
-            "書籍每 90 天統一寄送一次，未完成的任務將自動順延。\n"
-            "收檔後 15 個工作天內出貨。\n"
-            "所有寄送進度、任務狀態請以官網「會員中心 → 我的書櫃」公告為主。"
-        )
         embed = discord.Embed(
             title="🎆 任務完成",
-            description=description,
+            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)
@@ -192,3 +175,5 @@ class SubmitButton(discord.ui.Button):
         await channel.send(msg_task)
 
         delete_theme_book_edit_record(str(interaction.user.id), view.base_mission_id)
+        delete_task_entry_record(str(interaction.user.id), view.base_mission_id)
+        delete_mission_record(str(interaction.user.id))
