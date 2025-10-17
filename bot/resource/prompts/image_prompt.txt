@@ -25,7 +25,9 @@ Output:
   "attachment": {
         "id": "attachment_id",
         "url": "image_url",
-        "filename": "filename"
+        "filename": "filename",
+        "aside_text": "user image caption/note",
+        "content": "Photo story",
     }
 }
 - If the photo is missing, set `"is_ready": false`.

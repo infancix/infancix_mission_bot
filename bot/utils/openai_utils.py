@@ -192,20 +192,20 @@ class OpenAIUtils:
         }
 
     def process_relationship_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
-        relation = assistant_result.get("relation_or_name")
         att = assistant_result.get("attachment") or {}
-        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (relation is not None))
+        relation_or_identity = assistant_result.get("relation_or_identity", None)
+        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (relation_or_identity is not None))
 
         # revise message
         if is_ready:
             msg = "✅ 已登記！"
-        elif not relation:
-            msg = "⚠️ 還差最後一步，請補上與寶寶的關係或暱稱呦！"
+        elif not relation_or_identity:
+            msg = "⚠️ 還差最後一步，請補上與寶寶的關係或照片裡的人是誰呦！"
         else:
             msg = "請依指示上傳照片呦！"
         return {
             "message": msg,
-            "aside_text": relation or None,
+            "relation_or_identity": relation_or_identity or None,
             "attachment": {
                 "id": att.get("id", ""),
                 "url": att.get("url", ""),

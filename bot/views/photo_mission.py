@@ -52,8 +52,8 @@ class PhotoTaskSelect(discord.ui.Select):
         for mission in incomplete_missions:
             if int(mission['mission_id']) < 7000:
                 options.append(discord.SelectOption(
-                    label=f"📷{mission['mission_title']}",
-                    description=mission['photo_mission'],
+                    label=f"📷{mission['photo_mission']}",
+                    description=f"{mission['volume_title']} | {mission['page_title']}",
                     value=mission['mission_id']
                 ))
             else:
@@ -96,6 +96,9 @@ class PhotoTaskSelect(discord.ui.Select):
         elif selected_mission_id in config.baby_profile_registration_missions:
             from bot.handlers.profile_handler import handle_registration_mission_start
             await handle_registration_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.relation_or_identity_mission:
+            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+            await handle_relation_identity_mission_start(self.client, self.user_id, selected_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)

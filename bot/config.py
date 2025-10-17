@@ -28,7 +28,6 @@ class Config:
 
         self._load_mission_config()
         self.photo_mission_list = set(
-            self.family_intro_mission +
             self.photo_mission_with_aside_text +
             self.photo_mission_without_aside_text +
             self.photo_mission_with_title_and_content +
@@ -56,8 +55,8 @@ class Config:
             return f"{base_path}/image_prompt.txt"
         elif mission_id in self.photo_mission_with_aside_text:
             return f"{base_path}/image_with_aside_text.txt"
-        elif mission_id in self.family_intro_mission:
-            return f"{base_path}/family_relationship.txt"
+        elif mission_id in self.relation_or_identity_mission:
+            return f"{base_path}/relationship_identity_mission.txt"
         elif mission_id in self.photo_mission_with_title_and_content:
             return f"{base_path}/image_with_content.txt"
         elif mission_id in self.add_on_photo_mission:
@@ -81,9 +80,17 @@ class Config:
 
             # growth book missions
             growth_book_missions = mission_config['growth_book_missions']
-            self.family_intro_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('family_intro_mission', [])
+
+            # relation and identity missions
+            self.relation_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('relation_mission', [])
             ]
+            self.identity_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('identity_mission', [])
+            ]
+            self.relation_or_identity_mission = self.relation_mission + self.identity_mission
+
+            # photo missions
             self.photo_mission_with_aside_text = [item for month_data in growth_book_missions
                 for item in month_data.get('photo_mission_with_aside_text', [])
             ]
@@ -96,6 +103,8 @@ class Config:
             self.add_on_photo_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('add_on_photo_mission', [])
             ]
+
+            # other missions
             self.questionnaire_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('questionnaire_mission', [])
             ]
@@ -103,6 +112,7 @@ class Config:
                 for item in month_data.get('audio_mission', [])
             ]
 
+            # final confirmation mission
             self.confirm_album_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('confirm_growth_album_mission', [])
             ]

@@ -163,6 +163,9 @@ class TaskSelectView(discord.ui.View):
         elif next_mission_id in config.baby_profile_registration_missions:
             from bot.handlers.profile_handler import handle_registration_mission_start
             await handle_registration_mission_start(self.client, user_id, next_mission_id)
+        elif next_mission_id in config.relation_or_identity_mission:
+            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+            await handle_relation_identity_mission_start(self.client, user_id, next_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=0)

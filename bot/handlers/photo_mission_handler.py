@@ -77,8 +77,6 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
             user_message = f"User provided aside text: {message.content}"
             client.skip_aside_text[user_id] = False
-        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
-            user_message = f"User provide the relation of the image: {message.content}"
         elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_title_and_content:
             user_message = f"User provide the content: {message.content}"
         else:
@@ -94,15 +92,12 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
             mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
             client.logger.info(f"Processed aside text validation: {mission_result}")
-        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
-            mission_result = client.openai_utils.process_relationship_validation(mission_result)
-            client.logger.info(f"Processed relationship validation: {mission_result}")
 
     # Get enough information to proceed
     save_conversations_record(user_id, mission_id, 'user', user_message)
 
     if mission_result.get('is_ready'):
-        if mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
+        if  mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
             await submit_image_data(client, message, student_mission_info, mission_result)
             return
         else:
@@ -112,17 +107,13 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
         if student_mission_info['current_step'] == 1:
-            if mission_id in config.family_intro_mission:
-                embed = get_relationship_embed(student_mission_info)
-                await message.channel.send(embed=embed)
+            if mission_id in config.photo_mission_with_title_and_content:
+                embed = get_letter_embed()
             else:
-                if mission_id in config.photo_mission_with_title_and_content:
-                    embed = get_letter_embed()
-                else:
-                    embed = get_aside_text_embed()
-                view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
-                view.message = await message.channel.send(embed=embed, view=view)
-                save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
+                embed = get_aside_text_embed()
+            view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
+            view.message = await message.channel.send(embed=embed, view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
 
             # Update mission status
             student_mission_info['current_step'] = 2
@@ -351,16 +342,6 @@ async def build_photo_instruction_embed(mission_info):
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
     )
-    return embed
-
-def get_relationship_embed(mission_info):
-    embed = discord.Embed(
-        title="📝 照片裡的人和寶寶關係是?",
-        description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
-        color=0xeeb2da,
-    )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
 def get_aside_text_embed():

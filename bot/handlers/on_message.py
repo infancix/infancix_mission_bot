@@ -11,6 +11,10 @@ from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
 )
+from bot.handlers.relation_or_identity_handler import (
+    handle_relation_identity_mission_start,
+    process_relation_identity_filling
+)
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
     process_photo_mission_filling,
@@ -134,8 +138,8 @@ async def handle_direct_message(client, message):
         await process_baby_profile_filling(client, message, student_mission_info)
     elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
-    elif mission_id in config.family_intro_mission:
-        await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.relation_or_identity_mission:
+        await process_relation_identity_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
@@ -167,6 +171,8 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_pregnancy_mission_start(client, user_id, mission_id)
     elif mission_id in config.baby_profile_registration_missions:
         await handle_registration_mission_start(client, user_id, mission_id)
+    elif mission_id in config.relation_or_identity_mission:
+        await handle_relation_identity_mission_start(client, user_id, mission_id)
     elif mission_id in config.theme_mission_list:
         await handle_theme_mission_start(client, user_id, mission_id)
     elif mission_id in config.audio_mission:
