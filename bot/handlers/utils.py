@@ -14,7 +14,11 @@ from bot.utils.message_tracker import (
     load_growth_photo_records,
     load_theme_book_edit_records,
     load_questionnaire_records,
-    load_confirm_growth_album_records
+    load_confirm_growth_album_records,
+    delete_task_entry_record,
+    delete_growth_photo_record,
+    delete_conversations_record,
+    delete_questionnaire_record
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
@@ -44,6 +48,21 @@ async def daily_job(client):
             await asyncio.sleep(2)
         except Exception as e:
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
+
+def reset_user_state(client, user_id, mission_id=0):
+    # Delete the message record
+    delete_task_entry_record(user_id, str(mission_id))
+    delete_questionnaire_record(user_id, str(mission_id))
+    delete_growth_photo_record(user_id, str(mission_id))
+    delete_conversations_record(user_id, str(mission_id))
+    if user_id in client.photo_mission_replace_index:
+        del client.photo_mission_replace_index[user_id]
+    if user_id in client.reset_baby_profile:
+        del client.reset_baby_profile[user_id]
+    if user_id in client.skip_aside_text:
+        del client.skip_aside_text[user_id]
+    if user_id in client.skip_growth_info:
+        del client.skip_growth_info[user_id]
 
 async def load_task_entry_messages(client):
     records = load_task_entry_records()

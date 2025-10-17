@@ -77,20 +77,11 @@ class PhotoTaskSelect(discord.ui.Select):
         selected_mission_id = int(self.values[0])
 
         # Stop View to prevent duplicate interactions
-        self.view.stop()
         await interaction.response.edit_message(view=None)
+        self.view.stop()
 
-        if selected_mission_id in config.free_mission_list or str(self.user_id) in config.ADMIN_USER_IDS:
-            await self.call_mission_start(selected_mission_id)
-        else:
-            # selected_mission_info
-            selected_mission_info = await self.client.api_utils.get_mission_info(selected_mission_id)
-            selected_book_id = selected_mission_info.get('book_id', 0)
-            album_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, selected_book_id)
-            if album_status.get('purchase_status', '未購買') in ['未購買', '已取消']:
-                await interaction.followup.send("您尚未購買此繪本，請聯絡社群客服「阿福 <@1272828469469904937>」。", ephemeral=True)
-            else:
-                await self.call_mission_start(selected_mission_id)
+        # call mission start handler
+        await self.call_mission_start(selected_mission_id)
 
     async def call_mission_start(self, selected_mission_id):
         if selected_mission_id in config.theme_mission_list:
@@ -102,6 +93,9 @@ class PhotoTaskSelect(discord.ui.Select):
         elif selected_mission_id in config.questionnaire_mission:
             from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
             await handle_questionnaire_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.baby_profile_registration_missions:
+            from bot.handlers.profile_handler import handle_registration_mission_start
+            await handle_registration_mission_start(self.client, self.user_id, selected_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)

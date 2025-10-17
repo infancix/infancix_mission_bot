@@ -23,7 +23,7 @@ async def handle_questionnaire_mission_start(client, user_id, mission_id, send_w
     mission = await client.api_utils.get_mission_info(mission_id)
     baby = await client.api_utils.get_baby_profile(user_id)
 
-    # Delete conversion cache
+    # Delete conversation cache
     delete_questionnaire_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
@@ -63,8 +63,8 @@ async def handle_questionnaire_round(client, message, student_mission_info, curr
     # Start questionnaire
     total_rounds = len(client.mission_questionnaire.get(str(mission_id), []))
     if total_rounds == 0 or current_round >= total_rounds:
-        raise ValueError("題目設定錯誤，請聯絡管理員")
-        await message.channel.send("題目設定錯誤，請聯絡管理員")
+        raise ValueError("題目設定錯誤，請洽社群客服「阿福 <@1272828469469904937>」協助。")
+        await message.channel.send("題目設定錯誤，請洽社群客服「阿福 <@1272828469469904937>」協助。")
         return
 
     questionnaire = client.mission_questionnaire[str(mission_id)][current_round]

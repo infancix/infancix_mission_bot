@@ -48,7 +48,9 @@ class MissionBot(discord.Client):
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
         self.s3_client = S3ImageUtils("infancix-app-storage-jp")
         self.photo_mission_replace_index = defaultdict(int)
-        self.skip_aside_text = False
+        self.reset_baby_profile = defaultdict(int)
+        self.skip_aside_text = defaultdict(int)
+        self.skip_growth_info = defaultdict(int)
         self.submit_deadline = 5 # Default to 5th of each month
 
         with open("bot/resource/mission_quiz.json", "r") as file:
@@ -150,8 +152,9 @@ class MissionBot(discord.Client):
     async def initiate_baby_data_update(self, interaction: discord.Interaction):
         try:
             await interaction.response.send_message("開始修改寶寶資料！", ephemeral=True)
-            from bot.handlers.photo_mission_handler import handle_photo_mission_start
-            await handle_photo_mission_start(self, str(interaction.user.id), mission_id=1001)
+            from bot.handlers.profile_handler import handle_registration_mission_start
+            self.reset_baby_profile[str(interaction.user.id)] = True
+            await handle_registration_mission_start(self, str(interaction.user.id), mission_id=1001)
         except Exception as e:
             self.logger.error(f"Error while call_revise_baby_data: {str(e)}")
 

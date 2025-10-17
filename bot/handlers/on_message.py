@@ -7,10 +7,12 @@ import time
 from bot.config import config
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start
 from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
+from bot.handlers.profile_handler import (
+    handle_registration_mission_start,
+    process_baby_profile_filling
+)
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
-    handle_baby_optin,
-    process_baby_registration_message,
     process_photo_mission_filling,
     process_add_on_photo_mission_filling
 ) 
@@ -128,10 +130,8 @@ async def handle_direct_message(client, message):
     mission_id = int(student_mission_info['mission_id'])
     student_mission_info['user_id'] = user_id
     # dispatch question
-    if mission_id == config.baby_pre_registration_mission:
-        await handle_baby_optin(client, message, student_mission_info)
-    elif mission_id == config.baby_registration_mission:
-        await process_baby_registration_message(client, message, student_mission_info)
+    if mission_id in config.baby_profile_registration_missions:
+        await process_baby_profile_filling(client, message, student_mission_info)
     elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
     elif mission_id in config.family_intro_mission:
@@ -161,8 +161,12 @@ async def handle_direct_message(client, message):
 
 async def handle_start_mission(client, user_id, mission_id):
     mission_id = int(mission_id)
-    if mission_id >= 101 and mission_id <= 135:
+    if mission_id == 1000:
+        await handle_app_instruction(client, user_id, mission_id)
+    elif mission_id >= 101 and mission_id <= 135:
         await handle_pregnancy_mission_start(client, user_id, mission_id)
+    elif mission_id in config.baby_profile_registration_missions:
+        await handle_registration_mission_start(client, user_id, mission_id)
     elif mission_id in config.theme_mission_list:
         await handle_theme_mission_start(client, user_id, mission_id)
     elif mission_id in config.audio_mission:
@@ -179,12 +183,45 @@ async def handle_start_mission(client, user_id, mission_id):
         print(f"Unhandled mission ID: {mission_id}")
         return
 
+async def handle_app_instruction(client, user_id, mission_id):
+    embed = discord.Embed(
+        title="👋 歡迎來到 Baby120 繪本工坊",
+        description=(
+            "**📖 什麼是繪本工坊？**\n"
+            "用簡單幾步驟，為寶寶製作專屬成長繪本，記錄每個月的珍貴瞬間\n\n"
+            "**🎯 製作流程（4 步驟）**\n"
+            "1️⃣ 登記寶寶姓名 → 完成封面\n"
+            "2️⃣ 逐頁製作內頁 → 上傳照片 + 輸入內容 + 即時瀏覽\n"
+            "3️⃣ 完成後預覽整本繪本\n"
+            "4️⃣ 每月 1 號由客服阿福聯絡送印出貨\n"
+            "⚠️ 試用版可製作部分頁面\n\n"
+            "------\n"
+            "🚀 點擊下方按鈕，開始製作第一個月的繪本吧！"
+        ),
+        color=0xeeb2da,
+    )
+    video_link = "https://www.youtube.com/shorts/rKreAeQ4y58"
+
+    view = TaskSelectView(client, "go_book_instruction", 1000)
+    user = await client.fetch_user(user_id)
+    if user.dm_channel is None:
+        await user.create_dm()
+
+    await user.send(embed=embed)
+    await user.send(f"📹 快速教學影片：{video_link}", view=view)
+    return
+
 async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
     try:
         # Send the photo message to the user
         client.logger.info(f"Send photo message to user {user_id}, baby_id: {baby_id}, mission {mission_id}")
         mission_result = await client.api_utils.get_student_mission_status(str(user_id), mission_id)
         user = await client.fetch_user(user_id)
+        mission_result = {
+            **mission_result,
+            'user_id': str(user_id),
+            'baby_id': baby_id,
+        }
         view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
         embed = view.generate_embed(baby_id, int(mission_id))
         view.message = await user.send(embed=embed, view=view)
@@ -279,7 +316,7 @@ async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
             "想更快完成屬於寶寶的一整本繪本嗎？點下方按鈕，馬上解鎖秘訣 🚀"
         ),
         color=0xeeb2da,
-        )
+    )
     image_url = f"https://infancixbaby120.com/discord_image/{baby_id}/{book_id}/2.jpg?t={int(time.time())}"
     embed.set_image(url=image_url)
     embed.set_footer(
