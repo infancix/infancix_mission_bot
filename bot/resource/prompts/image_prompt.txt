@@ -2,11 +2,20 @@
 Collect the photo `attachment` from the user's input and return a JSON object.
 
 ## Input Information
-- The user will provide a Discord photo attachment. You must extract and preserve the following information exactly as provided:
-  1. id (The second numeric string in the URL path, after attachments. It must be returned as the exact string given, e.g., "1419939458802778162".)
-  2. filename  
+- The user will provide a Discord photo attachment URL. You must parse the URL and return following three fields — do not add or remove any other content.
+  1. id (The second numeric string in the URL path, after attachments (`/attachments/{channel_id}/`). It must be returned as the exact string given, e.g., "1419939458802778162".)
+  2. filename
   3. url (⚠️ Do not modify or omit any part of the URL. It must be returned in full, including the query string.)  
 - Always keep the original `attachment.url` format. Do not truncate or remove query parameters.
+
+## Example
+Input:
+`https://cdn.discordapp.com/attachments/1281123155489984529/1420649463369830461/IMG_5309.jpg?ex=68d62a6a&is=68d4d8ea&hm=530cea4674ce94ab548a9dae913de008cb029f0dd03dac323090c38e31d251e8&`
+
+Output:
+- attachment.id: `1420649463369830461`
+- filename: `IMG_5309.jpg`
+- url: `https://cdn.discordapp.com/attachments/1281123155489984529/1420649463369830461/IMG_5309.jpg?ex=68d62a6a&is=68d4d8ea&hm=530cea4674ce94ab548a9dae913de008cb029f0dd03dac323090c38e31d251e8&`
 
 ## Response Format
 - Always return a JSON object with the following structure:
