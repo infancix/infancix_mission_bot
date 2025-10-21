@@ -52,7 +52,7 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
     await user.send(embed=embed)
     return
 
-@exception_handler(user_friendly_message="錄音檔上傳失敗了，請稍後再試一次喔！")
+@exception_handler(user_friendly_message="錄音檔上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_audio_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']

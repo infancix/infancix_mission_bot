@@ -50,7 +50,7 @@ async def handle_relation_identity_mission_start(client, user_id, mission_id, se
     await user.send(embed=embed)
     return
 
-@exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可尋求社群客服「阿福 <@1272828469469904937>」協助。")
+@exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_relation_identity_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']

@@ -17,9 +17,12 @@ from bot.handlers.relation_or_identity_handler import (
 )
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
-    process_photo_mission_filling,
-    process_add_on_photo_mission_filling
+    process_photo_mission_filling
 ) 
+from bot.handlers.add_on_mission_handler import (
+    handle_add_on_mission_start,
+    process_add_on_photo_mission_filling
+)
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
@@ -179,6 +182,8 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_audio_mission_start(client, user_id, mission_id)
     elif mission_id in config.questionnaire_mission:
         await handle_questionnaire_mission_start(client, user_id, mission_id)
+    elif mission_id in config.add_on_photo_mission:
+        await handle_add_on_mission_start(client, user_id, mission_id)
     elif mission_id in config.photo_mission_list:
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
@@ -248,6 +253,7 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
         return
 
     albums = [{
+        'user_id': str(user_id),
         'baby_id': baby_id,
         'book_id': book_id,
         **album

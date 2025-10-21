@@ -105,7 +105,7 @@ class MissionBot(discord.Client):
             album_view = AlbumView(self, album_status)
             embed = album_view.get_current_embed()
             message = await interaction.followup.send(
-                "📖 **以下是您的成長書櫃**\n點擊 ▶️ 查看下一本 | ◀️ 返回上一本",
+                "📖 **以下是您的成長書櫃**",
                 embed=embed,
                 view=album_view,
                 ephemeral=True

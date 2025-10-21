@@ -99,6 +99,9 @@ class PhotoTaskSelect(discord.ui.Select):
         elif selected_mission_id in config.relation_or_identity_mission:
             from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
             await handle_relation_identity_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.add_on_photo_mission:
+            from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
+            await handle_add_on_mission_start(self.client, self.user_id, selected_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)

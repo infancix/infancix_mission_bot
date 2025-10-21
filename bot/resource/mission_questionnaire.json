@@ -8,6 +8,13 @@
                 "C.念故事",
                 "D.唱歌",
                 "E.播音樂"
+            ],
+            "options_en": [
+                "A.take a bath",
+                "B.cuddle",
+                "C.listen to stories",
+                "D.sing",
+                "E.play music"
             ]
         }
     ]

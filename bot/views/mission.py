@@ -29,7 +29,7 @@ class MilestoneSelectView(discord.ui.View):
         self.user_id = user_id
         self.student_milestones = student_milestones['milestones']
         self.current_page = int(student_milestones['current_stage'])
-        self.total_pages = 4
+        self.total_pages = 3
 
         self.update_select_menu()
         self.update_buttons()
@@ -137,14 +137,16 @@ class MilestoneSelect(discord.ui.Select):
         options = []
         for mission in student_milestones:
             mission_id = int(mission['mission_id'])
-            if user_id in config.ADMIN_USER_IDS:
-                description = mission['mission_type']
-                mission_available = 1
-            elif mission['mission_available'] in warning:
+            if mission['mission_available'] == -2:
+                continue
+            if mission['mission_available'] in warning:
                 description = warning[mission['mission_available']]
                 mission_available = 0
             else:
-                description = mission['mission_type']
+                if mission.get('photo_mission') and mission['photo_mission'] and mission['photo_mission'] != "":
+                    description = f"{mission['mission_type']} | {mission['photo_mission']}"
+                else:
+                    description = mission['mission_type']
                 mission_available = mission['mission_available']
 
             options.append(

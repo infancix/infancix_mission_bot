@@ -23,31 +23,57 @@ def unit_length(ch: str) -> float:
 def line_count(s: str) -> int:
     return 1 if not s else s.count("\n") + 1
 
-def normalize_aside_text(aside_text: str) -> str:
+def normalize_aside_text(aside_text: str, cn_limit=15, en_limit=75) -> str:
     """
-    Line breaks:  
-     - If the input already contains `\n`, keep the user’s original line breaks (do not modify).  
-     - If the input contains no `\n`, and the text length exceeds **15 Chinese characters**, automatically insert a line break after the 15th character.  
-     - The text must not exceed **2 lines**.
-     """
-    def _insert_break(s: str, n = 15) -> str:
+    Line breaks:
+     - If the input already contains `\n`, keep the user's original line breaks (do not modify).
+     - If the input contains no `\n`:
+         * For Chinese text: insert a line break after ~15 Chinese characters (using visual unit count).
+         * For English text: insert a line break at the nearest space before 75 characters.
+    """
+    def insert_break_chinese(s: str, n=15) -> str:
         result = ""
-        line_unit_count = 0.0
+        count = 0.0
         for ch in s:
             char_units = unit_length(ch)
-            if line_unit_count + char_units > n and line_unit_count > 0:
+            if count + char_units > n and count > 0:
                 result += "\n"
-                line_unit_count = 0.0
+                count = 0.0
             result += ch
-            line_unit_count += char_units
+            count += char_units
         return result
+
+    def insert_break_english(s: str, n=40) -> str:
+        # split by words and rebuild with line limit
+        words = s.split(" ")
+        line = ""
+        lines = []
+        for word in words:
+            if len(line) + len(word) + 1 > n:
+                lines.append(line.strip())
+                line = word
+            else:
+                line += " " + word if line else word
+        if line:
+            lines.append(line.strip())
+        return "\n".join(lines)
 
     if aside_text is None:
         return None
     aside_text = aside_text.rstrip("\r")
-    if "\n" in aside_text:
-        return aside_text
-    return _insert_break(aside_text)
+
+    # Decide language type: if mostly ASCII → English; else → Chinese
+    ascii_ratio = sum(ch.isascii() for ch in aside_text) / len(aside_text)
+    processed = []
+    for line in aside_text.split("\n"):
+        if line.strip() == "":
+            continue
+        elif ascii_ratio > 0.7:
+            processed.append(insert_break_english(line, n=en_limit))
+        else:
+            processed.append(insert_break_chinese(line, n=cn_limit))
+    processed = "\n".join(processed)
+    return processed
 
 class OpenAIUtils:
     def __init__(self, api_key: str):
@@ -115,18 +141,20 @@ class OpenAIUtils:
 
     def process_aside_text_validation(self, assistant_result: Dict[str, Any], skip_aside_text: bool = False) -> Dict[str, Any]:
         aside_text = assistant_result.get("aside_text")
+        aside_text = aside_text if aside_text != "null" and aside_text != '' else None
         att = assistant_result.get("attachment") or {}
         is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (aside_text is not None))
 
         processed = normalize_aside_text(aside_text) if aside_text is not None else None
 
         # revise message
-        msg = "✅ 已收到！"
-        if processed is not None and line_count(processed) > 2:
-            msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
-            is_ready = False
-
-        if not is_ready and skip_aside_text:
+        msg = assistant_result.get("message")
+        if is_ready:
+            msg = "✅ 已收到！"
+            if processed is not None and line_count(processed) > 2:
+                msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
+                is_ready = False
+        elif not is_ready and skip_aside_text:
             is_ready = bool(att.get("id") and att.get("url"))
 
         return {

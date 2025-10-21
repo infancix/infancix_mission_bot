@@ -10,12 +10,24 @@
   1. id (The second numeric string in the URL path, after attachments. It must be returned as the exact string given, e.g., "1419939458802778162".)
   2. filename
   3. url (⚠️ Do not modify or omit any part of the URL. It must be returned in full, including the query string.)
-- `content`: The user will provide a story about the photo, in **Chinese**. Please handle it as follows:
-  1) Text: Only correct typos, do not rewrite or add extra content.
-  2) Line breaks: Discord messages collapse user line breaks into spaces.
-     - If the input is a long paragraph without breaks, automatically insert line breaks every **20–25 characters** at a natural boundary (such as after punctuation or phrase endings) to improve readability.  
-     - If the input already contains `\n`, keep the user’s line breaks and do not remove them.
-  3) The final output should be easy to read, with each paragraph separated by `\n`.
+- `content`: The user will provide a story about the photo.
+  Please preserve the **original language** (Chinese, English, or mixed).
+  **Do not translate** between languages.
+  1) **Text:**
+     - Only correct **obvious typos** within the same language.
+       (e.g., fix “famliy” → “family” or “寶寳” → “寶寶”)
+     - Do **not** rewrite, shorten, expand, or add extra content.
+
+  2) **Line breaks:**
+     - **Keep the user’s original paragraph and line breaks exactly as provided.**
+       - If the input contains the two-character sequence `\n` (a backslash followed by the letter `n`), **keep it verbatim** as `\n` in the output (do not convert it into an actual newline).
+       - If the input contains actual newline characters, **keep those newlines** as they are (do not remove, merge, or escape them).
+     - Do **not** insert, merge, or remove any line breaks.
+     - **Line breaks & literal markers must be preserved exactly**:
+
+  3) **Output formatting:**
+     - The final text should preserve the user’s natural structure.
+     - Do **not** change the language, tone, or punctuation style of the story.
 
 ## Validation Rule
 - If either the `attachment` is missing OR the `content` is missing/invalid, set `"is_ready": false`.

@@ -28,6 +28,8 @@ class Config:
 
         self._load_mission_config()
         self.photo_mission_list = set(
+            [self.baby_registration_mission] +
+            self.relation_or_identity_mission +
             self.photo_mission_with_aside_text +
             self.photo_mission_without_aside_text +
             self.photo_mission_with_title_and_content +
