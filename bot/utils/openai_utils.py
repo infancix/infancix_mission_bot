@@ -23,13 +23,13 @@ def unit_length(ch: str) -> float:
 def line_count(s: str) -> int:
     return 1 if not s else s.count("\n") + 1
 
-def normalize_aside_text(aside_text: str, cn_limit=15, en_limit=75) -> str:
+def normalize_aside_text(aside_text: str, cn_limit=15, en_limit=65) -> str:
     """
     Line breaks:
      - If the input already contains `\n`, keep the user's original line breaks (do not modify).
      - If the input contains no `\n`:
          * For Chinese text: insert a line break after ~15 Chinese characters (using visual unit count).
-         * For English text: insert a line break at the nearest space before 75 characters.
+         * For English text: insert a line break at the nearest space before 60~65 characters.
     """
     def insert_break_chinese(s: str, n=15) -> str:
         result = ""
@@ -43,7 +43,7 @@ def normalize_aside_text(aside_text: str, cn_limit=15, en_limit=75) -> str:
             count += char_units
         return result
 
-    def insert_break_english(s: str, n=40) -> str:
+    def insert_break_english(s: str, n=65) -> str:
         # split by words and rebuild with line limit
         words = s.split(" ")
         line = ""
@@ -65,13 +65,13 @@ def normalize_aside_text(aside_text: str, cn_limit=15, en_limit=75) -> str:
     # Decide language type: if mostly ASCII → English; else → Chinese
     ascii_ratio = sum(ch.isascii() for ch in aside_text) / len(aside_text)
     processed = []
-    for line in aside_text.split("\n"):
-        if line.strip() == "":
+    for l in aside_text.split("\n"):
+        if l.strip() == "":
             continue
         elif ascii_ratio > 0.7:
-            processed.append(insert_break_english(line, n=en_limit))
+            processed.append(insert_break_english(l, n=en_limit))
         else:
-            processed.append(insert_break_chinese(line, n=cn_limit))
+            processed.append(insert_break_chinese(l, n=cn_limit))
     processed = "\n".join(processed)
     return processed
 
@@ -146,7 +146,7 @@ class OpenAIUtils:
         is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (aside_text is not None))
 
         processed = normalize_aside_text(aside_text) if aside_text is not None else None
-
+        print(f"Processed aside text: {processed}, line count: {line_count(processed)}")
         # revise message
         msg = assistant_result.get("message")
         if is_ready:
@@ -175,7 +175,7 @@ class OpenAIUtils:
             if assistant_result.get(field) in ["null", "", None]:
                 assistant_result[field] = None
 
-        if mission_id == config.baby_pre_registration_mission:
+        if mission_id in config.baby_pre_registration_mission:
             is_ready = bool(assistant_result.get("baby_name"))
         elif mission_id in config.baby_name_en_registration_missions:
             is_ready = bool(assistant_result.get("baby_name_en"))

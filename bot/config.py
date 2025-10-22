@@ -78,10 +78,19 @@ class Config:
             self.baby_pre_registration_mission = mission_config['baby_pre_registration_mission']
             self.baby_registration_mission = mission_config['baby_registration_mission']
             self.baby_name_en_registration_missions = mission_config.get('baby_name_en_registration_missions', [])
-            self.baby_profile_registration_missions = [self.baby_registration_mission, self.baby_pre_registration_mission] + self.baby_name_en_registration_missions
+            self.baby_profile_registration_missions = [self.baby_registration_mission] + self.baby_pre_registration_mission + self.baby_name_en_registration_missions
 
             # growth book missions
             growth_book_missions = mission_config['growth_book_missions']
+
+            # book introduction mission
+            self.book_intro_mission = [
+                month_data['book_intro_mission'] for month_data in growth_book_missions
+            ]
+            self.book_first_mission = {
+                month_data['month']: month_data['book_first_mission']
+                for month_data in growth_book_missions
+            }
 
             # relation and identity missions
             self.relation_mission = [item for month_data in growth_book_missions

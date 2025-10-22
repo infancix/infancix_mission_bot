@@ -45,7 +45,7 @@ async def handle_registration_mission_start(client, user_id, mission_id):
     if user.dm_channel is None:
         await user.create_dm()
 
-    if int(mission_id) == config.baby_pre_registration_mission:
+    if int(mission_id) in config.baby_pre_registration_mission:
         embed = get_baby_name_registration_embed()
     elif int(mission_id) in config.baby_name_en_registration_missions:
         embed = get_baby_name_en_registration_embed()

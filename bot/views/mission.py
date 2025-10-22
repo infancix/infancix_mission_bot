@@ -9,7 +9,9 @@ def calculate_spacer(label_text: str, max_spaces: int = 40) -> str:
 
 def setup_label(mission):
     title = ""
-    if int(mission['mission_id']) in config.photo_mission_list:
+    if int(mission['mission_id']) in config.baby_profile_registration_missions:
+        title += "✏️"
+    elif int(mission['mission_id']) in config.photo_mission_list:
         title += "📸"
     elif int(mission['mission_id']) in config.audio_mission:
         title += "🔊"
@@ -143,10 +145,16 @@ class MilestoneSelect(discord.ui.Select):
                 description = warning[mission['mission_available']]
                 mission_available = 0
             else:
-                if mission.get('photo_mission') and mission['photo_mission'] and mission['photo_mission'] != "":
-                    description = f"{mission['mission_type']} | {mission['photo_mission']}"
+                if mission.get('mission_type') is not None and mission['mission_type'] != "":
+                    if '成長週報' in mission['mission_type']:
+                        description = f"{mission['mission_type']}"
+                    else:
+                        description = f"{mission['book_type']} | {mission['volume_title']} | {mission['mission_type']}"
                 else:
-                    description = mission['mission_type']
+                    description = f"{mission['book_type']} | {mission['volume_title']}"
+                if mission.get('photo_mission') and mission['photo_mission'] and mission['photo_mission'] != "":
+                    description += f" | {mission['photo_mission']}"
+
                 mission_available = mission['mission_available']
 
             options.append(
@@ -187,8 +195,4 @@ class MilestoneSelect(discord.ui.Select):
         start_task_msg = f"START_MISSION_{selected_mission_id} <@{interaction.user.id}>"
         await channel.send(start_task_msg)
 
-        if not isinstance(interaction.channel, discord.DMChannel):
-            await interaction.followup.send("請去任務佈告欄查看！", ephemeral=True)
-
         return
-

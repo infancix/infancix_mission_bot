@@ -49,18 +49,29 @@ class GrowthPhotoView(discord.ui.View):
             self.reselect_button.callback = self.reselect_button_callback
             self.add_item(self.reselect_button)
 
-        self.complete_button = discord.ui.Button(
-            custom_id='complete_photo',
-            label="送出 (送出即無法修改)",
-            style=discord.ButtonStyle.success
-        )
-        self.complete_button.callback = self.complete_callback
-        self.add_item(self.complete_button)
+        if self.mission_id in config.book_intro_mission:
+            self.next_mission_button = discord.ui.Button(
+                custom_id='next_mission',
+                label="開始製作內頁",
+                style=discord.ButtonStyle.success
+            )
+            self.next_mission_button.callback = self.next_mission_button_callback
+            self.add_item(self.next_mission_button)
+        else:
+            self.complete_button = discord.ui.Button(
+                custom_id='complete_photo',
+                label="送出 (送出即無法修改)",
+                style=discord.ButtonStyle.success
+            )
+            self.complete_button.callback = self.complete_callback
+            self.add_item(self.complete_button)
 
         self.message = None
 
     def generate_embed(self, baby_id, mission_id):
-        if self.mission_id in config.questionnaire_mission:
+        if self.mission_id in config.book_intro_mission:
+            description = "恭喜你成功為寶寶製作專屬繪本封面 🎉\n\n點選下方按鈕，開始製作內頁吧！"
+        elif self.mission_id in config.questionnaire_mission:
             description = "請點選 重新選擇 或是 直接送出"
         elif mission_id in config.add_on_photo_mission:
             description = "請透過下方按鈕，選擇要更換的照片（1–4）"
@@ -163,6 +174,38 @@ class GrowthPhotoView(discord.ui.View):
             raise Exception('Invalid channel')
 
         msg_task = f"MISSION_{self.mission_id}_FINISHED <@{self.user_id}>"
+        await channel.send(msg_task)
+
+    async def next_mission_button_callback(self, interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+        await interaction.followup.send("⏳開啟任務會需一點時間，點選後請耐心等待，不必重複點喔！", ephemeral=True)
+
+        # Mission Completed
+        student_mission_info = {
+            'user_id': self.user_id,
+            'mission_id': self.mission_id,
+            'current_step': 4,
+            'total_steps': 4,
+            'score': 1
+        }
+        await self.client.api_utils.update_student_mission_status(**student_mission_info)
+
+        # reset user state
+        from bot.handlers.utils import reset_user_state
+        reset_user_state(self.client, str(interaction.user.id), self.mission_id)
+
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+
+        msg_task = f"MISSION_{self.mission_id}_FINISHED <@{self.user_id}>"
+        await channel.send(msg_task)
+
+        next_mission_id = config.book_first_mission[self.book_id]
+        msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
         await channel.send(msg_task)
 
     async def change_photo_callback(self, interaction: discord.Interaction):

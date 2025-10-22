@@ -3,6 +3,17 @@ from types import SimpleNamespace
 
 from bot.config import config
 
+def setup_label(mission):
+    if int(mission['mission_id']) in config.baby_profile_registration_missions:
+        emoji = "✏️"
+    elif int(mission['mission_id']) in config.audio_mission:
+        emoji = "🔊"
+    elif int(mission['mission_id']) in config.questionnaire_mission:
+        emoji = "📝"
+    else:
+        emoji = "📸"
+    return f"{emoji}{mission['mission_title'].replace('_封面', '')}"
+
 class PhotoTaskSelectView(discord.ui.View):
     def __init__(self, client, user_id, incomplete_photo_tasks, timeout=3600):
         super().__init__(timeout=timeout)
@@ -52,13 +63,13 @@ class PhotoTaskSelect(discord.ui.Select):
         for mission in incomplete_missions:
             if int(mission['mission_id']) < 7000:
                 options.append(discord.SelectOption(
-                    label=f"📷{mission['photo_mission']}",
+                    label=setup_label(mission),
                     description=f"{mission['volume_title']} | {mission['page_title']}",
                     value=mission['mission_id']
                 ))
             else:
                 options.append(discord.SelectOption(
-                    label=f"📷{mission['mission_title'].replace("_封面", "")}",
+                    label=setup_label(mission),
                     description=mission['mission_type'],
                     value=mission['mission_id']
                 ))
