@@ -3,6 +3,17 @@ from types import SimpleNamespace
 
 from bot.config import config
 
+def setup_label(mission):
+    if int(mission['mission_id']) in config.baby_profile_registration_missions:
+        emoji = "✏️"
+    elif int(mission['mission_id']) in config.audio_mission:
+        emoji = "🔊"
+    elif int(mission['mission_id']) in config.questionnaire_mission:
+        emoji = "📝"
+    else:
+        emoji = "📸"
+    return f"{emoji}{mission['mission_title'].replace('_封面', '')}"
+
 class PhotoTaskSelectView(discord.ui.View):
     def __init__(self, client, user_id, incomplete_photo_tasks, timeout=3600):
         super().__init__(timeout=timeout)
@@ -52,13 +63,13 @@ class PhotoTaskSelect(discord.ui.Select):
         for mission in incomplete_missions:
             if int(mission['mission_id']) < 7000:
                 options.append(discord.SelectOption(
-                    label=f"📷{mission['mission_title']}",
-                    description=mission['photo_mission'],
+                    label=setup_label(mission),
+                    description=f"{mission['volume_title']} | {mission['page_title']}",
                     value=mission['mission_id']
                 ))
             else:
                 options.append(discord.SelectOption(
-                    label=f"📷{mission['mission_title'].replace("_封面", "")}",
+                    label=setup_label(mission),
                     description=mission['mission_type'],
                     value=mission['mission_id']
                 ))
@@ -96,6 +107,12 @@ class PhotoTaskSelect(discord.ui.Select):
         elif selected_mission_id in config.baby_profile_registration_missions:
             from bot.handlers.profile_handler import handle_registration_mission_start
             await handle_registration_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.relation_or_identity_mission:
+            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+            await handle_relation_identity_mission_start(self.client, self.user_id, selected_mission_id)
+        elif selected_mission_id in config.add_on_photo_mission:
+            from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
+            await handle_add_on_mission_start(self.client, self.user_id, selected_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)

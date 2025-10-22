@@ -45,7 +45,7 @@ async def handle_registration_mission_start(client, user_id, mission_id):
     if user.dm_channel is None:
         await user.create_dm()
 
-    if int(mission_id) == config.baby_pre_registration_mission:
+    if int(mission_id) in config.baby_pre_registration_mission:
         embed = get_baby_name_registration_embed()
     elif int(mission_id) in config.baby_name_en_registration_missions:
         embed = get_baby_name_en_registration_embed()
@@ -67,7 +67,7 @@ async def handle_baby_photo_upload(client, message, student_mission_info):
     await client.api_utils.update_student_mission_status(**student_mission_info)
     return
 
-@exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可尋求社群客服「阿福 <@1272828469469904937>」協助。")
+@exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_baby_profile_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
@@ -236,11 +236,14 @@ def get_baby_name_registration_embed():
 
 def get_baby_name_en_registration_embed():
     embed = discord.Embed(
-        title="📝 寶寶英文名字登記",
-        description="英文名字或是暱稱都可以呦！",
+        title="✏️ 製作翻譯對照表",
+        description="請輸入寶寶的 [英文名字或暱稱]，\n我們將為寶寶建立專屬英文翻譯對照表，\n之後所有繪本都會自動使用這個名字喔!",
         color=0xeeb2da,
     )
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
+    embed.set_footer(
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        text="點選下方 `指令` 可查看更多功能"
+    )
     return embed
 
 def get_baby_registration_embed(reset=False):

@@ -25,6 +25,7 @@ from bot.config import config
 async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=1):
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
+    book = await client.api_utils.get_student_album_purchase_status(user_id, book_id=mission.get('book_id', None)) if mission.get('book_id') else {}
     baby = await client.api_utils.get_baby_profile(user_id)
 
     # Delete conversation cache
@@ -55,150 +56,14 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
         save_conversations_record(user_id, mission_id, 'assistant', f"請使用者上傳[mission{'photo_mission'}]的照片")
     else:
-        embed, files = await build_photo_mission_embed(mission, baby)
+        embed, files = await build_photo_mission_embed(mission, baby, book)
         if send_weekly_report and files:
             await user.send(files=files)
         await user.send(embed=embed)
     return
 
-@exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可尋求社群客服「阿福 <@1272828469469904937>」協助。")
+@exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_photo_mission_filling(client, message, student_mission_info):
-    user_id = str(message.author.id)
-    mission_id = student_mission_info['mission_id']
-    prompt_path = config.get_prompt_file(mission_id)
-
-    if message.attachments:
-        if user_id not in client.photo_mission_replace_index:
-            user_message = f"User uploaded {len(message.attachments)} photo(s). Attachment object: {message.attachments[0]}"
-            client.photo_mission_replace_index[user_id] = 1
-        else:
-            user_message = f"User wants to replace photo.\n New uploaded attachment: {message.attachments[0]}"
-    else:
-        if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
-            user_message = f"User provided aside text: {message.content}"
-            client.skip_aside_text[user_id] = False
-        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
-            user_message = f"User provide the relation of the image: {message.content}"
-        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_title_and_content:
-            user_message = f"User provide the content: {message.content}"
-        else:
-            user_message = message.content
-
-    async with message.channel.typing():
-        records = load_conversations_records()
-        conversations = records[user_id].get(str(mission_id), None) if user_id in records else None
-
-        # get reply message
-        mission_result = client.openai_utils.process_user_message(prompt_path, user_message, conversations=conversations)
-        client.logger.info(f"Assistant response: {mission_result}")
-        if student_mission_info.get('current_step', 1) == 2 and mission_id in config.photo_mission_with_aside_text:
-            mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
-            client.logger.info(f"Processed aside text validation: {mission_result}")
-        elif student_mission_info.get('current_step', 1) == 2 and mission_id in config.family_intro_mission:
-            mission_result = client.openai_utils.process_relationship_validation(mission_result)
-            client.logger.info(f"Processed relationship validation: {mission_result}")
-
-    # Get enough information to proceed
-    save_conversations_record(user_id, mission_id, 'user', user_message)
-
-    if mission_result.get('is_ready'):
-        if mission_id in config.family_intro_mission or mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
-            await submit_image_data(client, message, student_mission_info, mission_result)
-            return
-        else:
-            embed = get_confirmation_embed(mission_result)
-            view = TaskSelectView(client, "go_submit", mission_id, mission_result=mission_result)
-            view.message = await message.channel.send(embed=embed, view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
-    else:
-        if student_mission_info['current_step'] == 1:
-            if mission_id in config.family_intro_mission:
-                embed = get_relationship_embed(student_mission_info)
-                await message.channel.send(embed=embed)
-            else:
-                if mission_id in config.photo_mission_with_title_and_content:
-                    embed = get_letter_embed()
-                else:
-                    embed = get_aside_text_embed()
-                view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
-                view.message = await message.channel.send(embed=embed, view=view)
-                save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
-
-            # Update mission status
-            student_mission_info['current_step'] = 2
-            await client.api_utils.update_student_mission_status(**student_mission_info)
-        else:
-            # Continue to collect additional information
-            await message.channel.send(mission_result['message'])
-            save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
-
-    return
-
-def prepare_api_request(client, message, student_mission_info):
-    user_id = str(message.author.id)
-    mission_id = student_mission_info['mission_id']
-
-    # Replace photo request
-    if user_id in client.photo_mission_replace_index and message.attachments:
-        photo_index = client.photo_mission_replace_index[user_id]
-        saved_result = get_mission_record(user_id, mission_id)
-        if not saved_result.get('attachment') or photo_index-1 >= len(saved_result['attachment']):
-            return {
-                'needs_ai_prediction': False,
-                'direct_action': 'error',
-                'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
-            }
-
-        replace_attachment = extract_attachment_info(message.attachments[0].url)
-        saved_result['attachment'][photo_index-1] = replace_attachment
-        saved_result['is_ready'] = True
-        return {
-            'needs_ai_prediction': False,
-            'direct_action': 'photo_replacement',
-            'direct_response': saved_result
-        }
-    elif message.attachments:
-        saved_result = get_mission_record(user_id, mission_id)
-        if len(saved_result.get('attachment') or []) + len(message.attachments) > 4:
-            return {
-                'needs_ai_prediction': False,
-                'direct_action': 'error',
-                'context': "已達到照片上限4張，請挑選後再上傳喔！"
-            }
-
-        if not saved_result.get('attachment'):
-            saved_result['attachment'] = []
-        for att in message.attachments:
-            attachment = extract_attachment_info(att.url)
-            saved_result['attachment'].append(attachment)
-        return {
-            'needs_ai_prediction': False,
-            'direct_action': 'photo_upload',
-            'direct_response': saved_result
-        }
-    else:
-        user_message = message.content
-
-    # Build full context for AI prediction
-    context = ""
-    saved_result = get_mission_record(user_id, mission_id)
-    if saved_result.get('attachment'):
-        context_parts = []
-        context_parts.append(f"Previous attachments: {len(saved_result['attachment'])} photos collected")
-        context_parts.append(f"Attachments detail: {saved_result['attachment']}")
-        context = "\n".join(context_parts)
-    else:
-        return ""
-
-    return {
-        'needs_ai_prediction': True,
-        'direct_action': None,
-        'context': context,
-        'user_message': user_message
-    }
-
-@exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可尋求社群客服「阿福 <@1272828469469904937>」協助。")
-async def process_add_on_photo_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     prompt_path = config.get_prompt_file(mission_id)
@@ -220,22 +85,93 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
         mission_result = request_info.get('direct_response', {})
 
     # validate mission result
-    if len(mission_result.get('attachment', [])) == 4:
+    if mission_id in config.photo_mission_without_aside_text:
         mission_result['is_ready'] = True
-    elif len(mission_result.get('attachment', [])) < 4:
-        mission_result['is_ready'] = False
-        mission_result['message'] = f"目前已收到 {len(mission_result.get('attachment', []))} 張照片，還可以再上傳 {4 - len(mission_result.get('attachment', []))} 張喔！"
+    elif mission_id in config.photo_mission_with_aside_text:
+        mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
     save_mission_record(user_id, mission_id, mission_result)
 
-    # Get enough information to proceed
     if mission_result.get('is_ready'):
-        embed = get_waiting_embed()
-        await message.channel.send(embed=embed)
-        await submit_image_data(client, message, student_mission_info, mission_result)
+        if  mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
+            await submit_image_data(client, message, student_mission_info, mission_result)
+            return
+        else:
+            embed = get_confirmation_embed(mission_result)
+            view = TaskSelectView(client, "go_submit", mission_id, mission_result=mission_result)
+            view.message = await message.channel.send(embed=embed, view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
-        # Continue to collect additional information
-        await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
+        if student_mission_info['current_step'] == 1:
+            if mission_id in config.photo_mission_with_title_and_content:
+                embed = get_letter_embed()
+            else:
+                embed = get_aside_text_embed()
+            view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
+            view.message = await message.channel.send(embed=embed, view=view)
+            save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
+
+            # Update mission status
+            student_mission_info['current_step'] = 2
+            await client.api_utils.update_student_mission_status(**student_mission_info)
+        else:
+            # Continue to collect additional information
+            await message.channel.send(mission_result['message'])
+            save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
+
+    return
+
+def prepare_api_request(client, message, student_mission_info):
+    user_id = str(message.author.id)
+    mission_id = student_mission_info['mission_id']
+    saved_result = get_mission_record(user_id, mission_id) or {}
+
+    # Replace photo request
+    if user_id in client.photo_mission_replace_index and message.attachments:
+        photo_index = client.photo_mission_replace_index[user_id]
+        if not saved_result.get('attachment') or photo_index-1 >= len(saved_result['attachment']):
+            return {
+                'needs_ai_prediction': False,
+                'direct_action': 'error',
+                'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
+            }
+
+        replace_attachment = extract_attachment_info(message.attachments[0].url)
+        saved_result['attachment'][photo_index-1] = replace_attachment
+        saved_result['is_ready'] = True
+        return {
+            'needs_ai_prediction': False,
+            'direct_action': 'photo_replacement',
+            'direct_response': saved_result
+        }
+    elif message.attachments:
+        attachment = extract_attachment_info(message.attachments[0].url)
+        saved_result['attachment'] = attachment
+        return {
+            'needs_ai_prediction': False,
+            'direct_action': 'photo_upload',
+            'direct_response': saved_result
+        }
+    elif student_mission_info['current_step'] > 1:
+        user_message = "User provide aside_text:\n" + message.content
+    else:
+        user_message = message.content
+
+    # Build full context for AI prediction
+    context_parts = []
+    if saved_result.get('attachment') and saved_result['attachment'].get('url'):
+        context_parts.append(f"Current attachments detail: {saved_result['attachment']}")
+    if saved_result.get('aside_text'):
+        context_parts.append(f"Current aside text: {saved_result['aside_text']}")
+    if saved_result.get('content'):
+        context_parts.append(f"Current content: {saved_result['content']}")
+    context = "\n".join(context_parts) if context_parts else "No prior context."
+
+    return {
+        'needs_ai_prediction': True,
+        'direct_action': None,
+        'context': context,
+        'user_message': user_message
+    }
 
 # --------------------- Event Handlers ---------------------
 async def submit_image_data(client, message, student_mission_info, mission_result):
@@ -273,7 +209,7 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-async def build_photo_mission_embed(mission_info=None, baby_info=None):
+async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info=None):
     if baby_info is None:
         author = "恭喜寶寶出生！"
     else:
@@ -322,7 +258,21 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
         color=0xeeb2da
     )
     embed.set_author(name=author)
-    embed.set_image(url="https://infancixbaby120.com/discord_assets/photo_mission_instruction.png")
+
+    if book_info and book_info.get('lang_version', 'zh') == 'en':
+        if book_info.get('book_id') in [1, 3]:
+            demo_baby_id = 2024000002
+            demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg"
+            embed.set_image(url=demo_url)
+        else:
+            default_instruction_url = "https://infancixbaby120.com/discord_assets/photo_mission_instruction.png"
+            embed.set_image(url=default_instruction_url)
+    else:
+        # zh
+        demo_baby_id = 2024000001
+        demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg"
+        embed.set_image(url=demo_url)
+
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="點選下方 `指令` 可查看更多功能"
@@ -353,20 +303,10 @@ async def build_photo_instruction_embed(mission_info):
     )
     return embed
 
-def get_relationship_embed(mission_info):
-    embed = discord.Embed(
-        title="📝 照片裡的人和寶寶關係是?",
-        description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
-        color=0xeeb2da,
-    )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
-    return embed
-
 def get_aside_text_embed():
     embed = discord.Embed(
         title="✏️ 寫下該照片的回憶",
-        description="請於對話框輸入文字(限定30個字)\n_範例：第一次幫你按摩，就解決了你的便秘。_",
+        description="請於對話框輸入文字\n範例：第一次幫你按摩，就解決了你的便秘。\n\n(中文版限定30個字，英文版建議20個字以內，且最多兩行)",
         color=0xeeb2da,
     )
     return embed

@@ -80,7 +80,8 @@ def save_growth_photo_records(user_id: str, message_id: str, mission_id: int, re
 
     records[user_id][str(mission_id)] = {
         "message_id": message_id,
-        "result": result
+        "result": result,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
     with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:

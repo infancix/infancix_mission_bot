@@ -11,11 +11,18 @@ from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
 )
+from bot.handlers.relation_or_identity_handler import (
+    handle_relation_identity_mission_start,
+    process_relation_identity_filling
+)
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
-    process_photo_mission_filling,
-    process_add_on_photo_mission_filling
+    process_photo_mission_filling
 ) 
+from bot.handlers.add_on_mission_handler import (
+    handle_add_on_mission_start,
+    process_add_on_photo_mission_filling
+)
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
@@ -34,12 +41,15 @@ from bot.views.theme_book_view import ThemeBookView
 from bot.views.task_select_view import TaskSelectView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 from bot.utils.message_tracker import (
+    save_task_entry_record,
     delete_task_entry_record,
     save_growth_photo_records,
     load_theme_book_edit_records,
     save_theme_book_edit_record,
     save_confirm_growth_album_record
 )
+from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.id_utils import encode_ids
 
 async def handle_background_message(client, message):
     client.logger.debug(f"Background message received: {message}")
@@ -52,13 +62,16 @@ async def handle_background_message(client, message):
         album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
         if mission_match:
             mission_id = int(mission_match.group(1))
-            await handle_start_mission(client, user_id, mission_id)
+            if mission_id == 1000:
+                await handle_app_instruction(client, user_id, mission_id)
+            elif mission_id in config.book_intro_mission:
+                await handle_book_intro_mission(client, user_id, mission_id)
+            else:
+                await handle_start_mission(client, user_id, mission_id)
         elif photo_match:
             baby_id = int(photo_match.group(1))
             mission_id = int(photo_match.group(2))
-            if mission_id == config.baby_pre_registration_mission:
-                await handle_first_photo_book(client, user_id, baby_id, book_id=1)
-            elif mission_id < 7000:
+            if mission_id < 7000:
                 await handle_notify_photo_ready_job(client, user_id, baby_id, mission_id)
             else:
                 await handle_notify_theme_book_change_page(client, user_id, baby_id)
@@ -134,8 +147,8 @@ async def handle_direct_message(client, message):
         await process_baby_profile_filling(client, message, student_mission_info)
     elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
-    elif mission_id in config.family_intro_mission:
-        await process_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.relation_or_identity_mission:
+        await process_relation_identity_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
@@ -167,12 +180,16 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_pregnancy_mission_start(client, user_id, mission_id)
     elif mission_id in config.baby_profile_registration_missions:
         await handle_registration_mission_start(client, user_id, mission_id)
+    elif mission_id in config.relation_or_identity_mission:
+        await handle_relation_identity_mission_start(client, user_id, mission_id)
     elif mission_id in config.theme_mission_list:
         await handle_theme_mission_start(client, user_id, mission_id)
     elif mission_id in config.audio_mission:
         await handle_audio_mission_start(client, user_id, mission_id)
     elif mission_id in config.questionnaire_mission:
         await handle_questionnaire_mission_start(client, user_id, mission_id)
+    elif mission_id in config.add_on_photo_mission:
+        await handle_add_on_mission_start(client, user_id, mission_id)
     elif mission_id in config.photo_mission_list:
         await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id < 100 and mission_id not in config.photo_mission_list:
@@ -184,6 +201,10 @@ async def handle_start_mission(client, user_id, mission_id):
         return
 
 async def handle_app_instruction(client, user_id, mission_id):
+    user = await client.fetch_user(user_id)
+    if user.dm_channel is None:
+        await user.create_dm()
+
     embed = discord.Embed(
         title="👋 歡迎來到 Baby120 繪本工坊",
         description=(
@@ -200,15 +221,42 @@ async def handle_app_instruction(client, user_id, mission_id):
         ),
         color=0xeeb2da,
     )
-    video_link = "https://www.youtube.com/shorts/rKreAeQ4y58"
+    embed.set_image(url="https://infancixbaby120.com/discord_assets/app_intro.jpg")
+    view = TaskSelectView(client, "go_book_instruction", mission_id=1000)
+    view.message = await user.send(embed=embed, view=view)
+    view = TaskSelectView(client, "go_book_instruction", mission_id=1000)
+    return
 
-    view = TaskSelectView(client, "go_book_instruction", 1000)
+async def handle_book_intro_mission(client, user_id, mission_id):
+    mission_info = await client.api_utils.get_mission_info(mission_id)
+    embed = discord.Embed(
+        title=f"📖繪本介紹: **{mission_info['volume_title']} - {mission_info['photo_mission']}**",
+        description=mission_info['mission_instruction'],
+        color=0xeeb2da,
+    )
+    if 'mission_instruction_image_url' in mission_info and mission_info['mission_instruction_image_url'] != "":
+        instruction_url = create_preview_image_from_url(mission_info['mission_instruction_image_url'])
+        embed.set_image(url=instruction_url)
+
+    book_id = mission_info.get('book_id', None)
+    if book_id is None:
+        client.logger.error(f"Book ID not found for mission {mission_id}")
+        return
+
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
         await user.create_dm()
 
-    await user.send(embed=embed)
-    await user.send(f"📹 快速教學影片：{video_link}", view=view)
+    payload = {
+        'user_id': user_id,
+        'book_id': book_id,
+        'mission_id': mission_id,
+        'next_mission_id': mission_id,
+        'is_first_mission': True,
+    }
+    view = TaskSelectView(client, "go_next_mission", mission_id, mission_result=payload)
+    view.message = await user.send(embed=embed, view=view)
+    save_task_entry_record(user_id, str(view.message.id), "go_next_mission", mission_id, payload)
     return
 
 async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
@@ -242,6 +290,7 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
         return
 
     albums = [{
+        'user_id': str(user_id),
         'baby_id': baby_id,
         'book_id': book_id,
         **album
@@ -305,39 +354,6 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
     except Exception as e:
         client.logger.warning(f"⚠️ Failed to restore theme book edits for {user_id}: {e}")
-
-async def handle_first_photo_book(client, user_id, baby_id, book_id=1):
-    baby_profile = await client.api_utils.get_baby_profile(user_id)
-    baby_name = baby_profile.get('baby_name', '寶寶')
-    embed = discord.Embed(
-        title=f"🌏 {baby_name}的地球冒險日記",
-        description=(
-            "恭喜你成功為寶寶製作第一本專屬繪本封面 🎉\n\n"
-            "想更快完成屬於寶寶的一整本繪本嗎？點下方按鈕，馬上解鎖秘訣 🚀"
-        ),
-        color=0xeeb2da,
-    )
-    image_url = f"https://infancixbaby120.com/discord_image/{baby_id}/{book_id}/2.jpg?t={int(time.time())}"
-    embed.set_image(url=image_url)
-    embed.set_footer(
-        icon_url="https://infancixbaby120.com/discord_assets/logo.png",
-        text="用科學育兒，用愛紀錄成長"
-    )
-    view = TaskSelectView(client, "show_command_instruction", 1000)
-    try:
-        user = await client.fetch_user(user_id)
-        await user.send(embed=embed, view=view)
-        client.logger.info(f"Send first photo book message to user {user_id}, book {book_id}")
-        student_mission_info = {
-            'user_id': user_id,
-            'mission_id': 1000,
-            'current_step': 1,
-            'total_steps': 1
-        }
-        await client.api_utils.update_student_mission_status(**student_mission_info)
-    except Exception as e:
-        client.logger.error(f"Failed to send first photo book message to user {user_id}: {e}")
-    return
 
 async def handle_confirm_growth_album_mission_start(client, user_id, mission_id, book_id=1):
     album_status = await client.api_utils.get_student_album_purchase_status(user_id, book_id=book_id)

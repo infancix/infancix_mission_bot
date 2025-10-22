@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from bot.config import config
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
-from bot.utils.message_tracker import delete_task_entry_record, get_mission_record, save_mission_record
+from bot.utils.message_tracker import save_task_entry_record, delete_task_entry_record, get_mission_record, save_mission_record
 
 class TaskSelectView(discord.ui.View):
     def __init__(self, client, task_type, mission_id, mission_result=None, timeout=None):
@@ -28,7 +28,10 @@ class TaskSelectView(discord.ui.View):
             self.add_item(self.go_book_instruction_button)
 
         if task_type == "go_next_mission":
-            label = "繼續製作下一頁"
+            if self.result.get('is_first_mission'):
+                label = "開始製作封面"
+            else:
+                label = "繼續製作下一頁"
             self.go_next_mission_button = discord.ui.Button(
                 custom_id="go_next_mission_button",
                 label=label,
@@ -141,8 +144,26 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.response.edit_message(view=self)
 
-        from bot.handlers.profile_handler import handle_registration_mission_start
-        await handle_registration_mission_start(self.client, str(interaction.user.id), 1000)
+        mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
+        embed = discord.Embed(
+            title=f"📖繪本介紹: **{mission_info['volume_title']} - {mission_info['photo_mission']}**",
+            description=mission_info['mission_instruction'],
+            color=0xeeb2da,
+        )
+        if 'mission_instruction_image_url' in mission_info and mission_info['mission_instruction_image_url'] != "":
+            instruction_url = create_preview_image_from_url(mission_info['mission_instruction_image_url'])
+            embed.set_image(url=instruction_url)
+
+        payload = {
+            'user_id': str(interaction.user.id),
+            'book_id': mission_info['book_id'],
+            'mission_id': self.mission_id,
+            'next_mission_id': self.mission_id,
+            'is_first_mission': True,
+        }
+        view = TaskSelectView(self.client, "go_next_mission", self.mission_id, mission_result=payload)
+        view.message = await interaction.channel.send(embed=embed, view=view)
+        save_task_entry_record(str(interaction.user.id), str(view.message.id), "go_next_mission", self.mission_id, payload)
 
     async def go_next_mission_button_callback(self, interaction):
         for item in self.children:
@@ -163,6 +184,12 @@ class TaskSelectView(discord.ui.View):
         elif next_mission_id in config.baby_profile_registration_missions:
             from bot.handlers.profile_handler import handle_registration_mission_start
             await handle_registration_mission_start(self.client, user_id, next_mission_id)
+        elif next_mission_id in config.relation_or_identity_mission:
+            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+            await handle_relation_identity_mission_start(self.client, user_id, next_mission_id)
+        elif next_mission_id in config.add_on_photo_mission:
+            from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
+            await handle_add_on_mission_start(self.client, user_id, next_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=0)
