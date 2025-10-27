@@ -151,10 +151,14 @@ class MissionBot(discord.Client):
 
     async def initiate_baby_data_update(self, interaction: discord.Interaction):
         try:
-            await interaction.response.send_message("開始修改寶寶資料！", ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+                self.reset_baby_profile[str(interaction.user.id)] = 1
+            await interaction.followup.send("開始修改寶寶資料！", ephemeral=True)
+
             from bot.handlers.profile_handler import handle_registration_mission_start
-            self.reset_baby_profile[str(interaction.user.id)] = True
             await handle_registration_mission_start(self, str(interaction.user.id), mission_id=1001)
+
         except Exception as e:
             self.logger.error(f"Error while call_revise_baby_data: {str(e)}")
 
