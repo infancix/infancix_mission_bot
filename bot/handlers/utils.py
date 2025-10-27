@@ -17,7 +17,6 @@ from bot.utils.message_tracker import (
     load_confirm_growth_album_records,
     delete_task_entry_record,
     delete_growth_photo_record,
-    delete_conversations_record,
     delete_questionnaire_record
 )
 from bot.views.task_select_view import TaskSelectView
@@ -54,7 +53,6 @@ def reset_user_state(client, user_id, mission_id=0):
     delete_task_entry_record(user_id, str(mission_id))
     delete_questionnaire_record(user_id, str(mission_id))
     delete_growth_photo_record(user_id, str(mission_id))
-    delete_conversations_record(user_id, str(mission_id))
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
     if user_id in client.reset_baby_profile:

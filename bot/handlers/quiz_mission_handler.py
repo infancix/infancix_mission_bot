@@ -8,9 +8,6 @@ from bot.handlers.utils import get_user_id
 from bot.utils.message_tracker import (
     save_quiz_message_record,
     save_task_entry_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.config import config
@@ -96,8 +93,6 @@ async def send_quiz_summary(interaction, correct, student_mission_info):
 
     msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
     await channel.send(msg_task)
-
-    delete_conversations_record(user_id, mission_id)
 
 # -------------------- Helper Functions --------------------
 def build_quiz_mission_embed(mission_info=None, baby_info=None):

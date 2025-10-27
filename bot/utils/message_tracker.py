@@ -125,35 +125,6 @@ def delete_confirm_growth_album_record(user_id: str, book_id: int):
         with open(CONFIRM_GROWTH_ALBUM_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
 
-def load_conversations_records() -> dict:
-    if CONVERSATION_LOG_PATH.exists():
-        with open(CONVERSATION_LOG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
-    records = load_conversations_records()
-    if user_id not in records or str(mission_id) not in records[user_id]:
-        records[user_id] = defaultdict(list)  # remove all the previous records for this user
-
-    records[str(user_id)][str(mission_id)].append({
-        "role": role,
-        "message": message,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
-
-    with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=4, ensure_ascii=False)
-
-def delete_conversations_record(user_id: str, mission_id: int):
-    records = load_conversations_records()
-    if user_id in records and str(mission_id) in records[user_id]:
-        del records[user_id][str(mission_id)]
-        if not records[user_id]:  # Remove user entry if no missions left
-            del records[user_id]
-        with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=4, ensure_ascii=False)
-
 def load_theme_book_edit_records() -> dict:
     if THEME_BOOK_EDIT_LOG_PATH.exists():
         with open(THEME_BOOK_EDIT_LOG_PATH, "r", encoding="utf-8") as f:

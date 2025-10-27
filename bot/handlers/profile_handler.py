@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -28,7 +25,6 @@ async def handle_registration_mission_start(client, user_id, mission_id):
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
     if user_id in client.skip_growth_info:
         del client.go_skip_growth_info[user_id]
 
@@ -113,7 +109,6 @@ async def process_baby_profile_filling(client, message, student_mission_info):
         save_task_entry_record(user_id, str(view.message.id), "baby_optin", mission_id, result=mission_result)
     else:
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
     return
 
 async def prepare_api_request(client, message, student_mission_info):

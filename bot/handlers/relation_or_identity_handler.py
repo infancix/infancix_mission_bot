@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -29,7 +26,6 @@ async def handle_relation_identity_mission_start(client, user_id, mission_id, se
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
 
     # Mission start
     student_mission_info = {
@@ -89,7 +85,6 @@ async def process_relation_identity_filling(client, message, student_mission_inf
         await message.channel.send(embed=embed)
     else:
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
     return
 
 async def prepare_api_request(client, message, student_mission_info):

@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -29,7 +26,6 @@ async def handle_add_on_mission_start(client, user_id, mission_id, send_weekly_r
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
     if user_id in client.skip_aside_text:
@@ -100,15 +96,12 @@ def prepare_api_request(client, message, student_mission_info):
         user_message = message.content
 
     # Build full context for AI prediction
-    context = ""
+    context_parts = []
     saved_result = get_mission_record(user_id, mission_id)
     if saved_result.get('attachment'):
-        context_parts = []
         context_parts.append(f"Previous attachments: {len(saved_result['attachment'])} photos collected")
         context_parts.append(f"Attachments detail: {saved_result['attachment']}")
-        context = "\n".join(context_parts)
-    else:
-        return ""
+    context = "\n".join(context_parts)
 
     return {
         'needs_ai_prediction': True,
@@ -155,7 +148,6 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
     else:
         # Continue to collect additional information
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 # --------------------- Event Handlers ---------------------
 async def submit_image_data(client, message, student_mission_info, mission_result):
