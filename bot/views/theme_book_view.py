@@ -7,7 +7,6 @@ from bot.utils.message_tracker import (
     load_theme_book_edit_records,
     delete_theme_book_edit_record,
     delete_mission_record,
-    delete_conversations_record,
     delete_task_entry_record
 )
 

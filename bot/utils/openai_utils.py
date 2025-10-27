@@ -168,6 +168,33 @@ class OpenAIUtils:
             "is_ready": is_ready
         }
 
+    def process_content_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+        content = assistant_result.get("content")
+        content = content if content != "null" and content != '' else None
+        att = assistant_result.get("attachment", {})
+        is_attachment_ready = bool(att.get("id") and att.get("url") and att.get("filename"))
+        is_ready = bool(is_attachment_ready and content is not None)
+
+        # revise message
+        msg = assistant_result.get("message")
+        if is_ready:
+            msg = "✅ 已收到！"
+        elif is_attachment_ready and not content:
+            msg = "⚠️ 還差最後一步，請補上文字內容！"
+        else:
+            msg = "請依指示上傳照片或是補上文字內容呦！"
+
+        return {
+            "message": msg,
+            "content": content,
+            "attachment": {
+                "id": att.get("id", ""),
+                "url": att.get("url", ""),
+                "filename": att.get("filename", "")
+            },
+            "is_ready": is_ready
+        }
+
     def process_baby_profile_validation(self, mission_id, assistant_result, skip_growth_info=False) -> Dict[str, Any]:
         att = assistant_result.get("attachment") or {}
         step_1, step_2, step_3 = False, False, False
@@ -242,20 +269,47 @@ class OpenAIUtils:
             "is_ready": is_ready
         }
 
-    def process_theme_book_validation(self, book_id: int, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
+    def process_theme_book_validation(self, book_id: int, assistant_result: Dict[str, Any], previous_result: Dict[str, Any]) -> Dict[str, Any]:
+        # merge previous result
+        if previous_result:
+            for key in ["cover", "attachments"]:
+                if not assistant_result.get(key) and previous_result.get(key):
+                    assistant_result[key] = previous_result[key]
+
         # All of books need baby_name and cover and 6 attachments
-        attachments = [att for att in assistant_result.get("attachment", []) if att.get("id") and att.get("url") and att.get("filename")]
-        is_ready = bool(assistant_result.get("baby_name") and assistant_result.get("cover") and attachments and len(attachments) >= 6)
+        step_1, step_2, step_3, step_4, ask_for_relation_or_identity = False, False, False, False, False
+        if assistant_result.get("baby_name"):
+            step_1 = True
 
-        aside_texts = [att.get("aside_text") for att in assistant_result.get("attachment", []) if att.get("aside_text")]
+        if assistant_result.get("cover") and assistant_result["cover"].get("id") and assistant_result["cover"].get("url") and assistant_result["cover"].get("filename"):
+            step_2 = True
+            if book_id == 16 and not assistant_result.get("relation_or_identity"):
+                ask_for_relation_or_identity = True
+                step_2 = False
+
+        attachments = [att for att in assistant_result.get("attachments", []) if att.get("id") and att.get("url") and att.get("filename")]
+        if len(attachments) >= 6:
+            step_3 = True        
+
+        aside_texts = [att for att in assistant_result.get("aside_texts", []) if att.get("aside_text") is not None and att.get("aside_text") != "" and att.get("aside_text") != "null"]
         if book_id in [13, 14, 15, 16]:
-            is_ready = is_ready and (len(aside_texts) == len(attachments))
+            step_4 = step_3 and len(aside_texts) >= 6
+        else:
+            step_4 = step_3
 
+        is_ready = step_1 and step_2 and step_3 and step_4 and not ask_for_relation_or_identity
         return {
             "is_ready": is_ready,
             "baby_name": assistant_result.get("baby_name", None),
+            "relation_or_identity": assistant_result.get("relation_or_identity", None),
             "cover": assistant_result.get("cover", {}),
-            "attachment": attachments or [],
+            "attachments": attachments or [],
+            "aside_texts": aside_texts or [],
+            "step_1_completed": step_1,
+            "step_2_completed": step_2,
+            "step_3_completed": step_3,
+            "step_4_completed": step_4,
+            "ask_for_relation_or_identity": ask_for_relation_or_identity
         }
 
     def parsed_json(self, response):
