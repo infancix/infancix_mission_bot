@@ -13,6 +13,7 @@ class Config:
         self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
         self.MY_GUILD_ID = int(os.getenv('MY_GUILD_ID'))
         self.BACKGROUND_LOG_CHANNEL_ID = int(os.getenv('BACKGROUND_LOG_CHANNEL_ID'))
+        self.FILE_UPLOAD_CHANNEL_ID = int(os.getenv('FILE_UPLOAD_CHANNEL_ID'))
         self.MISSION_BOT_CHANNEL_ID = int(os.getenv('MISSION_BOT_CHANNEL_ID'))
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
@@ -26,6 +27,7 @@ class Config:
 
         self.IMAGE_ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
 
+        self.available_books = [1, 2, 3]
         self._load_mission_config()
         self.photo_mission_list = set(
             [self.baby_registration_mission] +

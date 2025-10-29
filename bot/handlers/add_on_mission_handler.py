@@ -211,7 +211,7 @@ def get_add_on_photo_embed(mission):
     embed.set_image(url=instruction_url)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
     return embed
 

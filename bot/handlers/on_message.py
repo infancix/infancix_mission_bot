@@ -37,9 +37,9 @@ from bot.handlers.theme_mission_handler import (
 )
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
+from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 from bot.views.theme_book_view import ThemeBookView
 from bot.views.task_select_view import TaskSelectView
-from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 from bot.utils.message_tracker import (
     save_task_entry_record,
     delete_task_entry_record,
@@ -60,6 +60,11 @@ async def handle_background_message(client, message):
         mission_match = re.search(rf'START_MISSION_(\d+)', message.content)
         photo_match = re.search(rf'PHOTO_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
         album_match = re.search(rf'ALBUM_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
+        if config.ENV:
+            mission_match = re.search(rf'DEV_START_MISSION_(\d+)', message.content)
+            photo_match = re.search(rf'DEV_PHOTO_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
+            album_match = re.search(rf'DEV_ALBUM_GENERATION_COMPLETED_(\d+)_(\d+)', message.content)
+
         if mission_match:
             mission_id = int(mission_match.group(1))
             if mission_id == 1000:
@@ -91,7 +96,7 @@ async def handle_direct_message(client, message):
 
     if not bool(student_mission_info):
         await client.api_utils.store_message(str(user_id), 'user', message.content)
-        reply_msg = "點選 `指令` > `補上傳照片` 重新解任務喔！"
+        reply_msg = "請於對話框輸入 */查看育兒里程碑*，重啟任務"
         await message.channel.send(reply_msg)
         await client.api_utils.store_message(str(user_id), 'assistant', reply_msg)
         return
@@ -269,6 +274,7 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
             **mission_result,
             'user_id': str(user_id),
             'baby_id': baby_id,
+            'book_id': mission_result['book_id']
         }
         view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
         embed = view.generate_embed(baby_id, int(mission_id))

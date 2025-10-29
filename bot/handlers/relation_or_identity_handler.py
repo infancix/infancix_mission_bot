@@ -100,7 +100,10 @@ async def prepare_api_request(client, message, student_mission_info):
             'direct_response': saved_result
         }
     else:
-        user_message = message.content
+        user_message = (
+            f"Photo answer: {message.content.strip()}\n"
+            f"⚠️ 使用者可能在一個回答中提及多個對象，請自動識別各種分隔符號（頓號、逗號、空格等），並統一輸出為用逗號分隔的字串。"
+        )
 
     # Build full context for AI prediction
     context_parts = []

@@ -27,8 +27,7 @@ from bot.utils.openai_utils import OpenAIUtils
 from bot.utils.s3_image_utils import S3ImageUtils
 from bot.views.mission import MilestoneSelectView
 from bot.views.photo_mission import PhotoTaskSelectView
-from bot.views.album_select_view import AlbumView
-from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
+from bot.views.album_select_view import AlbumSelectView, AlbumView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -101,51 +100,15 @@ class MissionBot(discord.Client):
     async def browse_growth_album(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
-            album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
-            album_view = AlbumView(self, album_status)
-            embed = album_view.get_current_embed()
+            albums_info = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
+            album_view = AlbumSelectView(self, str(interaction.user.id), albums_info)
+            embed = album_view.preview_embed()
             message = await interaction.followup.send(
-                "📖 **以下是您的成長書櫃**",
                 embed=embed,
                 view=album_view,
                 ephemeral=True
             )
             album_view.message = message
-        except Exception as e:
-            print(f"Error while sending message: {str(e)}")
-
-    async def call_confirm_photo_album_print(self, interaction: discord.Interaction):
-        try:
-            now = datetime.now()
-            current_month = now.month
-            current_day = now.day
-            if current_day > self.submit_deadline:
-                message = await interaction.response.send_message(
-                    "很抱歉，繪本送印時間只有在每月 1 號到 5 號喔！\n有任何問題歡迎隨時聯絡社群客服「阿福 <@1272828469469904937>」。",
-                    ephemeral=True
-                )
-                return
-            if not isinstance(interaction.channel, discord.channel.DMChannel):
-                message = await interaction.response.send_message(
-                    "嗨！請到「繪本工坊」使用「繪本送印」功能喔📚",
-                    ephemeral=True
-                )
-                return
-
-            # call the api to get confirmed albums view
-            await interaction.response.defer(ephemeral=True)
-            book_id = 1 # Hot fix for now, need to remove later
-            album_status = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id=book_id)
-            if album_status and album_status.get("purchase_status", "未購買") == "已購買" and album_status.get("shipping_status", "待確認") == "待確認":
-                confirm_album_view = ConfirmGrowthAlbumView(self, str(interaction.user.id), album_result=album_status)
-                message = await interaction.followup.send(view=confirm_album_view)
-                confirm_album_view.message = message
-                save_confirm_growth_album_record(str(interaction.user.id), str(message.id), book_id, album_status)
-            else:
-                message = await interaction.followup.send(
-                    "目前沒有待確認送印的繪本喔\n",
-                    ephemeral=True
-                )
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
@@ -205,16 +168,9 @@ class MissionBot(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="瀏覽繪本進度",
+                name="我的書櫃",
                 description="查看繪本進度📖",
                 callback=self.browse_growth_album
-            )
-        )
-        self.tree.add_command(
-            app_commands.Command(
-                name="繪本送印",
-                description="確認繪本送印",
-                callback=self.call_confirm_photo_album_print
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))

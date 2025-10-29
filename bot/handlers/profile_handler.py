@@ -26,7 +26,7 @@ async def handle_registration_mission_start(client, user_id, mission_id):
     # Delete conversation cache
     delete_mission_record(user_id)
     if user_id in client.skip_growth_info:
-        del client.go_skip_growth_info[user_id]
+        del client.skip_growth_info[user_id]
 
     # Mission start
     student_mission_info = {
@@ -273,7 +273,7 @@ def get_baby_growth_registration_embed():
     )
     embed.set_author(name="成長繪本｜寶寶人生第一張大頭貼 (2/3)")
     embed.set_image(url="https://infancixbaby120.com/discord_assets/mission_1001_instruction.png")
-    embed.set_footer(text="可以先跳過這個步驟，之後再透過 `指令`>`更新寶寶資料` 補上喔！")
+    embed.set_footer(text="可以先跳過這個步驟，之後在對話框輸入 */更新寶寶資料* 補上喔！")
     return embed
 
 def get_baby_data_confirmation_embed(mission_result):
