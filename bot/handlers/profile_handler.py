@@ -21,7 +21,7 @@ from bot.config import config
 
 async def handle_registration_mission_start(client, user_id, mission_id):
     user_id = str(user_id)
-    mission = await client.api_utils.get_mission_info(mission_id)
+    mission_info = await client.api_utils.get_mission_info(mission_id)
 
     # Delete conversation cache
     delete_mission_record(user_id)
@@ -30,7 +30,7 @@ async def handle_registration_mission_start(client, user_id, mission_id):
 
     # Mission start
     student_mission_info = {
-        **mission,
+        **mission_info,
         'user_id': user_id,
         'current_step': 1,
         'total_steps': 4
@@ -42,9 +42,10 @@ async def handle_registration_mission_start(client, user_id, mission_id):
         await user.create_dm()
 
     if int(mission_id) in config.baby_pre_registration_mission:
-        embed = get_baby_name_registration_embed()
+        embed = get_baby_name_registration_embed(mission_info)
     elif int(mission_id) in config.baby_name_en_registration_missions:
-        embed = get_baby_name_en_registration_embed()
+        baby_info = await client.api_utils.get_baby_profile(user_id)
+        embed = get_baby_name_en_registration_embed(mission_info, baby_info.get('gender'))
     else:
         embed = get_baby_registration_embed(client.reset_baby_profile.get(user_id, False))
 
@@ -219,25 +220,46 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-def get_baby_name_registration_embed():
+def get_baby_name_registration_embed(mission_info):
     embed = discord.Embed(
         title="📝 寶寶暱稱登記",
         description="🧸 暱稱（建議2-3字）",
         color=0xeeb2da,
     )
-    embed.set_author(name="成長繪本｜第 1 個月 - 恭喜寶寶出生了")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
-    return embed
-
-def get_baby_name_en_registration_embed():
-    embed = discord.Embed(
-        title="✏️ 製作翻譯對照表",
-        description="請輸入寶寶的 [英文名字或暱稱]，\n我們將為寶寶建立專屬英文翻譯對照表，\n之後所有繪本都會自動使用這個名字喔!",
-        color=0xeeb2da,
-    )
+    if mission_info['mission_id'] == 1000:
+        embed.set_author(name="恭喜寶寶出生！")
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text=f"成長繪本｜{mission_info['volume_title']} - {mission_info['photo_mission']}"
+    )
+    return embed
+
+def get_baby_name_en_registration_embed(mission_info, gender=None):
+    if gender is None:
+        embed = discord.Embed(
+            title="✏️ 製作翻譯對照表",
+            description=(
+                "請先告訴我們寶寶是 **男生** 還是 **女生**？\n"
+                "接著請輸入寶寶的 [英文名字或暱稱]，\n"
+                "我們將為寶寶建立專屬英文翻譯對照表，\n"
+                "之後所有繪本都會自動使用這個名字喔!\n\n"
+                "📝 範例：`男生 Alex` 或 `女生 Emma`"
+            ),
+            color=0xeeb2da,
+        )
+    else:
+        embed = discord.Embed(
+            title="✏️ 製作翻譯對照表",
+            description=(
+                "請輸入寶寶的 [英文名字或暱稱]，\n"
+                "我們將為寶寶建立專屬英文翻譯對照表，\n"
+                "之後所有繪本都會自動使用這個名字喔!"
+            ),
+            color=0xeeb2da,
+        )
+    embed.set_footer(
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        text=f"成長繪本｜{mission_info['volume_title']} - {mission_info['photo_mission']}"
     )
     return embed
 

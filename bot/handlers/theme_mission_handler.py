@@ -3,6 +3,10 @@ import discord
 import os
 import re
 import json
+from PIL import Image
+import pillow_heif
+import io
+import requests
 from types import SimpleNamespace
 from datetime import datetime, date
 from typing import Dict, Optional, List
@@ -57,7 +61,7 @@ async def process_theme_mission_filling(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     book_id = student_mission_info['book_id']
 
-    request_info = prepare_api_request(client, message, student_mission_info)
+    request_info = await prepare_api_request(client, message, student_mission_info)
     print(f"Request info: {request_info}")
 
     if request_info.get('direct_action') == "replace_photo":
@@ -92,7 +96,7 @@ async def process_theme_mission_filling(client, message, student_mission_info):
 
     await _handle_mission_step(client, message, student_mission_info, mission_result)
 
-def prepare_api_request(client, message, student_mission_info):
+async def prepare_api_request(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     current_step = student_mission_info.get('current_step', 1)
@@ -107,21 +111,45 @@ def prepare_api_request(client, message, student_mission_info):
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
         photo_index = client.photo_mission_replace_index[user_id]
-        if not saved_result.get('attachments') or photo_index-1 >= len(saved_result['attachments']):
+        if photo_index == 0:
+            cover_attachment = extract_attachment_info(message.attachments[0].url)
+            saved_result['cover'] = cover_attachment
             return {
                 'needs_ai_prediction': False,
-                'direct_action': 'error',
-                'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
+                'direct_action': 'cover_upload',
+                'direct_response': saved_result
             }
+        else:
+            if photo_index > len(saved_result.get('attachments') or []):
+                return {
+                    'needs_ai_prediction': False,
+                    'direct_action': 'error',
+                    'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
+                }
 
-        replace_attachment = extract_attachment_info(message.attachments[0].url, photo_index)
-        saved_result['attachments'][photo_index-1] = replace_attachment
-        saved_result['is_ready'] = True
-        return {
-            'needs_ai_prediction': False,
-            'direct_action': 'photo_replacement',
-            'direct_response': saved_result
-        }
+            replace_attachment = extract_attachment_info(message.attachments[0].url, photo_index)
+            # Convert HEIC/HEIF to JPG if needed
+            if replace_attachment['filename'].endswith('.heic') or replace_attachment['filename'].endswith('.heif'):
+                new_attachment = await convert_heic_to_jpg_attachment(client, replace_attachment)
+                if new_attachment:
+                    replace_attachment = new_attachment
+
+            # Save attachment info
+            saved_result['attachments'][photo_index-1] = replace_attachment
+
+            # Reset aside text for specific book IDs
+            if book_id in [13, 14, 15, 16]:
+                saved_result['aside_texts'][photo_index-1] = {
+                    "photo_index": photo_index,
+                    "aside_text": None
+                }
+                saved_result['is_ready'] = False
+
+            return {
+                'needs_ai_prediction': False,
+                'direct_action': 'photo_replacement',
+                'direct_response': saved_result
+            }
 
     # baby name registration
     if current_step == 1 and message.attachments:
@@ -148,9 +176,18 @@ def prepare_api_request(client, message, student_mission_info):
                 'direct_action': 'error',
                 'context': "已達到照片上限6張，請挑選後再上傳喔！"
             }
+
         for att in message.attachments:
             attachment = extract_attachment_info(att.url, photo_index=len(saved_result['attachments'])+1)
+            # Convert HEIC/HEIF to JPG if needed
+            if attachment['filename'].endswith('.heic') or attachment['filename'].endswith('.heif'):
+                new_attachment = await convert_heic_to_jpg_attachment(client, attachment)
+                if new_attachment:
+                    attachment = new_attachment
+
+            # Save attachment info
             saved_result['attachments'].append(attachment)
+
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',
@@ -160,7 +197,10 @@ def prepare_api_request(client, message, student_mission_info):
     # getting user text input
     elif current_step == 4 and message.content.strip():
         photo_index = len([t for t in saved_result['aside_texts'] if t != 'null' and t is not None]) + 1
-        user_message = f"User provided the {photo_index}th aside text: " + message.content.strip()
+        user_message = (
+            f"Photo {photo_index} answer: {message.content.strip()}\n"
+            f"⚠️ Keep as single aside_text, do not split"
+        )
     else:
         user_message = message.content
 
@@ -253,6 +293,18 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
             embed = get_identity_embed(student_mission_info)
             await message.channel.send(embed=embed)
 
+        elif user_id in client.photo_mission_replace_index and client.photo_mission_replace_index[user_id] > 0:
+            photo_index = client.photo_mission_replace_index[user_id]
+            # ask for aside text
+            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
+            if book_id == 14:
+                await message.channel.send(embed=embed)
+            else:
+                student_mission_info['photo_index'] = photo_index
+                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
+
         elif mission_result.get('step_2_completed') == True and not mission_result.get('step_3_completed'):
             attachments = mission_result.get('attachments', [])
             # ask for next photo
@@ -280,18 +332,6 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
             # update mission status
             student_mission_info['current_step'] = 4
             await client.api_utils.update_student_mission_status(**student_mission_info)
-
-        elif user_id in client.photo_mission_replace_index:
-            photo_index = client.photo_mission_replace_index[user_id]
-            # ask for aside text
-            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
-            student_mission_info['photo_index'] = photo_index
-            if book_id == 14:
-                await message.channel.send(embed=embed)
-            else:
-                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
-                view.message = await message.channel.send(embed=embed, view=view)
-                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
 
         else:
             # Continue to collect additional information
@@ -336,9 +376,50 @@ def extract_attachment_info(attachment_url: str, photo_index: int=0) -> Optional
     return {
         "photo_index": photo_index,
         "id": attachment_id,
-        "filename": filename,
+        "filename": filename.lower(),
         "url": attachment_url
     }
+
+async def convert_heic_to_jpg_attachment(client, heic_attachment):
+    try:
+        # you need to revised the request to fetch the heic image using async ways
+        async with client.session.get(heic_attachment['url']) as response:
+            heic_content = await response.read()
+
+        client.logger.info(f"開始轉換 HEIC 檔案: {heic_attachment['filename']}")
+        heic_data = io.BytesIO(heic_content)
+        heif_file = pillow_heif.read_heif(heic_data)
+        image = Image.frombytes(
+            heif_file.mode,
+            heif_file.size,
+            heif_file.data,
+            "raw",
+        )
+
+        # convert to JPEG
+        jpg_buffer = io.BytesIO()
+        image.save(jpg_buffer, format='JPEG', quality=85)
+        jpg_buffer.seek(0)
+
+        # post to upload_data channel
+        background_channel = client.get_channel(int(config.FILE_UPLOAD_CHANNEL_ID))
+        if background_channel is None or not isinstance(background_channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+
+        jpg_filename = heic_attachment['filename'].replace('.heic', '.jpg').replace('.heif', '.jpg')
+        jpg_file = discord.File(jpg_buffer, filename=jpg_filename)
+        jpg_message = await background_channel.send(file=jpg_file)
+        client.logger.info(f"HEIC 轉換成功，JPG 訊息 ID: {jpg_message.id}")
+        return {
+            "photo_index": heic_attachment['photo_index'],
+            "id": jpg_message.attachments[0].id,
+            "filename": jpg_message.attachments[0].filename,
+            "url": jpg_message.attachments[0].url
+        }
+
+    except Exception as e:
+        print(f"HEIC 轉換失敗: {e}")
+        return None
 
 def build_theme_mission_instruction_embed(mission_info):
     embed = discord.Embed(
@@ -427,27 +508,26 @@ def get_story_pages_embed(book_id, mission_info, photo_index, required_photos=6,
 def get_aside_text_instruction_embed(book_id, mission_info, mission_result, photo_index):
     if book_id == 13:
         title = "請問照片裡的動物是什麼？"
-        description = "例如：大象、長頸鹿、獅子等⋯⋯\n\n（HEIC 格式可能無法預覽）"
+        description = "例如：大象、長頸鹿、獅子等⋯⋯"
     elif book_id == 14:
         title = "請問照片中的人是誰呢？(15字以內)"
-        description = "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n（HEIC 格式可能無法預覽）"
+        description = "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)"
     elif book_id == 15:
         title = "請問照片中的物品是什麼？"
-        description = "例如：奶瓶、玩偶、碗、襪子等。\n\n（HEIC 格式可能無法預覽）"
+        description = "例如：奶瓶、玩偶、碗、襪子等。"
     elif book_id == 16:
         title = "請描述寶寶和特定陪伴者的互動(15字以內)"
-        description = "例如：一起玩耍、閱讀故事書、散步等。\n\n（HEIC 格式可能無法預覽）"
+        description = "例如：一起玩耍、閱讀故事書、散步等。"
     else:
         title = "請輸入照片描述"
-        description = "例如：第一次翻身、第一次去公園。\n\n（HEIC 格式可能無法預覽）"
+        description = "例如：第一次翻身、第一次去公園。"
 
     embed = discord.Embed(
         title=title,
         description=description,
         color=0xeeb2da,
     )
-    if mission_result.get('attachments', []) and len(mission_result['attachments']) >= photo_index and mission_result['attachments'][photo_index-1].get('url'):
-        embed.set_image(url=mission_result['attachments'][photo_index-1]['url'])
+    embed.set_image(url=mission_result['attachments'][photo_index-1]['url'])
     embed.set_author(name=f"✍️ {mission_info['mission_type']} ({photo_index}/6)")
     return embed
 

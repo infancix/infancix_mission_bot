@@ -24,7 +24,8 @@ class GrowthPhotoView(discord.ui.View):
         self.book_id = mission_result.get('book_id', 0)
         self.reward = mission_result.get('reward', 20)
         self.purchase_status = mission_result.get('purchase_status', '未購買')
-        self.design_id = encode_ids(self.baby_id, self.book_id)
+        self.need_generated_full_album = mission_result.get('design_id', None) is None
+        self.design_id = mission_result.get('design_id') if mission_result.get('design_id') else encode_ids(self.baby_id, self.book_id)
         self.mission_result = mission_result
 
         if self.mission_id in config.add_on_photo_mission:
@@ -178,12 +179,12 @@ class GrowthPhotoView(discord.ui.View):
                         break
 
                 if target_book_id is not None:
-                    next_book_info = await self.client.api_utils.get_mission_info(config.book_first_mission[target_book_id])
+                    next_book_info = await self.client.api_utils.get_mission_info(config.book_first_mission_map[target_book_id])
                     embed.description += (
                         f"或是點擊按鈕體驗更多繪本吧！"
                     )
                     task_type.append("go_next_mission")
-                    payload['next_mission_id'] = config.book_first_mission[target_book_id]
+                    payload['next_mission_id'] = config.book_first_mission_map[target_book_id]
                     payload['next_book_title'] = f"{next_book_info['volume_title']} | {next_book_info['photo_mission']}"
 
                 task_type_str = "_".join(task_type)
@@ -193,18 +194,19 @@ class GrowthPhotoView(discord.ui.View):
 
             else:
                 # purchased user
-                if self.design_id is None:
+                if self.need_generated_full_album:
                     # submit generate full album request
-                    await self.client.api_utils.submit_generate_full_album_request(self.user_id, self.book_id)
+                    await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
                     self.client.logger.info(f"送出完整繪本產生任務 for user {self.user_id}, book {self.book_id}")
-
                     embed.description += (
                         f"⏳系統正在為您製作完整繪本，請耐心等待。完成後會在此通知您！\n\n"
                     )
+                    embed.set_image(url=f"https://infancixbaby120.com/discord_assets/loading1.gif")
                     await interaction.followup.send(embed=embed)
                 else:
                     deadline_str, defer_str = self.get_deadline_and_defer_timestamp()
                     embed.description += (
+                        f"你已經完成所有任務囉！\n\n"
                         f"🔍 最後檢查:\n"
                         f"請點擊下方連結確認整本內容：\n"
                         f"📎[繪本預覽](https://infancixbaby120.com/babiary/{self.design_id})\n"
@@ -265,7 +267,7 @@ class GrowthPhotoView(discord.ui.View):
         msg_task = f"MISSION_{self.mission_id}_FINISHED <@{self.user_id}>"
         await channel.send(msg_task)
 
-        next_mission_id = config.book_first_mission[self.book_id]
+        next_mission_id = config.book_first_mission_map.get(self.book_id)
         msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
         await channel.send(msg_task)
 
