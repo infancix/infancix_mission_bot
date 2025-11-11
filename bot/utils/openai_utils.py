@@ -199,13 +199,13 @@ class OpenAIUtils:
         att = assistant_result.get("attachment") or {}
         step_1, step_2, step_3 = False, False, False
         for field in ["baby_name", "baby_name_en", "birthday", "gender", "height", "weight", "head_circumference"]:
-            if assistant_result.get(field) in ["null", "", None]:
+            if assistant_result.get(field) in ["", "null", 'Null', 'None', None]:
                 assistant_result[field] = None
 
         if mission_id in config.baby_pre_registration_mission:
             is_ready = bool(assistant_result.get("baby_name"))
         elif mission_id in config.baby_name_en_registration_missions:
-            is_ready = bool(assistant_result.get("baby_name_en"))
+            is_ready = bool(assistant_result.get("baby_name_en") and assistant_result.get("gender"))
         else:
             step_1 = bool(assistant_result.get("baby_name") and \
                 assistant_result.get("birthday") and \
@@ -269,7 +269,7 @@ class OpenAIUtils:
             "is_ready": is_ready
         }
 
-    def process_theme_book_validation(self, book_id: int, assistant_result: Dict[str, Any], previous_result: Dict[str, Any]) -> Dict[str, Any]:
+    def process_theme_book_validation(self, book_id: int, assistant_result: Dict[str, Any], previous_result=None) -> Dict[str, Any]:
         # merge previous result
         if previous_result:
             for key in ["cover", "attachments"]:

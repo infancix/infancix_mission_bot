@@ -53,6 +53,9 @@ class APIUtils:
     async def get_all_students_mission_notifications(self):
         return await self._get_request('photo_mission/schedule/daily_mission')
 
+    async def get_purchase_students_reminder_list(self, user_id=None):
+        return await self._get_request('photo_mission/schedule/monthly_print_reminder' + (f'?discord_id={user_id}' if user_id else ''))
+
     async def get_student_milestones(self, user_id):
         return await self._get_request(f'get_student_milestones?discord_id={user_id}')
 

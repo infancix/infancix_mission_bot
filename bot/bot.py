@@ -12,6 +12,7 @@ from bot.handlers.on_message import handle_background_message, handle_direct_mes
 from bot.handlers.utils import (
     run_scheduler,
     daily_job,
+    monthly_print_reminder_job,
     load_task_entry_messages,
     load_quiz_message,
     load_growth_photo_messages,
@@ -20,7 +21,7 @@ from bot.handlers.utils import (
     load_confirm_growth_album_messages
 )
 from bot.utils.message_tracker import (
-    save_confirm_growth_album_record
+    save_confirm_growth_albums_record
 )
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
@@ -102,9 +103,8 @@ class MissionBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             albums_info = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
             album_view = AlbumSelectView(self, str(interaction.user.id), albums_info)
-            embed = album_view.preview_embed()
             message = await interaction.followup.send(
-                embed=embed,
+                "選擇下方選單，查看或確認送印您的成長繪本！",
                 view=album_view,
                 ephemeral=True
             )
@@ -205,5 +205,7 @@ def run_bot():
     client = MissionBot(config.MY_GUILD_ID)
 
     schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
+
+    schedule.every().day.at("12:30").do(lambda: asyncio.create_task(monthly_print_reminder_job(client)))
 
     client.run(config.DISCORD_TOKEN)
