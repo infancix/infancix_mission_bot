@@ -89,7 +89,13 @@ class Config:
             self.book_intro_mission = [
                 month_data['book_intro_mission'] for month_data in growth_book_missions
             ]
-            self.book_first_mission = {
+
+            self.book_intro_mission_map = {
+                month_data['month']: month_data['book_intro_mission']
+                for month_data in growth_book_missions
+            }
+
+            self.book_first_mission_map = {
                 month_data['month']: month_data['book_first_mission']
                 for month_data in growth_book_missions
             }

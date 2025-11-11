@@ -90,11 +90,16 @@ class PreviousButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
-        view.current_page -= 1
 
+        # Defer immediately to prevent timeout
+        await interaction.response.defer()
+
+        view.current_page -= 1
         embed = view.get_current_embed(str(interaction.user.id))
         view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=view)
+
+        # Use edit_original_response instead of response.edit_message
+        await interaction.edit_original_response(embed=embed, view=view)
 
 class NextButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -107,11 +112,16 @@ class NextButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
-        view.current_page += 1
 
+        # Defer immediately to prevent timeout
+        await interaction.response.defer()
+
+        view.current_page += 1
         embed = view.get_current_embed(str(interaction.user.id))
         view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=view)
+
+        # Use edit_original_response instead of response.edit_message
+        await interaction.edit_original_response(embed=embed, view=view)
 
 class PageIndicator(discord.ui.Button):
     def __init__(self, current_page, total_pages):
@@ -157,7 +167,7 @@ class SubmitButton(discord.ui.Button):
         # Send completion message
         embed = discord.Embed(
             title="🎆 任務完成",
-            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
+            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，於對話框輸入 */我的書櫃* 查看整本",
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)
