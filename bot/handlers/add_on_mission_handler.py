@@ -44,7 +44,8 @@ async def handle_add_on_mission_start(client, user_id, mission_id, send_weekly_r
     if user.dm_channel is None:
         await user.create_dm()
 
-    embed = get_add_on_photo_embed(mission)
+    student_profile = await client.api_utils.get_student_profile(user_id)
+    embed = get_add_on_photo_embed(mission, student_profile)
     view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
     view.message = await user.send(embed=embed, view=view)
     save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
@@ -185,25 +186,28 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-def get_add_on_photo_embed(mission):
+def get_add_on_photo_embed(mission_info, student_info):
     description = (
-        "恭喜完成這個月成長繪本\n"
-        "想要放更多照片留作紀念嗎?\n\n"
-        "> **商品**\n"
-        "> 照片紀念頁\n"
-        "> \n"
-        "> **內容說明**\n"
-        "> 共 1 頁，內含 4 張照片\n"
-        "> \n"
-        "> **售價**\n"
-        "> 🪙 $200\n"
+        "恭喜完成這個月的成長繪本 🎉\n"
+        "想要放更多照片、留下更完整的回憶嗎？\n\n"
+        "> **商品內容**\n"
+        "> 📄 加購照片紀念頁（1 頁）\n"
+        "> 🖼️ 可放 4 張照片\n\n"
+        "> **價格**\n"
+        "> 🪙 200\n"
     )
+
     embed = discord.Embed(
         title="📸 加購繪本單頁",
         description=description,
         color=0xeeb2da,
     )
-    instruction_url = mission.get('mission_instruction_image_url', '').split(',')[0]
+    embed.add_field(
+        name="您的金幣餘額",
+        value=f"🪙 {student_info.get('gold', 0)}",
+        inline=False
+    )
+    instruction_url = mission_info.get('mission_instruction_image_url', '').split(',')[0]
     if instruction_url:
         instruction_url = create_preview_image_from_url(instruction_url)
     else:

@@ -80,6 +80,8 @@ async def process_relation_identity_filling(client, message, student_mission_inf
     elif mission_result.get("relation_or_identity", None) is None:
         if int(mission_id) in config.relation_mission:
             embed = get_relation_embed(student_mission_info)
+        elif int(mission_id) == 56:
+            embed = get_toy_embed(student_mission_info)
         else:
             embed = get_identity_embed(student_mission_info)
         await message.channel.send(embed=embed)
@@ -228,6 +230,19 @@ def get_identity_embed(mission_info):
     embed = discord.Embed(
         title="📝 這張照片裡的人是誰呢？",
         description="例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)",
+        color=0xeeb2da,
+    )
+    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
+    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
+    return embed
+
+def get_toy_embed(mission_info):
+    embed = discord.Embed(
+        title="請問寶寶最喜歡的安撫玩偶名字是？",
+        description=(
+            "中文版建議 4 個字以內\n"
+            "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+        ),
         color=0xeeb2da,
     )
     embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
