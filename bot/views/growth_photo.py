@@ -1,11 +1,12 @@
 import discord
 import time
 import discord
-import time
 import calendar
+import random
+from types import SimpleNamespace
 from datetime import datetime
-
 from collections import defaultdict
+
 from bot.config import config
 from bot.views.task_select_view import TaskSelectView
 from bot.views.album_select_view import AlbumView
@@ -37,6 +38,14 @@ class GrowthPhotoView(discord.ui.View):
                 )
                 self.change_photo_button.callback = self.change_photo_callback
                 self.add_item(self.change_photo_button)
+
+            self.reupload_button = discord.ui.Button(
+                custom_id='reupload_photo',
+                label="重新上傳所有照片",
+                style=discord.ButtonStyle.secondary
+            )
+            self.reupload_button.callback = self.change_photo_callback
+            self.add_item(self.reupload_button)
 
         if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
             self.remove_aside_text_button = discord.ui.Button(
@@ -99,7 +108,8 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={int(time.time())}")
+        timestamp = f"{int(time.time())}{random.randint(1000, 9999)}"
+        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={timestamp}")
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
         return embed
@@ -287,6 +297,21 @@ class GrowthPhotoView(discord.ui.View):
 
         embed = discord.Embed(
             title="🔼 請上傳新照片",
+            description="📎 點左下 [+] 上傳照片",
+            color=0xeeb2da,
+        )
+        await interaction.followup.send(embed=embed)
+
+    async def change_photo_callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        # remove mission state
+        delete_mission_record(str(interaction.user.id))        
+        embed = discord.Embed(
+            title="🔼 請重新上傳所有照片",
             description="📎 點左下 [+] 上傳照片",
             color=0xeeb2da,
         )

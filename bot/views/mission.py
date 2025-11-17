@@ -30,8 +30,8 @@ class MilestoneSelectView(discord.ui.View):
         self.client = client
         self.user_id = user_id
         self.student_milestones = student_milestones['milestones']
+        self.total_pages = len(self.student_milestones)
         self.current_page = int(student_milestones['current_stage'])
-        self.total_pages = 3
 
         self.update_select_menu()
         self.update_buttons()
