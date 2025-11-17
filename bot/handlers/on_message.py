@@ -6,7 +6,7 @@ import time
 
 from bot.config import config
 from bot.handlers.quiz_mission_handler import handle_quiz_mission_start
-from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
+from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start, process_questionnaire_photo_mission_filling
 from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
@@ -96,7 +96,7 @@ async def handle_photo(client, user_id, match):
 async def handle_album(client, user_id, match):
     baby_id = int(match.group(1))
     book_id = int(match.group(2))
-    if book_id in config.theme_book_map:
+    if book_id in config.theme_book_mission_map:
         await handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id)
     else:
         await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
@@ -170,6 +170,8 @@ async def handle_direct_message(client, message):
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
         await process_add_on_photo_mission_filling(client, message, student_mission_info)
+    elif mission_id in config.questionnaire_mission:
+        await process_questionnaire_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.theme_mission_list:
@@ -293,6 +295,7 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
         }
         view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
         embed = view.generate_embed(baby_id, int(mission_id))
+        await asyncio.sleep(0.5)
         view.message = await user.send(embed=embed, view=view)
         # save and delete task status
         save_growth_photo_records(str(user_id), view.message.id, mission_id, result=mission_result)
@@ -316,6 +319,7 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     try:
         # Send the album preview to the user
         user = await client.fetch_user(user_id)
+        await asyncio.sleep(0.5)
         await user.send(embed=embed, view=view)
         # Log the successful message send
         client.logger.info(f"Send album message to user {user_id}, book {book_id}")
@@ -324,26 +328,21 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     return
 
 async def handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id):
-    mission_id = config.theme_book_map.get(book_id)
     book_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
-    mission_info = await client.api_utils.get_mission_info(mission_id)
-
-    book_info.update({
-        'user_id': str(user_id),
-        'book_id': book_id,
-        'mission_id': mission_id,
-        'book_author': mission_info['mission_type'],
-    })
-
     view = ThemeBookView(client, book_info)
-    embed = view.get_current_embed(str(user_id))
-
+    embed, file_path, filename = view.get_current_embed(str(user_id))
+    file = discord.File(file_path, filename=filename)
     try:
         user = await client.fetch_user(user_id)
-        view.message = await user.send(embed=embed, view=view)
+        await asyncio.sleep(0.5)
+        view.message = await user.send(
+            embed=embed,
+            view=view,
+            file=file,
+        )
         # Log the successful message send
         client.logger.info(f"Send theme book message to user {user_id}, book {book_id}")
-        save_theme_book_edit_record(str(user_id), view.message.id, mission_id, book_info)
+        save_theme_book_edit_record(str(user_id), view.message.id, book_id, book_info)
     except Exception as e:
         client.logger.error(f"Failed to send theme book message to user {user_id}: {e}")
     return
@@ -352,7 +351,7 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
     records = load_theme_book_edit_records()
     try:
         if str(user_id) in records:
-            base_mission_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
+            book_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
             channel = await client.fetch_user(user_id)
             message = await channel.fetch_message(int(edit_status['message_id']))
             await message.delete()
@@ -360,9 +359,14 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
             # Create a new one
             book_info = edit_status.get('result', None)
             view = ThemeBookView(client, book_info)
-            embed = view.get_current_embed(str(user_id))
-            view.message = await channel.send(embed=embed, view=view)
-            save_theme_book_edit_record(str(user_id), view.message.id, base_mission_id, book_info)
+            embed, file_path, filename = view.get_current_embed(str(user_id))
+            await asyncio.sleep(0.5)
+            view.message = await user.send(
+                embed=embed,
+                view=view,
+                file=file,
+            )
+            save_theme_book_edit_record(str(user_id), view.message.id, book_id, book_info)
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
 
     except Exception as e:
@@ -383,6 +387,7 @@ async def handle_notify_album_job(client, user_id, mission_id, book_id):
         user = await client.fetch_user(user_id)
         if user.dm_channel is None:
             await user.create_dm()
+        await asyncio.sleep(0.5)
         view.message = await user.send(embed=embed, view=view)
     return
 
@@ -396,6 +401,7 @@ async def handle_notify_monthly_print_reminder_job(client, user_id, match):
         if user.dm_channel is None:
             await user.create_dm()
 
+        await asyncio.sleep(0.5)
         view.message = await user.send(embed=embed, view=view)
         save_confirm_growth_albums_record(str(user_id), view.message.id, albums_info, incomplete_missions)
         client.logger.info(f"Send monthly print reminder to user {user_id}")

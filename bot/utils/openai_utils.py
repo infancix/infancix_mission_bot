@@ -300,6 +300,7 @@ class OpenAIUtils:
         is_ready = step_1 and step_2 and step_3 and step_4 and not ask_for_relation_or_identity
         return {
             "is_ready": is_ready,
+            "message": assistant_result.get("message", "請依指示上傳照片或補上文字內容呦！"),
             "baby_name": assistant_result.get("baby_name", None),
             "relation_or_identity": assistant_result.get("relation_or_identity", None),
             "cover": assistant_result.get("cover", {}),

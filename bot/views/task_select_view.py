@@ -352,10 +352,13 @@ class TaskSelectView(discord.ui.View):
         if not student_profile or student_profile.get('gold', 0) < abs(self.result.get('reward', 200)):
             embed = self.get_insufficient_coin_embed()
             await interaction.followup.send(embed=embed)
+            delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
             return
         else:
             embed = self.get_add_on_photo_embed()
             await interaction.followup.send(embed=embed)
+            delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
+            return
 
     def get_insufficient_coin_embed(self):
         embed = discord.Embed(
@@ -388,14 +391,9 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
+        book_id = self.result['book_id']
         saved_result = get_mission_record(str(interaction.user.id), self.mission_id)
-        if not saved_result:
-            await interaction.followup.send("找不到任務紀錄，請稍後再試。")
-            return
-        saved_result['aside_texts'] = []
-
-        student_mission_info = self.result
-        book_id = student_mission_info['book_id']
+        saved_result['aside_texts'] = saved_result.get('aside_texts', [])
 
         if str(interaction.user.id) in self.client.photo_mission_replace_index:
             photo_index = self.client.photo_mission_replace_index[str(interaction.user.id)]
@@ -404,17 +402,23 @@ class TaskSelectView(discord.ui.View):
                 "aside_text": "[使用者選擇跳過]"
             }
         else:
+            photo_index = len(saved_result['aside_texts']) + 1
             saved_result['aside_texts'].append({
-                "photo_index": len(saved_result['aside_texts']) + 1,
+                "photo_index": photo_index,
                 "aside_text": "[使用者選擇跳過]"
             })
 
-        self.client.logger.info(f"使用者 {interaction.user.id} 選擇跳過繪本 {book_id} 頁面旁白文字")
+        self.client.logger.info(f"使用者 {interaction.user.id} 選擇跳過繪本({book_id}) {photo_index} 頁面旁白文字")
         mission_result = self.client.openai_utils.process_theme_book_validation(book_id, saved_result)
         save_mission_record(str(interaction.user.id), self.mission_id, mission_result)
 
         from bot.handlers.theme_mission_handler import _handle_mission_step
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+        student_mission_info = {
+            **self.result,
+            'user_id': str(interaction.user.id),
+            'current_step': 3,
+        }
         await _handle_mission_step(self.client, message, student_mission_info, mission_result)
 
     async def purchase_button_callback(self, interaction):

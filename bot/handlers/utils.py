@@ -144,7 +144,7 @@ async def load_theme_book_edit_messages(client):
     for user_id in records:
         try:
             channel = await client.fetch_user(user_id)
-            for mission_id, edit_status in records[user_id].items():
+            for book_id, edit_status in records[user_id].items():
                 message = await channel.fetch_message(int(edit_status['message_id']))
                 result = edit_status.get('result', None)
                 view = ThemeBookView(client, result)
