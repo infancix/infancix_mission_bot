@@ -1,7 +1,7 @@
 {
     "41": [
         {
-            "question": "Q:你最常對寶寶做的睡眠儀式?",
+            "question": "❓:你最常對寶寶做的睡眠儀式? (請選擇三項)",
             "options": [
                 "A.按摩",
                 "B.抱抱",
@@ -15,7 +15,28 @@
                 "C.listen to stories",
                 "D.sing",
                 "E.play music"
-            ]
+            ],
+            "min_selections": 3,
+            "max_selections": 3
+        }
+    ],
+    "1024": [
+        {
+            "question": "✨ 探索寶寶的氣質：敏感度",
+            "options": [
+                "閥值低/敏感度高",
+                "中等/特質不明顯",
+                "閥值高/敏感度低",
+                "跳過"
+            ],
+            "options_en": [
+                "Low threshold / High sensitivity",
+                "Moderate threshold / Average sensitivity",
+                "High threshold / Low sensitivity",
+                "Skip"
+            ],
+            "min_selections": 1,
+            "max_selections": 1
         }
     ]
 }
