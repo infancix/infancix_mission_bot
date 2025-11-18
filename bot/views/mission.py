@@ -8,20 +8,9 @@ def calculate_spacer(label_text: str, max_spaces: int = 40) -> str:
     return '\u2000' * max(1, spaces)
 
 def setup_label(mission):
-    title = ""
-    if int(mission['mission_id']) in config.baby_profile_registration_missions:
-        title += "✏️"
-    elif int(mission['mission_id']) in config.photo_mission_list:
-        title += "📸"
-    elif int(mission['mission_id']) in config.audio_mission:
-        title += "🔊"
-    elif int(mission['mission_id']) in config.questionnaire_mission:
-        title += "📝"
-
-    title += f"{mission['mission_title']}"
+    title = f"{mission['mission_title']}"
     if mission['mission_status'] == 'Completed':
         title += " ✅"
-
     return f"{title}"
 
 class MilestoneSelectView(discord.ui.View):
@@ -30,8 +19,8 @@ class MilestoneSelectView(discord.ui.View):
         self.client = client
         self.user_id = user_id
         self.student_milestones = student_milestones['milestones']
+        self.total_pages = len(self.student_milestones)
         self.current_page = int(student_milestones['current_stage'])
-        self.total_pages = 3
 
         self.update_select_menu()
         self.update_buttons()
@@ -54,38 +43,6 @@ class MilestoneSelectView(discord.ui.View):
         self.add_item(PreviousButton(self.current_page > 0))
         self.add_item(PageIndicator(self.current_page, self.total_pages))
         self.add_item(NextButton(self.current_page < self.total_pages - 1))
-
-class PreviousYearButton(discord.ui.Button):
-    def __init__(self, enabled=True):
-        super().__init__(
-            style=discord.ButtonStyle.secondary,
-            label="⬅上一個年份",
-            disabled=not enabled,
-            row=1
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        view = self.view
-        view.current_page = max(0, view.current_page - 12)
-        view.update_select_menu()
-        view.update_buttons()
-        await interaction.response.edit_message(view=view)
-
-class NextYearButton(discord.ui.Button):
-    def __init__(self, enabled=True):
-        super().__init__(
-            style=discord.ButtonStyle.secondary,
-            label="下一個年份⮕",
-            disabled=not enabled,
-            row=1
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        view = self.view
-        view.current_page = min(view.total_pages - 1, view.current_page + 12)
-        view.update_select_menu()
-        view.update_buttons()
-        await interaction.response.edit_message(view=view)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -130,28 +87,17 @@ class PageIndicator(discord.ui.Button):
 
 class MilestoneSelect(discord.ui.Select):
     def __init__(self, client, user_id, student_milestones):
-        warning = {
-            0: "⚠️ 任務尚未開放",
-            -1: "⚠️ 寶寶年齡尚未符合要求",
-            -2: "⚠️ 尚未購買繪本，請洽官網或是社團客服阿福",
-            -3: "⚠️ 繪本已進入送印階段，無法修改"
-        }
         options = []
         for mission in student_milestones:
             mission_id = int(mission['mission_id'])
-            if mission['mission_available'] == -2:
+            if mission['mission_available'] <= 0:
                 continue
-            if mission['mission_available'] in warning:
-                description = warning[mission['mission_available']]
-                mission_available = 0
             else:
                 if mission.get('mission_type') is not None and mission['mission_type'] != "":
-                    if '成長週報' in mission['mission_type']:
-                        description = f"{mission['mission_type']}"
-                    else:
-                        description = f"{mission['book_type']} | {mission['volume_title']} | {mission['mission_type']}"
+                    description = f"{mission['mission_type']}"
                 else:
                     description = f"{mission['book_type']} | {mission['volume_title']}"
+
                 if mission.get('photo_mission') and mission['photo_mission'] and mission['photo_mission'] != "":
                     description += f" | {mission['photo_mission']}"
 
@@ -165,8 +111,10 @@ class MilestoneSelect(discord.ui.Select):
                 )
             )
 
+        mission = student_milestones[0]
+        class_type = '里程碑' if '里程碑' in mission.get('mission_type') else '成長週報'
         super().__init__(
-            placeholder="查看任務進度...",
+            placeholder=f"查看{class_type}...",
             min_values=1,
             max_values=1,
             options=options
@@ -180,19 +128,17 @@ class MilestoneSelect(discord.ui.Select):
         selected_mission_id = int(selected_mission.split('_')[0])
         mission_available = int(selected_mission.split('_')[-1])
         mission = await self.client.api_utils.get_mission_info(selected_mission_id)
+        class_type = '里程碑' if '里程碑' in mission.get('mission_type') else '成長週報'
 
-        self.view.stop()
-        await interaction.response.edit_message(content=f"選擇任務: {mission['mission_title']}", view=None)
-    
         if not mission_available:
-            await interaction.followup.send("任務尚未開放，請稍後再試！", ephemeral=True)
+            await interaction.followup.send("僅提供購買繪本的家長查看喔！", ephemeral=True)
             return
 
+        self.view.stop()
+        await interaction.response.edit_message(content=f"選擇{class_type}: {mission['mission_title']}", view=None)
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
         if channel is None or not isinstance(channel, discord.TextChannel):
             raise Exception('Invalid channel')
 
-        start_task_msg = f"START_MISSION_{selected_mission_id} <@{interaction.user.id}>"
-        await channel.send(start_task_msg)
-
-        return
+        msg_task = f"START_CLASS_{selected_mission_id} <@{self.user_id}>"
+        await channel.send(msg_task)
