@@ -66,9 +66,9 @@ async def handle_background_message(client, message):
 
     patterns = [
         (rf'START_MISSION_{prefix}(\d+)', handle_mission),
-        (rf'START_CLASS{prefix}_(\d+)', handle_class),
-        (rf'PHOTO_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_photo),
-        (rf'ALBUM_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_album),
+        (rf'START_CLASS_{prefix}(\d+)', handle_class),
+        (rf'PHOTO_GENERATION_COMPLETED_{prefix}(\d+)_(\d+)', handle_photo),
+        (rf'ALBUM_GENERATION_COMPLETED_{prefix}(\d+)_(\d+)', handle_album),
         (rf'MONTHLY_PRINT_{prefix}REMINDER', handle_notify_monthly_print_reminder_job),
     ]
     for pattern, handler in patterns:

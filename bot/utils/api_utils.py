@@ -56,8 +56,12 @@ class APIUtils:
     async def get_purchase_students_reminder_list(self, user_id=None):
         return await self._get_request('photo_mission/schedule/monthly_print_reminder' + (f'?discord_id={user_id}' if user_id else ''))
 
-    async def get_student_milestones(self, user_id):
-        return await self._get_request(f'get_student_milestones?discord_id={user_id}')
+    async def get_student_milestones(self, user_id, month_id:int=None, query_type:str=None, query_min_notification_day:int=None):
+        return await self._get_request(f'get_student_milestones?discord_id={user_id}' \
+            + (f'&query_month={month_id}' if month_id else '') \
+            + (f'&query_type={query_type}' if query_type else '') \
+            + (f'&query_min_notification_day={query_min_notification_day}' if query_min_notification_day else '')
+        )
 
     async def get_student_incomplete_photo_mission(self, user_id, book_id=None):
         response = await self._get_request(f'photo_mission/incompleted_mission_list?discord_id={user_id}' + (f'&book_id={book_id}' if book_id else ''))
@@ -294,9 +298,6 @@ class APIUtils:
             'message': message
         }
         return await self._post_request(endpoint, payload)
-
-    async def add_to_testing_whiltlist(self, user_id, endpoint='growth_album/add_to_whitelist'):
-        return await self._get_request(f"{endpoint}?discord_id={user_id}")
 
     ## ------------------ API for generate photo / album request ----------------
     async def submit_generate_album_request(self, user_id, book_id, endpoint='process_album_and_autofill'):
