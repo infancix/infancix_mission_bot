@@ -109,8 +109,8 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{current_mission_id}.jpg"
-        filename = f"{current_mission_id}.jpg"
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{self.mission_id}.jpg"
+        filename = f"{self.mission_id}.jpg"
         current_page_url = f"attachment://{filename}"
         embed.set_image(url=current_page_url)
         if mission_id not in config.add_on_photo_mission:
