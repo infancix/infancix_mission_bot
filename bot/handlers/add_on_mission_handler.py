@@ -194,7 +194,7 @@ def get_add_on_photo_embed(mission_info, student_info) -> discord.Embed:
         "> 📄 加購照片紀念頁（1 頁）\n"
         "> 🖼️ 可放 4 張照片\n> \n"
         "> **價格**\n"
-        "> 🪙 200\n"
+        "> 社團金幣🪙 200元\n"
     )
     embed = discord.Embed(
         title="📸 加購繪本單頁",

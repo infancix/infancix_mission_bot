@@ -81,7 +81,7 @@ async def process_relation_identity_filling(client, message, student_mission_inf
         if int(mission_id) in config.relation_mission:
             embed = get_relation_embed(student_mission_info)
         elif int(mission_id) == 56:
-            embed = get_toy_embed(student_mission_info)
+            embed = get_little_friend_embed(student_mission_info)
         else:
             embed = get_identity_embed(student_mission_info)
         await message.channel.send(embed=embed)
@@ -236,11 +236,10 @@ def get_identity_embed(mission_info):
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
-def get_toy_embed(mission_info):
+def get_little_friend_embed(mission_info):
     embed = discord.Embed(
-        title="請問寶寶最喜歡的安撫玩偶名字是？",
+        title="請問這位朋友的名字是?",
         description=(
-            "中文版建議 4 個字以內\n"
             "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
         ),
         color=0xeeb2da,

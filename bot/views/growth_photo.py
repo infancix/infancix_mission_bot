@@ -12,6 +12,7 @@ from bot.views.task_select_view import TaskSelectView
 from bot.views.album_select_view import AlbumView
 from bot.utils.message_tracker import (
     save_task_entry_record,
+    delete_mission_record
 )
 from bot.utils.id_utils import encode_ids
 
@@ -327,7 +328,7 @@ class GrowthPhotoView(discord.ui.View):
                 'mission_id': self.mission_id,
                 'current_step': 2
             }
-            self.client.api_utils.update_student_mission_status(**student_mission_info)
+            await self.client.api_utils.update_student_mission_status(**student_mission_info)
             await handle_questionnaire_round(self.client, message, student_mission_info, current_round=0, restart=True)
         except Exception as e:
             await interaction.response.send_message("❌ 發生錯誤，請稍後再試。", ephemeral=True)
