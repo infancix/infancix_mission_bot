@@ -45,7 +45,7 @@ class GrowthPhotoView(discord.ui.View):
                 label="重新上傳所有照片",
                 style=discord.ButtonStyle.secondary
             )
-            self.reupload_button.callback = self.change_photo_callback
+            self.reupload_button.callback = self.reupload_photo_callback
             self.add_item(self.reupload_button)
 
         if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
@@ -109,11 +109,14 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        timestamp = f"{int(time.time())}{random.randint(1000, 9999)}"
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={timestamp}")
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{current_mission_id}.jpg"
+        filename = f"{current_mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
-        return embed
+
+        return embed, file_path, filename
 
     async def complete_callback(self, interaction):
         await interaction.response.defer()
@@ -303,7 +306,7 @@ class GrowthPhotoView(discord.ui.View):
         )
         await interaction.followup.send(embed=embed)
 
-    async def change_photo_callback(self, interaction: discord.Interaction):
+    async def reupload_photo_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         for item in self.children:
             item.disabled = True
