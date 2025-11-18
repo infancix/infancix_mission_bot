@@ -5,7 +5,7 @@ import re
 import time
 
 from bot.config import config
-from bot.handlers.quiz_mission_handler import handle_quiz_mission_start
+from bot.handlers.knowledge_post_handler import handle_knowledge_post_start
 from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start, process_questionnaire_photo_mission_filling
 from bot.handlers.profile_handler import (
     handle_registration_mission_start,
@@ -66,6 +66,7 @@ async def handle_background_message(client, message):
 
     patterns = [
         (rf'START_MISSION_{prefix}(\d+)', handle_mission),
+        (rf'START_CLASS{prefix}_(\d+)', handle_class),
         (rf'PHOTO_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_photo),
         (rf'ALBUM_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_album),
         (rf'MONTHLY_PRINT_{prefix}REMINDER', handle_notify_monthly_print_reminder_job),
@@ -84,6 +85,11 @@ async def handle_mission(client, user_id, match):
         await handle_book_intro_mission(client, user_id, mission_id)
     else:
         await handle_start_mission(client, user_id, mission_id)
+
+async def handle_class(client, user_id, match):
+    class_id = int(match.group(1))
+    await handle_knowledge_post_start(client, user_id, class_id)
+    return
 
 async def handle_photo(client, user_id, match):
     baby_id = int(match.group(1))
@@ -211,8 +217,6 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_add_on_mission_start(client, user_id, mission_id)
     elif mission_id in config.photo_mission_list:
         await handle_photo_mission_start(client, user_id, mission_id)
-    elif mission_id < 100 and mission_id not in config.photo_mission_list:
-        await handle_quiz_mission_start(client, user_id, mission_id)
     elif mission_id in config.confirm_album_mission:
         await handle_confirm_growth_album_mission_start(client, user_id, mission_id)
     else:
@@ -294,9 +298,10 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
             'book_id': mission_result['book_id']
         }
         view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
-        embed = view.generate_embed(baby_id, int(mission_id))
+        embed, file_path, filename = view.generate_embed(baby_id, int(mission_id))
         await asyncio.sleep(0.5)
-        view.message = await user.send(embed=embed, view=view)
+        file = discord.File(file_path, filename=filename)
+        view.message = await user.send(embed=embed, view=view, file=file)
         # save and delete task status
         save_growth_photo_records(str(user_id), view.message.id, mission_id, result=mission_result)
         delete_task_entry_record(str(user_id), mission_id)
