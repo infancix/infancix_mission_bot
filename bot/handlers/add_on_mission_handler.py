@@ -186,26 +186,20 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-def get_add_on_photo_embed(mission_info, student_info):
+def get_add_on_photo_embed(mission_info, student_info) -> discord.Embed:
     description = (
         "恭喜完成這個月的成長繪本 🎉\n"
         "想要放更多照片、留下更完整的回憶嗎？\n\n"
         "> **商品內容**\n"
         "> 📄 加購照片紀念頁（1 頁）\n"
-        "> 🖼️ 可放 4 張照片\n\n"
+        "> 🖼️ 可放 4 張照片\n> \n"
         "> **價格**\n"
-        "> 🪙 200\n"
+        "> 社團金幣🪙 200元\n"
     )
-
     embed = discord.Embed(
         title="📸 加購繪本單頁",
         description=description,
         color=0xeeb2da,
-    )
-    embed.add_field(
-        name="您的金幣餘額",
-        value=f"🪙 {student_info.get('gold', 0)}",
-        inline=False
     )
     instruction_url = mission_info.get('mission_instruction_image_url', '').split(',')[0]
     if instruction_url:
@@ -214,12 +208,11 @@ def get_add_on_photo_embed(mission_info, student_info):
         instruction_url = "https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png"
     embed.set_image(url=instruction_url)
     embed.set_footer(
-        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="若有任何問題，隨時聯絡社群客服「阿福」。"
+        text=f"您的金幣餘額： 🪙{student_info.get('gold', 0)}　|　若有任何問題，請聯絡客服「阿福」。"
     )
     return embed
 
-def get_waiting_embed():
+def get_waiting_embed() -> discord.Embed:
     embed = discord.Embed(
         title="繪本製作中，請稍等30秒",
         color=0xeeb2da

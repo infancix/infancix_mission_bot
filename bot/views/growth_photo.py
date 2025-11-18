@@ -1,16 +1,18 @@
 import discord
 import time
 import discord
-import time
 import calendar
+import random
+from types import SimpleNamespace
 from datetime import datetime
-
 from collections import defaultdict
+
 from bot.config import config
 from bot.views.task_select_view import TaskSelectView
 from bot.views.album_select_view import AlbumView
 from bot.utils.message_tracker import (
     save_task_entry_record,
+    delete_mission_record
 )
 from bot.utils.id_utils import encode_ids
 
@@ -37,6 +39,14 @@ class GrowthPhotoView(discord.ui.View):
                 )
                 self.change_photo_button.callback = self.change_photo_callback
                 self.add_item(self.change_photo_button)
+
+            self.reupload_button = discord.ui.Button(
+                custom_id='reupload_photo',
+                label="重新上傳所有照片",
+                style=discord.ButtonStyle.secondary
+            )
+            self.reupload_button.callback = self.change_photo_callback
+            self.add_item(self.reupload_button)
 
         if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
             self.remove_aside_text_button = discord.ui.Button(
@@ -99,7 +109,8 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={int(time.time())}")
+        timestamp = f"{int(time.time())}{random.randint(1000, 9999)}"
+        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={timestamp}")
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
         return embed
@@ -292,6 +303,21 @@ class GrowthPhotoView(discord.ui.View):
         )
         await interaction.followup.send(embed=embed)
 
+    async def change_photo_callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        # remove mission state
+        delete_mission_record(str(interaction.user.id))        
+        embed = discord.Embed(
+            title="🔼 請重新上傳所有照片",
+            description="📎 點左下 [+] 上傳照片",
+            color=0xeeb2da,
+        )
+        await interaction.followup.send(embed=embed)
+
     async def reselect_button_callback(self, interaction: discord.Interaction):
         await interaction.response.send_message("正在重新載入選項...", ephemeral=True)
         try:
@@ -302,7 +328,7 @@ class GrowthPhotoView(discord.ui.View):
                 'mission_id': self.mission_id,
                 'current_step': 2
             }
-            self.client.api_utils.update_student_mission_status(**student_mission_info)
+            await self.client.api_utils.update_student_mission_status(**student_mission_info)
             await handle_questionnaire_round(self.client, message, student_mission_info, current_round=0, restart=True)
         except Exception as e:
             await interaction.response.send_message("❌ 發生錯誤，請稍後再試。", ephemeral=True)

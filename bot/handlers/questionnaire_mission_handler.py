@@ -40,7 +40,6 @@ async def handle_questionnaire_mission_start(client, user_id, mission_id, send_w
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
-    await client.api_utils.add_to_testing_whiltlist(user_id)
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -93,10 +92,12 @@ async def handle_questionnaire_completion(client, message, student_mission_info)
 
     if click_summary != "跳過":
         saved_result['aside_text'] = click_summary
+        attachments = [saved_result.get('attachment')] if saved_result.get('attachment') else None
         save_mission_record(user_id, mission_id, saved_result)
         success = await client.api_utils.update_mission_image_content(
-            user_id, mission_id, discord_attachments=None, aside_text=click_summary
+            user_id, mission_id, discord_attachments=attachments, aside_text=click_summary
         )
+
     if click_summary == "跳過" or success:
         client.logger.info(f"✅ 已更新任務附加文字，使用者 {user_id} 任務 {mission_id} 內容 {click_summary}")
         if mission_id in config.questionnaire_without_image_mission:
@@ -216,7 +217,7 @@ async def build_questionnaire_mission_embed(questionnaire_info, mission_info, ba
             author = "恭喜寶寶出生！"
 
     embed = discord.Embed(
-        title=f"**{questionnaire['question']}**",
+        title=f"**{questionnaire_info['question']}**",
         description=mission_info['mission_instruction'] if mission_info.get('mission_instruction') else "\n💡回答請點選下方按鈕\n",
         color=0xeeb2da
     )
