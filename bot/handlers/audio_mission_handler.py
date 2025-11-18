@@ -36,7 +36,16 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
-    await client.api_utils.add_to_testing_whiltlist(user_id)
+
+    # Prepare next mission
+    book_id = mission.get('book_id', 0)
+    incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
+    next_mission_id = None
+    for m in incomplete_missions:
+        if m['mission_id'] != mission_id:
+            next_mission_id = m['mission_id']
+            student_mission_info['next_mission_id'] = next_mission_id
+            break
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -45,7 +54,10 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
     embed, files = await build_audio_mission_embed(mission, baby)
     if send_weekly_report and files:
         await user.send(files=files)
-    await user.send(embed=embed)
+
+    view = TaskSelectView(client, "skip_mission", mission_id, mission_result=student_mission_info)
+    view.message = await user.send(embed=embed, view=view)
+    save_task_entry_record(user_id, str(view.message.id), "skip_mission", mission_id, result=student_mission_info)
     return
 
 @exception_handler(user_friendly_message="錄音檔上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
@@ -154,7 +166,7 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-async def build_audio_mission_embed(mission_info=None, baby_info=None):
+async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mission=True):
     # Prepare description based on style
     if baby_info is None:
         author = "恭喜寶寶出生！"
