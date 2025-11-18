@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -30,7 +27,6 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
     if user_id in client.skip_aside_text:
@@ -54,7 +50,6 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
         view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
         view.message = await user.send(embed=embed, view=view)
         save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
-        save_conversations_record(user_id, mission_id, 'assistant', f"請使用者上傳[mission{'photo_mission'}]的照片")
     else:
         embed, files = await build_photo_mission_embed(mission, baby, book)
         if send_weekly_report and files:
@@ -89,6 +84,8 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         mission_result['is_ready'] = True
     elif mission_id in config.photo_mission_with_aside_text:
         mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
+    elif mission_id in config.photo_mission_with_title_and_content:
+        mission_result = client.openai_utils.process_content_validation(mission_result)
     save_mission_record(user_id, mission_id, mission_result)
 
     if mission_result.get('is_ready'):
@@ -104,11 +101,12 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         if student_mission_info['current_step'] == 1:
             if mission_id in config.photo_mission_with_title_and_content:
                 embed = get_letter_embed()
+                await message.channel.send(embed=embed)
             else:
                 embed = get_aside_text_embed()
-            view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
-            view.message = await message.channel.send(embed=embed, view=view)
-            save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
+                view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
 
             # Update mission status
             student_mission_info['current_step'] = 2
@@ -116,7 +114,6 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         else:
             # Continue to collect additional information
             await message.channel.send(mission_result['message'])
-            save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
     return
 
@@ -275,7 +272,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
 
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
 
     files = []
@@ -299,7 +296,7 @@ async def build_photo_instruction_embed(mission_info):
     embed.set_image(url="https://infancixbaby120.com/discord_assets/photo_mission_instruction.png")
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
     return embed
 
@@ -314,7 +311,7 @@ def get_aside_text_embed():
 def get_letter_embed():
     embed = discord.Embed(
         title="✏️ 寫一封信給寶寶",
-        description="請於對話框輸入文字(不限定字數)\n",
+        description="請於對話框輸入文字(限500字以內)\n",
         color=0xeeb2da,
     )
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
@@ -357,7 +354,7 @@ def get_add_on_photo_embed(mission):
     embed.set_image(url=instruction_url)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
     return embed
 

@@ -13,6 +13,7 @@ class Config:
         self.DISCORD_DEV_TOKEN = os.getenv('DISCORD_DEV_TOKEN')
         self.MY_GUILD_ID = int(os.getenv('MY_GUILD_ID'))
         self.BACKGROUND_LOG_CHANNEL_ID = int(os.getenv('BACKGROUND_LOG_CHANNEL_ID'))
+        self.FILE_UPLOAD_CHANNEL_ID = int(os.getenv('FILE_UPLOAD_CHANNEL_ID'))
         self.MISSION_BOT_CHANNEL_ID = int(os.getenv('MISSION_BOT_CHANNEL_ID'))
         self.MISSION_BOT = int(os.getenv('MISSION_BOT_ID'))
         self.BABY_API_HOST = os.getenv('BABY_API_HOST')
@@ -26,6 +27,7 @@ class Config:
 
         self.IMAGE_ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
 
+        self.available_books = [1, 2, 3]
         self._load_mission_config()
         self.photo_mission_list = set(
             [self.baby_registration_mission] +
@@ -36,15 +38,7 @@ class Config:
             self.add_on_photo_mission
         )
 
-        # theme story book
-        self.theme_book_map = {
-            13: 7001,
-            14: 7008,
-            15: 7015,
-            16: 7022,
-            17: 7029,
-            18: 7036
-        }
+        self.book_intro_mission_map.update({book_id: mission_ids[0] for book_id, mission_ids in self.theme_book_mission_map.items()})
         self.theme_mission_list = [7001, 7008, 7015, 7022, 7029, 7036]
 
     def get_prompt_file(self, mission_id):
@@ -53,7 +47,7 @@ class Config:
             return f"{base_path}/baby_intro_prompt.txt"
         elif mission_id == self.pregnant_registration_mission:
             return f"{base_path}/pregnant_registration_prompt.txt"
-        elif mission_id in self.photo_mission_without_aside_text:
+        elif mission_id in self.photo_mission_without_aside_text or mission_id in self.questionnaire_with_image_mission:
             return f"{base_path}/image_prompt.txt"
         elif mission_id in self.photo_mission_with_aside_text:
             return f"{base_path}/image_with_aside_text.txt"
@@ -82,12 +76,19 @@ class Config:
 
             # growth book missions
             growth_book_missions = mission_config['growth_book_missions']
+            theme_book_missions = mission_config.get('theme_book_missions', [])
 
             # book introduction mission
             self.book_intro_mission = [
                 month_data['book_intro_mission'] for month_data in growth_book_missions
             ]
-            self.book_first_mission = {
+
+            self.book_intro_mission_map = {
+                month_data['month']: month_data['book_intro_mission']
+                for month_data in growth_book_missions
+            }
+
+            self.book_first_mission_map = {
                 month_data['month']: month_data['book_first_mission']
                 for month_data in growth_book_missions
             }
@@ -116,9 +117,14 @@ class Config:
             ]
 
             # other missions
-            self.questionnaire_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('questionnaire_mission', [])
+            self.questionnaire_without_image_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('questionnaire_without_image_mission', [])
             ]
+            self.questionnaire_with_image_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('questionnaire_with_image_mission', [])
+            ]
+            self.questionnaire_mission = self.questionnaire_without_image_mission + self.questionnaire_with_image_mission
+
             self.audio_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('audio_mission', [])
             ]
@@ -127,5 +133,7 @@ class Config:
             self.confirm_album_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('confirm_growth_album_mission', [])
             ]
+
+            self.theme_book_mission_map = {item['book_id']: item['mission_ids'] for item in theme_book_missions}
 
 config = Config()

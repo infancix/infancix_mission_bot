@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -29,7 +26,6 @@ async def handle_relation_identity_mission_start(client, user_id, mission_id, se
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
 
     # Mission start
     student_mission_info = {
@@ -84,12 +80,13 @@ async def process_relation_identity_filling(client, message, student_mission_inf
     elif mission_result.get("relation_or_identity", None) is None:
         if int(mission_id) in config.relation_mission:
             embed = get_relation_embed(student_mission_info)
+        elif int(mission_id) == 56:
+            embed = get_toy_embed(student_mission_info)
         else:
             embed = get_identity_embed(student_mission_info)
         await message.channel.send(embed=embed)
     else:
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
     return
 
 async def prepare_api_request(client, message, student_mission_info):
@@ -105,7 +102,10 @@ async def prepare_api_request(client, message, student_mission_info):
             'direct_response': saved_result
         }
     else:
-        user_message = message.content
+        user_message = (
+            f"Photo answer: {message.content.strip()}\n"
+            f"⚠️ 使用者可能在一個回答中提及多個對象，請自動識別各種分隔符號（空格、逗號、頓號、分號等），若為英文則使用「, , and」連接，若為中文則使用「和」連接。"
+        )
 
     # Build full context for AI prediction
     context_parts = []
@@ -229,7 +229,20 @@ def get_relation_embed(mission_info):
 def get_identity_embed(mission_info):
     embed = discord.Embed(
         title="📝 這張照片裡的人是誰呢？",
-        description="例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)",
+        description="例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)",
+        color=0xeeb2da,
+    )
+    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
+    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
+    return embed
+
+def get_toy_embed(mission_info):
+    embed = discord.Embed(
+        title="請問寶寶最喜歡的安撫玩偶名字是？",
+        description=(
+            "中文版建議 4 個字以內\n"
+            "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+        ),
         color=0xeeb2da,
     )
     embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")

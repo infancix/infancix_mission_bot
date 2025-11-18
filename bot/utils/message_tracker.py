@@ -12,7 +12,8 @@ if config.ENV:
 QUIZ_MESSAGE_LOG_PATH =  DATA_DIR / "quiz_message_records.json"
 TASK_ENTRY_LOG_PATH =  DATA_DIR / "task_entry_records.json"
 GROWTH_PHOTO_LOG_PATH = DATA_DIR / "growth_photo_records.json"
-CONFIRM_GROWTH_ALBUM_LOG_PATH = DATA_DIR / "confirm_growth_album_records.json"
+GROWTH_ALBUM_LOG_PATH = DATA_DIR / "growth_album_records.json"
+CONFIRM_GROWTH_ALBUMS_LOG_PATH = DATA_DIR / "confirm_growth_albums_records.json"
 THEME_BOOK_EDIT_LOG_PATH = DATA_DIR / "theme_book_edit_records.json"
 CONVERSATION_LOG_PATH = DATA_DIR / "conversation_records.json"
 QUESTIONNAIRE_LOG_PATH = DATA_DIR / "questionnaire_records.json"
@@ -96,97 +97,28 @@ def delete_growth_photo_record(user_id: str, mission_id: int):
         with open(GROWTH_PHOTO_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
 
-def load_confirm_growth_album_records() -> dict:
-    if CONFIRM_GROWTH_ALBUM_LOG_PATH.exists():
-        with open(CONFIRM_GROWTH_ALBUM_LOG_PATH, "r", encoding="utf-8") as f:
+def load_confirm_growth_albums_records() -> dict:
+    if CONFIRM_GROWTH_ALBUMS_LOG_PATH.exists():
+        with open(CONFIRM_GROWTH_ALBUMS_LOG_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
-def save_confirm_growth_album_record(user_id: str, message_id: str, book_id: int, result=None):
-    records = load_confirm_growth_album_records()
-    if user_id not in records or str(book_id) not in records[user_id]:
-        records[user_id] = {} # remove all the previous records for this user
-
-    records[user_id][str(book_id)] = {
+def save_confirm_growth_albums_record(user_id: str, message_id: str, albums_info=None, incomplete_missions=None):
+    records = load_confirm_growth_albums_records()
+    records[user_id] = {
         "message_id": message_id,
-        "result": result,
+        "albums_info": albums_info,
+        "incomplete_missions": incomplete_missions,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
-
-    with open(CONFIRM_GROWTH_ALBUM_LOG_PATH, "w", encoding="utf-8") as f:
+    with open(CONFIRM_GROWTH_ALBUMS_LOG_PATH, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=4, ensure_ascii=False)
 
-def delete_confirm_growth_album_record(user_id: str, book_id: int):
-    records = load_confirm_growth_album_records()
-    if user_id in records and str(book_id) in records[user_id]:
-        del records[user_id][str(book_id)]
-        if not records[user_id]:  # Remove user entry if no missions left
-            del records[user_id]
-        with open(CONFIRM_GROWTH_ALBUM_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=4, ensure_ascii=False)
-
-def load_conversations_records() -> dict:
-    if CONVERSATION_LOG_PATH.exists():
-        with open(CONVERSATION_LOG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_conversations_record(user_id: str, mission_id: int, role: str, message: str):
-    records = load_conversations_records()
-    if user_id not in records or str(mission_id) not in records[user_id]:
-        records[user_id] = defaultdict(list)  # remove all the previous records for this user
-
-    records[str(user_id)][str(mission_id)].append({
-        "role": role,
-        "message": message,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
-
-    with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=4, ensure_ascii=False)
-
-def delete_conversations_record(user_id: str, mission_id: int):
-    records = load_conversations_records()
-    if user_id in records and str(mission_id) in records[user_id]:
-        del records[user_id][str(mission_id)]
-        if not records[user_id]:  # Remove user entry if no missions left
-            del records[user_id]
-        with open(CONVERSATION_LOG_PATH, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=4, ensure_ascii=False)
-
-def load_theme_book_edit_records() -> dict:
-    if THEME_BOOK_EDIT_LOG_PATH.exists():
-        with open(THEME_BOOK_EDIT_LOG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def get_user_theme_book_edit_record(user_id: str, mission_id: int) -> dict:
-    records = load_theme_book_edit_records()
-    if user_id in records and str(mission_id) in records[user_id]:
-        return records[user_id][str(mission_id)]
-    return {}
-
-def save_theme_book_edit_record(user_id: str, message_id: str, mission_id: int, result=None):
-    records = load_theme_book_edit_records()
-    if user_id not in records or str(mission_id) not in records[user_id]:
-        records[user_id] = {}  # remove all the previous records for this user
-
-    records[user_id][str(mission_id)] = {
-        "message_id": message_id,
-        "result": result,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=4, ensure_ascii=False)
-
-def delete_theme_book_edit_record(user_id: str, mission_id: int):
-    records = load_theme_book_edit_records()
-    if user_id in records and str(mission_id) in records[user_id]:
-        del records[user_id][str(mission_id)]
-        if not records[user_id]:  # Remove user entry if no missions left
-            del records[user_id]
-        with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
+def delete_confirm_growth_albums_record(user_id: str):
+    records = load_confirm_growth_albums_records()
+    if user_id in records:
+        del records[user_id]
+        with open(CONFIRM_GROWTH_ALBUMS_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)
 
 def load_questionnaire_records() -> dict:
@@ -255,4 +187,41 @@ def delete_mission_record(user_id: str):
     if user_id in records:
         del records[user_id]
         with open(MISSION_LOG_PATH, "w", encoding="utf-8") as f:
+            json.dump(records, f, indent=4, ensure_ascii=False)
+
+
+# ------------------- Theme Book Edit Records ------------------------------------------------------
+def load_theme_book_edit_records() -> dict:
+    if THEME_BOOK_EDIT_LOG_PATH.exists():
+        with open(THEME_BOOK_EDIT_LOG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def get_user_theme_book_edit_record(user_id: str, book_id: int) -> dict:
+    records = load_theme_book_edit_records()
+    if user_id in records and str(book_id) in records[user_id]:
+        return records[user_id][str(book_id)]
+    return {}
+
+def save_theme_book_edit_record(user_id: str, message_id: str, book_id: int, result=None):
+    records = load_theme_book_edit_records()
+    if user_id not in records or str(book_id) not in records[user_id]:
+        records[user_id] = {}  # remove all the previous records for this user
+
+    records[user_id][str(mission_id)] = {
+        "message_id": message_id,
+        "result": result,
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=4, ensure_ascii=False)
+
+def delete_theme_book_edit_record(user_id: str, book_id: int):
+    records = load_theme_book_edit_records()
+    if user_id in records and str(book_id) in records[user_id]:
+        del records[user_id][str(book_id)]
+        if not records[user_id]:  # Remove user entry if no missions left
+            del records[user_id]
+        with open(THEME_BOOK_EDIT_LOG_PATH, "w", encoding="utf-8") as f:
             json.dump(records, f, indent=4, ensure_ascii=False)

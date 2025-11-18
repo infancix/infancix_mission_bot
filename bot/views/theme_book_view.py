@@ -1,5 +1,7 @@
 import discord
 import time
+import random
+import asyncio
 
 from bot.config import config
 from bot.utils.id_utils import encode_ids
@@ -7,7 +9,6 @@ from bot.utils.message_tracker import (
     load_theme_book_edit_records,
     delete_theme_book_edit_record,
     delete_mission_record,
-    delete_conversations_record,
     delete_task_entry_record
 )
 
@@ -21,11 +22,11 @@ class ThemeBookView(discord.ui.View):
         self.book_info = book_info
         self.baby_id = book_info['baby_id']
         self.book_id = book_info['book_id']
-        self.base_mission_id = int(book_info['mission_id'])
+        self.mission_list = config.theme_book_mission_map[self.book_id]
+        self.base_mission_id = self.mission_list[0]
         self.current_page = 0
         self.total_pages = len(THEME_BOOK_PAGES)
 
-        # Update the book-page display
         self.update_buttons()
 
     def update_buttons(self):
@@ -46,10 +47,10 @@ class ThemeBookView(discord.ui.View):
     def get_current_embed(self, user_id):
         if self.current_page not in THEME_BOOK_PAGES:
             raise ValueError(f"Invalid current_page: {self.current_page}")
+        current_mission_id = self.mission_list[self.current_page]
         page_offset = THEME_BOOK_PAGES[self.current_page]
-        current_mission_id = self.base_mission_id + page_offset
         self.client.photo_mission_replace_index[user_id] = page_offset
-        current_page_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{current_mission_id}.jpg?t={int(time.time())}"
+        current_page_url = f"attachment://{current_mission_id}.jpg"
         if page_offset == 0:
             title = "預覽：封面"
         else:
@@ -76,9 +77,14 @@ class ThemeBookView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        embed.set_author(name=self.book_info['book_author'])
+        embed.set_author(name=self.book_info['book_collection'])
+
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{current_mission_id}.jpg"
+        filename = f"{current_mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
         embed.set_image(url=current_page_url)
-        return embed
+
+        return embed, file_path, filename
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -91,11 +97,19 @@ class PreviousButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
-        view.current_page -= 1
 
-        embed = view.get_current_embed(str(interaction.user.id))
+        # Defer immediately to prevent timeout
+        await interaction.response.defer()
+
+        view.current_page = max(0, view.current_page - 1)
+        embed, file_path, filename = view.get_current_embed(str(interaction.user.id))
         view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=view)
+        file = discord.File(file_path, filename=filename)
+        await interaction.edit_original_response(
+            embed=embed,
+            view=view,
+            attachments=[file],
+        )
 
 class NextButton(discord.ui.Button):
     def __init__(self, enabled=True):
@@ -108,11 +122,19 @@ class NextButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view = self.view
-        view.current_page += 1
 
-        embed = view.get_current_embed(str(interaction.user.id))
+        # Defer immediately to prevent timeout
+        await interaction.response.defer()
+
+        view.current_page = min(view.total_pages - 1, view.current_page + 1)
+        embed, file_path, filename = view.get_current_embed(str(interaction.user.id))
         view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=view)
+        file = discord.File(file_path, filename=filename)
+        await interaction.edit_original_response(
+            embed=embed,
+            view=view,
+            attachments=[file],
+        )
 
 class PageIndicator(discord.ui.Button):
     def __init__(self, current_page, total_pages):
@@ -158,7 +180,7 @@ class SubmitButton(discord.ui.Button):
         # Send completion message
         embed = discord.Embed(
             title="🎆 任務完成",
-            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，可點選 `指令` > `瀏覽繪本進度` 查看整本",
+            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，於對話框輸入 */我的書櫃* 查看整本",
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)

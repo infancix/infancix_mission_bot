@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -29,7 +26,6 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
 
     # Delete conversion cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
 
@@ -87,7 +83,6 @@ async def process_audio_mission_filling(client, message, student_mission_info):
         await submit_audio_data(client, message, student_mission_info, mission_result)
     else:
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
     return
 
@@ -215,7 +210,7 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None):
     embed.set_author(name=author)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
 
     files = []

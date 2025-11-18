@@ -14,10 +14,9 @@ from bot.utils.message_tracker import (
     load_growth_photo_records,
     load_theme_book_edit_records,
     load_questionnaire_records,
-    load_confirm_growth_album_records,
+    load_confirm_growth_albums_records,
     delete_task_entry_record,
     delete_growth_photo_record,
-    delete_conversations_record,
     delete_questionnaire_record
 )
 from bot.views.task_select_view import TaskSelectView
@@ -49,12 +48,31 @@ async def daily_job(client):
         except Exception as e:
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
 
+async def monthly_print_reminder_job(client):
+    today = date.today()
+    # check if today is the 1st of the month
+    if today.day != 1 and today.day != 4:
+        return
+
+    client.logger.debug('Running monthly print reminder job now...')
+    target_channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+    if target_channel is None or not isinstance(target_channel, discord.TextChannel):
+        raise Exception('Invalid channel')
+
+    reminder_list = await client.api_utils.get_purchase_students_reminder_list()
+    for reminder in reminder_list:
+        try:
+            user_id = reminder['discord_id']
+            await target_channel.send(f"MONTHLY_PRINT_REMINDER <@{user_id}>")
+            await asyncio.sleep(10)
+        except Exception as e:
+            client.logger.error(f"Failed to send monthly print reminder to user: {user_id}, {str(e)}")
+
 def reset_user_state(client, user_id, mission_id=0):
-    # Delete the message record
+    # Delete the message records
     delete_task_entry_record(user_id, str(mission_id))
     delete_questionnaire_record(user_id, str(mission_id))
     delete_growth_photo_record(user_id, str(mission_id))
-    delete_conversations_record(user_id, str(mission_id))
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
     if user_id in client.reset_baby_profile:
@@ -92,16 +110,17 @@ async def load_growth_photo_messages(client):
             client.logger.warning(f"⚠️ Failed to restore growth photo for {user_id}: {e}")
 
 async def load_confirm_growth_album_messages(client):
-    records = load_confirm_growth_album_records()
+    records = load_confirm_growth_albums_records()
     for user_id in records:
         try:
             channel = await client.fetch_user(user_id)
-            for mission_id, album_status in records[user_id].items():
-                if album_status.get('result', {}):
-                    message = await channel.fetch_message(int(album_status['message_id']))
-                    view = ConfirmGrowthAlbumView(client, user_id, album_status.get('result', {}))
-                    embed = view.preview_embed()
-                    await message.edit(embed=embed, view=view)
+            message_id = records[user_id]['message_id']
+            albums_info = records[user_id].get('albums_info', {})
+            incomplete_missions = records[user_id].get('incomplete_missions', [])
+            message = await channel.fetch_message(int(message_id))
+            view = ConfirmGrowthAlbumView(client, user_id, albums_info, incomplete_missions)
+            embed = view.preview_embed()
+            await message.edit(embed=embed, view=view)
             client.logger.info(f"✅ Restore confirmed growth album for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore confirmed growth album for {user_id}: {e}")
@@ -125,7 +144,7 @@ async def load_theme_book_edit_messages(client):
     for user_id in records:
         try:
             channel = await client.fetch_user(user_id)
-            for mission_id, edit_status in records[user_id].items():
+            for book_id, edit_status in records[user_id].items():
                 message = await channel.fetch_message(int(edit_status['message_id']))
                 result = edit_status.get('result', None)
                 view = ThemeBookView(client, result)

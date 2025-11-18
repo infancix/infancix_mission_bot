@@ -14,9 +14,6 @@ from bot.utils.message_tracker import (
     get_mission_record,
     save_mission_record,
     delete_mission_record,
-    load_conversations_records,
-    save_conversations_record,
-    delete_conversations_record
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
@@ -29,7 +26,6 @@ async def handle_add_on_mission_start(client, user_id, mission_id, send_weekly_r
 
     # Delete conversation cache
     delete_mission_record(user_id)
-    delete_conversations_record(user_id, mission_id)
     if user_id in client.photo_mission_replace_index:
         del client.photo_mission_replace_index[user_id]
     if user_id in client.skip_aside_text:
@@ -48,7 +44,8 @@ async def handle_add_on_mission_start(client, user_id, mission_id, send_weekly_r
     if user.dm_channel is None:
         await user.create_dm()
 
-    embed = get_add_on_photo_embed(mission)
+    student_profile = await client.api_utils.get_student_profile(user_id)
+    embed = get_add_on_photo_embed(mission, student_profile)
     view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
     view.message = await user.send(embed=embed, view=view)
     save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
@@ -100,15 +97,12 @@ def prepare_api_request(client, message, student_mission_info):
         user_message = message.content
 
     # Build full context for AI prediction
-    context = ""
+    context_parts = []
     saved_result = get_mission_record(user_id, mission_id)
     if saved_result.get('attachment'):
-        context_parts = []
         context_parts.append(f"Previous attachments: {len(saved_result['attachment'])} photos collected")
         context_parts.append(f"Attachments detail: {saved_result['attachment']}")
-        context = "\n".join(context_parts)
-    else:
-        return ""
+    context = "\n".join(context_parts)
 
     return {
         'needs_ai_prediction': True,
@@ -155,7 +149,6 @@ async def process_add_on_photo_mission_filling(client, message, student_mission_
     else:
         # Continue to collect additional information
         await message.channel.send(mission_result['message'])
-        save_conversations_record(user_id, mission_id, 'assistant', mission_result['message'])
 
 # --------------------- Event Handlers ---------------------
 async def submit_image_data(client, message, student_mission_info, mission_result):
@@ -193,37 +186,33 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-def get_add_on_photo_embed(mission):
+def get_add_on_photo_embed(mission_info, student_info) -> discord.Embed:
     description = (
-        "恭喜完成這個月成長繪本\n"
-        "想要放更多照片留作紀念嗎?\n\n"
-        "> **商品**\n"
-        "> 照片紀念頁\n"
-        "> \n"
-        "> **內容說明**\n"
-        "> 共 1 頁，內含 4 張照片\n"
-        "> \n"
-        "> **售價**\n"
-        "> 🪙 $200\n"
+        "恭喜完成這個月的成長繪本 🎉\n"
+        "想要放更多照片、留下更完整的回憶嗎？\n\n"
+        "> **商品內容**\n"
+        "> 📄 加購照片紀念頁（1 頁）\n"
+        "> 🖼️ 可放 4 張照片\n> \n"
+        "> **價格**\n"
+        "> 🪙 200\n"
     )
     embed = discord.Embed(
         title="📸 加購繪本單頁",
         description=description,
         color=0xeeb2da,
     )
-    instruction_url = mission.get('mission_instruction_image_url', '').split(',')[0]
+    instruction_url = mission_info.get('mission_instruction_image_url', '').split(',')[0]
     if instruction_url:
         instruction_url = create_preview_image_from_url(instruction_url)
     else:
         instruction_url = "https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission_demo.png"
     embed.set_image(url=instruction_url)
     embed.set_footer(
-        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text="點選下方 `指令` 可查看更多功能"
+        text=f"您的金幣餘額： 🪙{student_info.get('gold', 0)}　|　若有任何問題，請聯絡客服「阿福」。"
     )
     return embed
 
-def get_waiting_embed():
+def get_waiting_embed() -> discord.Embed:
     embed = discord.Embed(
         title="繪本製作中，請稍等30秒",
         color=0xeeb2da

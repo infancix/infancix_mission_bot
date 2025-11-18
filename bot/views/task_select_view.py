@@ -1,7 +1,7 @@
 import discord
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 
 from bot.config import config
@@ -17,7 +17,7 @@ class TaskSelectView(discord.ui.View):
         self.message = None
         self.result = mission_result or {}
 
-        if task_type == "go_book_instruction":
+        if "go_book_instruction" in task_type:
             label = "開始製作繪本"
             self.go_book_instruction_button = discord.ui.Button(
                 custom_id="go_book_instruction_button",
@@ -27,8 +27,10 @@ class TaskSelectView(discord.ui.View):
             self.go_book_instruction_button.callback = self.go_book_instruction_button_callback
             self.add_item(self.go_book_instruction_button)
 
-        if task_type == "go_next_mission":
-            if self.result.get('is_first_mission'):
+        if "go_next_mission" in task_type:
+            if self.result.get('next_book_title'):
+                label = f"製作《{self.result.get('next_book_title')}》"
+            elif self.result.get('is_first_mission'):
                 label = "開始製作封面"
             else:
                 label = "繼續製作下一頁"
@@ -40,6 +42,16 @@ class TaskSelectView(discord.ui.View):
             self.go_next_mission_button.callback = self.go_next_mission_button_callback
             self.add_item(self.go_next_mission_button)
 
+        if "go_purchase" in task_type:
+            label = "購買繪本"
+            self.purchase_button = discord.ui.Button(
+                custom_id="purchase_button",
+                label=label,
+                style=discord.ButtonStyle.success,
+            )
+            self.purchase_button.callback = self.purchase_button_callback
+            self.add_item(self.purchase_button)
+
         if task_type == "go_quiz":
             label = "挑戰任務 GO!"
             self.go_quiz_button = discord.ui.Button(
@@ -49,7 +61,7 @@ class TaskSelectView(discord.ui.View):
             )
             self.go_quiz_button.callback = self.go_quiz_button_callback
             self.add_item(self.go_quiz_button)
-        
+
         if task_type == "go_skip_aside_text":
             label = "跳過"
             self.go_skip_aside_text_button = discord.ui.Button(
@@ -79,7 +91,7 @@ class TaskSelectView(discord.ui.View):
             )
             self.go_submit_button.callback = self.go_submit_button_callback
             self.add_item(self.go_submit_button)
-        
+
         if task_type == "baby_born":
             label = "寶寶還在肚子裡，不想退房"
             self.baby_not_born_button = discord.ui.Button(
@@ -98,7 +110,7 @@ class TaskSelectView(discord.ui.View):
             )
             self.baby_born_button.callback = self.baby_born_button_callback
             self.add_item(self.baby_born_button)
-        
+
         if task_type == "baby_optin":
             label = "送出"
             self.baby_optin_button = discord.ui.Button(
@@ -119,16 +131,6 @@ class TaskSelectView(discord.ui.View):
             self.check_add_on_button.callback = self.check_add_on_button_callback
             self.add_item(self.check_add_on_button)
 
-        if task_type == "show_command_instruction":
-            label = "📖 解鎖繪本任務秘訣"
-            self.show_command_instruction_button = discord.ui.Button(
-                custom_id="show_command_instruction_button",
-                label=label,
-                style=discord.ButtonStyle.primary
-            )
-            self.show_command_instruction_button.callback = self.show_command_instruction_button_callback
-            self.add_item(self.show_command_instruction_button)
-
         if task_type == "skip_theme_book_aside_text":
             label = "跳過"
             self.skip_theme_book_aside_text_button = discord.ui.Button(
@@ -138,6 +140,16 @@ class TaskSelectView(discord.ui.View):
             )
             self.skip_theme_book_aside_text_button.callback = self.skip_theme_book_aside_text_button_callback
             self.add_item(self.skip_theme_book_aside_text_button)
+
+        if task_type == "confirm_print":
+            label = "確認送印"
+            self.confirm_button = discord.ui.Button(
+                custom_id="confirm_button",
+                label=label,
+                style=discord.ButtonStyle.success
+            )
+            self.confirm_button.callback = self.confirm_button_callback
+            self.add_item(self.confirm_button)
 
     async def go_book_instruction_button_callback(self, interaction):
         for item in self.children:
@@ -192,7 +204,7 @@ class TaskSelectView(discord.ui.View):
             await handle_add_on_mission_start(self.client, user_id, next_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
-            await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=0)
+            await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=1)
 
     async def go_quiz_button_callback(self, interaction):
         for item in self.children:
@@ -340,19 +352,13 @@ class TaskSelectView(discord.ui.View):
         if not student_profile or student_profile.get('gold', 0) < abs(self.result.get('reward', 200)):
             embed = self.get_insufficient_coin_embed()
             await interaction.followup.send(embed=embed)
+            delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
             return
         else:
             embed = self.get_add_on_photo_embed()
             await interaction.followup.send(embed=embed)
-
-    async def show_command_instruction_button_callback(self, interaction):
-        embed = discord.Embed(
-            title="快來試試看吧！",
-            color=0xeeb2da,
-        )
-        embed.set_image(url="https://infancixbaby120.com/discord_assets/command_instruction.jpg")
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return
+            delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
+            return
 
     def get_insufficient_coin_embed(self):
         embed = discord.Embed(
@@ -360,8 +366,8 @@ class TaskSelectView(discord.ui.View):
             color=0xeeb2da,
         )
         embed.add_field(name="🫰 如何獲得金幣", value="解任務、參與活動", inline=False)
-        embed.add_field(name="🔍︎ 查看金幣餘額", value="請至 <@1272828469469904937> 點選指令", inline=False)
-        embed.add_field(name="🥺 如何回來賺買", value="點選 `指令` > `補上傳照片` > `加購繪本單頁`", inline=False)
+        embed.add_field(name="🔍︎ 查看金幣餘額", value="請至 <@1272828469469904937> 於私訊對話框輸入 */我的檔案* 查詢喔", inline=False)
+        embed.add_field(name="🥺 如何回來賺買", value="於對話框輸入 */補上傳照片*，重新製作喔！", inline=False)
         return embed
 
     def get_add_on_photo_embed(self):
@@ -385,22 +391,80 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
+        book_id = self.result['book_id']
         saved_result = get_mission_record(str(interaction.user.id), self.mission_id)
-        if not saved_result or 'attachment' not in saved_result:
-            await interaction.followup.send("找不到任務紀錄，請稍後再試。")
-            return
+        saved_result['aside_texts'] = saved_result.get('aside_texts', [])
 
-        student_mission_info = self.result
-        book_id = student_mission_info['book_id']
-        photo_index = student_mission_info.get('photo_index', -1)
+        if str(interaction.user.id) in self.client.photo_mission_replace_index:
+            photo_index = self.client.photo_mission_replace_index[str(interaction.user.id)]
+            saved_result['aside_texts'][photo_index-1] = {
+                "photo_index": photo_index,
+                "aside_text": "[使用者選擇跳過]"
+            }
+        else:
+            photo_index = len(saved_result['aside_texts']) + 1
+            saved_result['aside_texts'].append({
+                "photo_index": photo_index,
+                "aside_text": "[使用者選擇跳過]"
+            })
 
-        saved_result['attachment'][photo_index]['aside_text'] = "[使用者選擇跳過]"
+        self.client.logger.info(f"使用者 {interaction.user.id} 選擇跳過繪本({book_id}) {photo_index} 頁面旁白文字")
         mission_result = self.client.openai_utils.process_theme_book_validation(book_id, saved_result)
         save_mission_record(str(interaction.user.id), self.mission_id, mission_result)
 
         from bot.handlers.theme_mission_handler import _handle_mission_step
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+        student_mission_info = {
+            **self.result,
+            'user_id': str(interaction.user.id),
+            'current_step': 3,
+        }
         await _handle_mission_step(self.client, message, student_mission_info, mission_result)
+
+    async def purchase_button_callback(self, interaction):
+        for item in self.children:
+            item.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        # Send log to Background channel
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+
+        msg_task = f"<@{str(interaction.user.id)}> 購買繪本"
+        await channel.send(msg_task)
+
+        await interaction.channel.send(f"🛒 已收到您的購買請求！社群客服「阿福 <@1272828469469904937>」會儘快與您聯繫。")
+
+    async def confirm_button_callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        confirm_embed = discord.Embed(
+            title="📘 已確認送印！",
+            description=(
+                "這本屬於您與寶寶的成長故事，將進入印刷流程。\n\n"
+                "📦 **印刷期與運送期**\n"
+                "約需**30 個工作天**，完成後將寄送至您的指定地址。\n\n"
+                "🎶 **親子共讀課 X Music Together 會員專屬**\n"
+                "您的繪本將於**課程當天**發放，無需等待郵寄！\n"
+            ),
+            color=0xeeb2da,
+        )
+        await interaction.followup.send(embed=confirm_embed, ephemeral=True)
+
+        book_id = self.result['book_id']
+        await self.client.api_utils.update_student_confirmed_growth_album(str(interaction.user.id), book_id)
+        self.stop()
+
+        # Send log to Background channel
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+        msg_task = f"BOOK_{book_id}_CONFIRM_FINISHED <@{str(interaction.user.id)}>"
+        await channel.send(msg_task)
 
     async def on_timeout(self):
         for item in self.children:
