@@ -45,7 +45,7 @@ class GrowthPhotoView(discord.ui.View):
                 label="重新上傳所有照片",
                 style=discord.ButtonStyle.secondary
             )
-            self.reupload_button.callback = self.change_photo_callback
+            self.reupload_button.callback = self.reupload_photo_callback
             self.add_item(self.reupload_button)
 
         if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
@@ -303,7 +303,7 @@ class GrowthPhotoView(discord.ui.View):
         )
         await interaction.followup.send(embed=embed)
 
-    async def change_photo_callback(self, interaction: discord.Interaction):
+    async def reupload_photo_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         for item in self.children:
             item.disabled = True
