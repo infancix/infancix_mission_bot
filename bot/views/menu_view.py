@@ -148,7 +148,6 @@ class KnowledgeMenuView(discord.ui.View):
         month_val = self.selected_month
         type_label = self.TYPE_LABEL.get(knowledge_type, "內容")
 
-        # 這裡直接用你給的 API
         knowledge_list = await self.client.api_utils.get_student_milestones(
             user_id,
             month_id=month_val,
@@ -190,7 +189,7 @@ class KnowledgePostSelect(discord.ui.Select):
 
             options.append(
                 discord.SelectOption(
-                    label=setup_label(mission),
+                    label=mission['mission_title'],
                     description=description,
                     value=f"{mission_id}_{mission_available}"
                 )

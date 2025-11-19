@@ -22,6 +22,17 @@ number_emojis = [
     "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"
 ]
 
+BOOK_AGE_OPTIONS = [
+    ("pregnancy", "懷孕特別版（敬請期待）", False),
+    (1, "0–1 歲", True),
+]
+
+BOOK_TYPES = {
+    "成長繪本": "成長繪本",
+    "主題寶寶書": "主題寶寶書",
+    # "周年特別版繪本": "特別版",
+}
+
 def calculate_deadline_timeout(client):
     """計算到本月 5 號 23:59:59 的剩餘秒數"""
     now = datetime.now()
@@ -50,65 +61,129 @@ def calculate_weekday(year, month, day):
     week_index = datetime(year, month, day).weekday()
     return weekday_map.get(week_index, "")
 
-class AlbumSelectView(discord.ui.View):
-    def __init__(self, client, user_id, albums_info, timeout=3600):
+class BookMenuView(discord.ui.View):
+    def __init__(self, client, timeout: float = 3600):
         super().__init__(timeout=timeout)
         self.client = client
-        self.user_id = user_id
-        self.albums_info = albums_info
-        # pagination index
-        self.items_per_page = 24
-        self.setup_records()
-        self.page = 0
+        self.age_code: str | None = None   # "pregnancy" / "1-12" ...
+        self.book_type: str | None = None  # "growth_book" / ...
+        self.build_level1()
 
-        self.setup_select_options()
-        if self.needs_pagination:
-            self.update_buttons()
+    # -------- 共用工具 --------
+    def clear_items(self):
+        for c in list(self.children):
+            self.remove_item(c)
 
-    def setup_records(self):
-        self.sorted_tasks = sorted(self.albums_info, key=lambda x: (x['age_range'], x['book_id']))
-        self.total_tasks = len(self.sorted_tasks)
-        self.needs_pagination = self.total_tasks > self.items_per_page
-        self.total_pages = (self.total_tasks - 1) // self.items_per_page + 1 if self.total_tasks > 0 else 1
+    async def update_view(self, itx: discord.Interaction):
+        await itx.response.edit_message(view=self)
 
-    def setup_select_options(self):
-        # Remove current buttons
-        for item in self.children[:]:
-            if isinstance(item, AlbumSelect):
-                self.remove_item(item)
+    # -------- Level 1：選年齡 --------
+    def build_level1(self):
+        self.clear_items()
+        self.age_code = None
+        self.book_type = None
 
-        start_idx = self.page * self.items_per_page
-        end_idx = min(start_idx + self.items_per_page, self.total_tasks)
-        current_page_records = self.sorted_tasks[start_idx:end_idx]
+        for code, label, enabled in BOOK_AGE_OPTIONS:
+            btn = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+                disabled=not enabled,
+            )
 
-        self.add_item(AlbumSelect(self.client, self.user_id, current_page_records))
+            if code == 1:
+                async def age_cb(itx: discord.Interaction, c=code):
+                    self.age_code = c
+                    self.build_level2_type()
+                    await self.update_view(itx)
 
-    def update_buttons(self):
-        # Remove current buttons
-        for item in self.children[:]:
-            if isinstance(item, (PreviousButton, NextButton, PageIndicator)):
-                self.remove_item(item)
+                btn.callback = age_cb
+                self.add_item(btn)
+                continue
 
-        self.add_item(PreviousButton(self.page > 0))
-        self.add_item(PageIndicator(self.page, self.total_pages))
-        self.add_item(NextButton(self.page < self.total_pages - 1))
+            # 🔸 懷孕特別版（敬請期待）：secondary，點了只提示
+            if code == "pregnancy":
+                async def teaser_cb(itx: discord.Interaction, lbl=label):
+                    await itx.response.send_message(
+                        f"💛「{lbl.replace('（敬請期待）', '')}」還在準備中，完成後會在這裡開放喔！",
+                        ephemeral=True,
+                    )
 
-    def preview_embed(self):
+                btn.callback = teaser_cb
+                self.add_item(btn)
+                continue
+
+    # -------- Level 2：選繪本類型 --------
+    def build_level2_type(self):
+        self.clear_items()
+
+        back = discord.ui.Button(
+            label="返回年齡選擇",
+            style=discord.ButtonStyle.secondary,
+        )
+
+        async def back_cb(itx: discord.Interaction):
+            self.build_level1()
+            await self.update_view(itx)
+
+        back.callback = back_cb
+        self.add_item(back)
+
+        for label in BOOK_TYPES:
+            btn = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+            )
+
+            async def type_cb(itx: discord.Interaction, t=label):
+                self.book_type = t
+                await self.handle_type_click(itx, t)
+
+            btn.callback = type_cb
+            self.add_item(btn)
+
+    # -------- Level 3：依「類型」決定行為 --------
+    async def handle_type_click(self, itx: discord.Interaction, book_type: str):
+        user_id = str(itx.user.id)
+        age_code = self.age_code
+    
+        book_list = await self.client.api_utils.get_student_album_purchase_status(
+            user_id,
+            age_range=age_code,
+            book_type=book_type,
+        )
+
+        if not book_list:
+            await itx.response.send_message(
+                f"「{age_code}」目前尚未開放。",
+                ephemeral=True,
+            )
+            return
+
+        view = discord.ui.View()
+        view.add_item(AlbumSelect(self.client, user_id, age_code, book_type, book_list))
+
         embed = discord.Embed(
-            title="我的成長書櫃",
-            description="選擇下方選單，查看或確認送印您的成長繪本！",
+            title=f"📘 請選擇要製作的{BOOK_TYPES.get(book_type, "繪本")}",
+            description=f"年齡分類：{age_code}",
             color=0xeeb2da,
         )
-        return embed
+
+        await itx.response.send_message(
+            embed=embed,
+            view=view,
+            ephemeral=True,
+        )
 
 class AlbumSelect(discord.ui.Select):
-    def __init__(self, client, user_id, albums_info):
+    def __init__(self, client, user_id, age_code, book_type, book_list):
         self.client = client
         self.user_id = user_id
-        self.albums_info = albums_info
+        self.age_code = age_code
+        self.book_type = book_type
+        self.book_list = book_list
 
         options = []
-        for album in albums_info:
+        for album in self.book_list:
             label = f"{album['book_type']} | {album['book_title']}"
             if album.get('purchase_status', '未購買') == '已購買':
                 if album.get("shipping_status", "待確認") == "待確認":
@@ -135,93 +210,167 @@ class AlbumSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         selected_book_id = int(self.values[0])
-        album_info = next((album for album in self.albums_info if album['book_id'] == selected_book_id), None)
-        if not album_info:
+        album_status = next((album for album in self.book_list
+                             if album['book_id'] == selected_book_id), None)
+        if not album_status:
             await interaction.followup.send("找不到選取的繪本資料，請稍後再試。", ephemeral=True)
             return
 
-        if album_info.get('intro_mission_status', 0) == 0:
-            intro_mission_id = config.book_intro_mission_map[album_info['book_id']]
-            mission_info = await self.client.api_utils.get_mission_info(intro_mission_id)
-            album_info = {
-                **album_info,
-                'book_instruction': mission_info.get('mission_instruction', ''),
-                'mission_instruction_image_url': mission_info.get('mission_instruction_image_url', ''),
-            }
+        album_info = await self.client.api_utils.get_album_info(book_id=selected_book_id)
+        album_info.update(album_status)
 
-        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id), album_info['book_id'])
-        view = AlbumView(self.client, self.user_id, album_info, incomplete_missions)
+        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(
+            user_id=str(interaction.user.id),
+            book_id=selected_book_id
+        )
+
+        view = AlbumView(
+            self.client,
+            self.user_id,
+            album_info,
+            incomplete_missions,
+            age_code=self.age_code,
+            book_type=self.book_type,
+        )
         embed = view.preview_embed()
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 class AlbumView(discord.ui.View):
-    def __init__(self, client, user_id, album_info, incomplete_missions, timeout=None):
+    def __init__(self, client, user_id, album_info, incomplete_missions, age_code, book_type, timeout=None):
         self.client = client
         self.album_info = album_info
         self.user_id = user_id
         self.book_id = album_info['book_id']
         self.baby_id = album_info['baby_id']
-        self.design_id = album_info.get('design_id', None) or encode_ids(self.baby_id, self.book_id)
+        self.age_code = age_code
+        self.book_type = book_type
+        self.design_id = encode_ids(self.baby_id, self.book_id)
         self.incomplete_missions = incomplete_missions
+        self.next_mission_id = None
         self.message = None
 
         if timeout is None and self.is_confirm_view_enabled():
             timeout = calculate_deadline_timeout(self.client)
         super().__init__(timeout=timeout)
 
-        if self.album_info.get('purchase_status', '未購買') == '未購買':
-            # Unpurchased users
-            if self.album_info.get('intro_mission_status', 0) == 0:
-                label="體驗製作繪本"
-            else:
-                label="繼續製作繪本"
+        self.setup_back_button()
+        self.setup_revise_button()
+        self.setup_main_cta_button()
 
-            if len(self.incomplete_missions) > 0:
-                self.go_next_missions_button = discord.ui.Button(
-                    custom_id='go_next_missions_button',
-                    label=label,
-                    style=discord.ButtonStyle.secondary,
+    def setup_back_button(self):
+        back_button = discord.ui.Button(
+            label="返回上一層",
+            style=discord.ButtonStyle.secondary,
+        )
+
+        async def back_cb(itx: discord.Interaction):
+            book_list = await self.client.api_utils.get_student_album_purchase_status(
+                str(itx.user.id),
+                age_range=self.age_code,
+                book_type=self.book_type,
+            )
+
+            if not book_list:
+                await itx.response.edit_message(
+                    content=f"「{self.age_code}」目前尚未開放。",
+                    embed=None,
+                    view=None,
                 )
-                self.go_next_missions_button.callback = self.go_next_missions_button_callback
-                self.add_item(self.go_next_missions_button)
+                return
 
-            self.purchase_button = discord.ui.Button(
-                custom_id='purchase_album_button',
-                label="🛒 購買繪本",
+            # rebuild book selection view
+            view = discord.ui.View()
+            view.add_item(
+                AlbumSelect(
+                    self.client,
+                    self.user_id,
+                    self.age_code,
+                    self.book_type,
+                    book_list
+                )
+            )
+
+            embed = discord.Embed(
+                title=f"📘 請選擇要製作的{BOOK_TYPES.get(book_type, "繪本")}",
+                description=f"年齡分類：{self.age_code}",
+                color=0xeeb2da,
+            )
+
+            await itx.response.edit_message(embed=embed, view=view)
+
+        back_button.callback = back_cb
+        self.add_item(back_button)
+
+    def setup_revise_button(self):
+        disabled = False if self.album_info.get('shipping_status', '待確認') == '待確認' else True
+        revise_button = discord.ui.Button(
+            label="修改照片",
+            style=discord.ButtonStyle.primary,
+            disabled=True #disabled, # 先關閉修改照片功能
+        )
+
+        async def revise_cb(itx: discord.Interaction):
+            await self.go_next_missions_button_callback(itx)
+
+        revise_button.callback = revise_cb
+        self.add_item(revise_button)
+
+    def setup_main_cta_button(self):
+        if self.album_info.get('shipping_status', '待確認') != '待確認':
+            main_button = discord.ui.Button(
+                label="已送印",
+                style=discord.ButtonStyle.success,
+                disabled=True,
+            )
+            # No action needed, just disabled
+
+        elif self.is_confirm_view_enabled():
+            main_button = discord.ui.Button(
+                label="確認送印",
                 style=discord.ButtonStyle.success,
             )
-            self.purchase_button.callback = self.purchase_button_callback
-            self.add_item(self.purchase_button)
+            async def confirm_cb(itx: discord.Interaction):
+                await self.confirm_button_callback(itx)
+            main_button.callback = confirm_cb
+
+        elif self.need_intro_mission():
+            main_button = discord.ui.Button(
+                label="開始製作",
+                style=discord.ButtonStyle.success,
+            )
+            next_mission_id = config.book_intro_mission_map.get(self.book_id)
+            async def start_cb(itx: discord.Interaction):
+                await self.go_next_missions_button_callback(itx, next_mission_id)
+            main_button.callback = start_cb
+
+        elif len(self.incomplete_missions) == 0 and self.album_info.get('purchase_status') != '已購買':
+            main_button = discord.ui.Button(
+                label="購買繪本",
+                style=discord.ButtonStyle.success,
+            )
+            async def purchase_cb(itx: discord.Interaction):
+                await self.purchase_button_callback(itx)
+            main_button.callback = purchase_cb
 
         else:
-            # Purchased users
-            if len(self.incomplete_missions) > 0:
-                if self.album_info.get('intro_mission_status', 0) == 0:
-                    label="開始製作封面"
-                else:
-                    label="繼續製作下一頁"
-
-                self.go_next_missions_button = discord.ui.Button(
-                    custom_id='go_next_missions_button',
-                    label=label,
-                    style=discord.ButtonStyle.secondary,
-                )
-                self.go_next_missions_button.callback = self.go_next_missions_button_callback
-                self.add_item(self.go_next_missions_button)
-
-            self.confirm_button = discord.ui.Button(
-                custom_id='confirm_album_button',
-                label="📘 確認送印",
+            main_button = discord.ui.Button(
+                label="繼續製作",
                 style=discord.ButtonStyle.success,
-                disabled=not (self.is_confirm_view_enabled()),
             )
-            self.confirm_button.callback = self.confirm_button_callback
-            self.add_item(self.confirm_button)
+            next_mission_id = self.incomplete_missions[0]['mission_id'] if self.incomplete_missions else None
+            async def continue_cb(itx: discord.Interaction):
+                await self.go_next_missions_button_callback(itx, next_mission_id)
+            main_button.callback = continue_cb
 
     def is_confirm_view_enabled(self):
-        if len(self.incomplete_missions) == 0 and self.album_info.get('purchase_status') == '已購買' and self.album_info.get('shipping_status') == '待確認':
+        if len(self.incomplete_missions) == 0 and self.album['completed_mission_count'] > 0 and self.album_info.get('purchase_status') == '已購買' and self.album_info.get('shipping_status') == '待確認':
             return True
         return False
+
+    def need_intro_mission(self):
+        if self.album_info.get('completed_mission_count', 0) > 0:
+            return False
+        return True
 
     def preview_embed(self):
         if self.is_confirm_view_enabled():
@@ -231,45 +380,33 @@ class AlbumView(discord.ui.View):
         return preview_embed
 
     def normal_preview_embed(self):
-        if self.album_info.get('intro_mission_status') and self.baby_id != 0:
-            image = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{self.book_id}/2.jpg?t={int(time.time())}" 
+        embed = discord.Embed(
+            title=f"{self.album_info['book_title']}**",
+            description=(
+                f"✨ **{self.album_info['book_introduction']}\n\n"
+                f"🔗[繪本預覽]({f"https://infancixbaby120.com/babiary/{self.design_id}"})\n\n"
+                f"繪本進度: \n"
+            ),
+            color=0xeeb2da,
+        )
+        
+        if len(self.incomplete_missions) > 0:
+            embed.description += f"目前繪本尚有 {len(self.incomplete_missions)} 頁未完成，點擊下方按鈕繼續製作喔！\n\n"
         else:
-            image = self.album_info['book_cover_url']
-
-        if self.album_info.get('intro_mission_status', 0) == 0 and 'book_instruction' in self.album_info:
-            embed = discord.Embed(
-                title=self.album_info['book_title'],
-                description=self.album_info['book_instruction'],
-                color=0xeeb2da,
-            )
-            if self.album_info.get('mission_instruction_image_url', '') != '':
-                image = create_preview_image_from_url(self.album_info['mission_instruction_image_url'])
-        else:
-            embed = discord.Embed(
-                title=self.album_info['book_title'],
-                description=(
-                    f"🔗[繪本預覽]({f"https://infancixbaby120.com/babiary/{self.design_id}"})\n\n"
-                    f"繪本進度: \n"
-                ),
-                color=0xeeb2da,
-            )
-            if len(self.incomplete_missions) > 0:
-                embed.description += f"目前繪本尚有 {len(self.incomplete_missions)} 頁未完成，點擊下方按鈕繼續製作喔！\n\n"
+            if self.album_info.get('purchase_status', '未購買') == '已購買':
+                embed.description += f"💛 您的繪本已 {self.album_info['shipping_status']}\n\n"
             else:
-                if self.album_info.get('purchase_status', '未購買') == '已購買':
-                    embed.description += f"💛 您的繪本已 {self.album_info['shipping_status']}\n\n"
-                else:
-                    embed.description += f"💛 您的體驗任務完成囉！\n\n"
+                embed.description += f"💛 您的體驗任務完成囉！\n\n"
 
-        if self.album_info.get('purchase_status', '未購買') == '未購買':
+        if self.album_info.get('purchase_status', '未購買') != '未購買':
             embed.description += (
                 f"想收藏這本屬於你與寶寶的故事嗎？\n"
                 f"🛍️ 購買繪本: @社群管家阿福將私訊您，協助您下單。"
             )
 
-        embed.set_image(url=image)
+        embed.set_image(url=self.album_info['book_cover_url'])
         embed.set_footer(
-            text="💬若按鈕無回應，請在對話框輸入 */我的書櫃* > 點選*確認送印*"
+            text="有任何問題，隨時聯絡社群客服「阿福」。"
         )
         return embed
 
@@ -321,43 +458,37 @@ class AlbumView(discord.ui.View):
         )
         return embed
 
-    async def go_next_missions_button_callback(self, interaction: discord.Interaction):
+    async def go_next_missions_button_callback(self, interaction: discord.Interaction, next_mission_id=None):
         await interaction.response.defer()
         for item in self.children:
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        if self.album_info.get('intro_mission_status', 0) == 0:
-            next_mission_id = config.book_intro_mission_map.get(self.book_id)
-        else:
-            next_mission_id = self.incomplete_missions[0]['mission_id'] if self.incomplete_missions else None
-
         if not next_mission_id:
             await interaction.followup.send("繪本尚未開放，未來會第一時間通知您喔!💌。", ephemeral=True)
             return
 
-        user_id = str(interaction.user.id)
         if next_mission_id in config.theme_mission_list:
             from bot.handlers.theme_mission_handler import handle_theme_mission_start
-            await handle_theme_mission_start(self.client, user_id, next_mission_id)
+            await handle_theme_mission_start(self.client, self.user_id, next_mission_id)
         elif next_mission_id in config.audio_mission:
             from bot.handlers.audio_mission_handler import handle_audio_mission_start
-            await handle_audio_mission_start(self.client, user_id, next_mission_id)
+            await handle_audio_mission_start(self.client, self.user_id, next_mission_id)
         elif next_mission_id in config.questionnaire_mission:
             from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
-            await handle_questionnaire_mission_start(self.client, user_id, next_mission_id)
+            await handle_questionnaire_mission_start(self.client, self.user_id, next_mission_id)
         elif next_mission_id in config.baby_profile_registration_missions:
             from bot.handlers.profile_handler import handle_registration_mission_start
-            await handle_registration_mission_start(self.client, user_id, next_mission_id)
+            await handle_registration_mission_start(self.client, self.user_id, next_mission_id)
         elif next_mission_id in config.relation_or_identity_mission:
             from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
-            await handle_relation_identity_mission_start(self.client, user_id, next_mission_id)
+            await handle_relation_identity_mission_start(self.client, self.user_id, next_mission_id)
         elif next_mission_id in config.add_on_photo_mission:
             from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
-            await handle_add_on_mission_start(self.client, user_id, next_mission_id)
+            await handle_add_on_mission_start(self.client, self.user_id, next_mission_id)
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
-            await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=1)
+            await handle_photo_mission_start(self.client, self.user_id, next_mission_id, send_weekly_report=1)
 
     async def confirm_button_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()

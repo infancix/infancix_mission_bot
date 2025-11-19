@@ -70,7 +70,7 @@ class MissionBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             message = await interaction.followup.send(
                 "請先選擇製作的繪本：",
-                view=AlbumSelect(self),
+                view=BookMenuView(self),
                 ephemeral=True
             )
         except Exception as e:

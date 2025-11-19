@@ -5,7 +5,7 @@
   "baby_name_en_registration_missions": [1160, 1161, 1162, 1163, 1164, 1165, 1166, 1167, 1168, 1169, 1170, 1171],
   "growth_book_missions": [
     {
-      "month": 1,
+      "book_id": 1,
       "book_intro_mission": 1000,
       "book_first_mission": 1002,
       "relation_mission": [1002, 1003],
@@ -13,10 +13,11 @@
       "photo_mission_without_aside_text": [1005],
       "photo_mission_with_title_and_content": [1008],
       "add_on_photo_mission": [1009],
-      "confirm_growth_album_mission": [1148]
+      "confirm_growth_album_mission": [1148],
+      "mission_ids": [1001, 1002, 1003, 3, 5, 6, 2, 1004, 1005, 1006, 1007, 1008, 1009]
     },
     {
-      "month": 2,
+      "book_id": 2,
       "book_intro_mission": 1172,
       "book_first_mission": 1010,
       "identity_mission": [1010],
@@ -25,10 +26,11 @@
       "photo_mission_without_aside_text": [30],
       "photo_mission_with_title_and_content": [],
       "add_on_photo_mission": [1015],
-      "confirm_growth_album_mission": [1149]
+      "confirm_growth_album_mission": [1149],
+      "mission_ids": [1010, 1012, 15, 20, 30, 28, 16, 14, 17, 1011, 1013, 1014, 1015]
     },
     {
-      "month": 3,
+      "book_id": 3,
       "book_intro_mission": 1173,
       "book_first_mission": 38,
       "questionnaire_without_image_mission": [41],
@@ -38,10 +40,11 @@
       "photo_mission_without_aside_text": [33, 36, 37, 38, 1016, 1017, 1018, 1019],
       "photo_mission_with_title_and_content": [],
       "add_on_photo_mission": [1020],
-      "confirm_growth_album_mission": [1150]
+      "confirm_growth_album_mission": [1150],
+      "mission_ids": [38, 44, 41, 36, 33, 37, 1016, 1017, 1018, 1019, 1020]
     },
     {
-      "month": 4,
+      "book_id": 4,
       "book_intro_mission": 1174,
       "book_first_mission": 1021,
       "questionnaire_without_image_mission": [],
@@ -51,7 +54,8 @@
       "photo_mission_without_aside_text": [1021, 1022, 1023, 50, 51, 52, 63, 64, 65, 66],
       "photo_mission_with_title_and_content": [],
       "add_on_photo_mission": [1025],
-      "confirm_growth_album_mission": [1151]
+      "confirm_growth_album_mission": [1151],
+      "mission_ids": [1021, 50, 64, 56, 66, 63, 65, 51, 52, 1022, 1023, 1024, 1025]
     }
   ],
   "theme_book_missions": [

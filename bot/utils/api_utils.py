@@ -27,6 +27,9 @@ class APIUtils:
     async def get_mission_info(self, mission_id, endpoint='mission/mission_info'):
         return await self._get_request(f"{endpoint}?mission_id={mission_id}")
 
+    async def get_album_info(self, book_id, endpoint='growth_album/album_info'):
+        return await self._get_request(f"{endpoint}?book_id={book_id}")
+
     async def get_student_is_in_mission(self, user_id, endpoint='get_student_is_in_mission'):
         response = await self._post_request(endpoint, {'discord_id': str(user_id)})
         if bool(response) == False:
@@ -36,8 +39,12 @@ class APIUtils:
     async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
-    async def get_student_album_purchase_status(self, user_id, book_id=None, endpoint='growth_album/get_browse_growth_albums'):
-        response = await self._get_request(f'{endpoint}?discord_id={user_id}'+ (f'&book_id={book_id}' if book_id else ''))
+    async def get_student_album_purchase_status(self, user_id, book_id=None, age_range:int=None, book_type:str=None, endpoint='growth_album/get_browse_growth_albums'):
+        response = await self._get_request(f'{endpoint}?discord_id={user_id}' \
+            + (f'&book_id={book_id}' if book_id else '') \
+            + (f'&age_range={age_range}' if age_range else '') \
+            + (f'&book_type={book_type}' if book_type else '')
+        )
         if bool(response) == False:
             return None
         return response
