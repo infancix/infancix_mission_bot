@@ -226,7 +226,7 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
     )
 
     files = []
-    if '成長週報' in mission_info['mission_type']:
+    if '週' in mission_info['mission_milestone']:
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
