@@ -1,18 +1,20 @@
 import discord
 from bot.config import config
 
-BUCKETS = [
+from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+
+AGE_RANGES = [
     ("1–12 個月", "1-12"),
-    ("13–24 個月", "13-24"),
-    ("25–36 個月", "25-36"),
+    #("13–24 個月", "13-24"),
+    #("25–36 個月", "25-36"),
 ]
 
-def months_in_bucket(bucket_code: str) -> list[int]:
-    if bucket_code == "1-12":
+def months_in_bucket(selected_age_range: str) -> list[int]:
+    if selected_age_range == "1-12":
         return list(range(1, 13))      # 1~12
-    if bucket_code == "13-24":
+    if selected_age_range == "13-24":
         return list(range(13, 25))     # 13~24
-    if bucket_code == "25-36":
+    if selected_age_range == "25-36":
         return list(range(25, 37))     # 25~36
     return []
 
@@ -21,25 +23,19 @@ def calculate_spacer(label_text: str, max_spaces: int = 40) -> str:
     spaces = max_spaces - label_text_length - 1
     return '\u2000' * max(1, spaces)
 
-def setup_label(mission):
-    title = f"{mission['mission_title']}"
-    if mission['mission_status'] == 'Completed':
-        title += " ✅"
-    return f"{title}"
-
 class KnowledgeMenuView(discord.ui.View):
-    TYPE_LABEL = {
-        "care": "里程碑",
-        "growth": "成長週報",
-    }
-
-    def __init__(self, client, timeout: float = 3600):
+    def __init__(self, client, user_id, timeout: float = 3600):
         super().__init__(timeout=timeout)
         self.client = client
-        self.bucket_code: str | None = None      # "1-12" / "13-24" / "25-36"
-        self.selected_month: int | None = None   # 1 ~ 36
-        self.knowledge_type: str | None = None   # "care" / "growth"
-        self.build_level1()                      # 先選年齡區間
+        self.user_id = user_id
+        self.selected_age_range: str | None = None
+        self.selected_month: int | None = None
+        self.selected_category: str | None = None
+        self.selected_page: int = 0
+        self.knowledge_group = None
+        self.knowledge_list = None
+        self.page_size = 4
+        self.build_level1()
 
     # 小工具
     def clear_items(self):
@@ -47,23 +43,26 @@ class KnowledgeMenuView(discord.ui.View):
             self.remove_item(c)
 
     async def update_view(self, itx: discord.Interaction):
-        await itx.response.edit_message(view=self)
+        await itx.response.edit_message(view=self, embed=None, attachments=[])
 
     # Level 1：選年齡區間
     def build_level1(self):
         self.clear_items()
-        self.bucket_code = None
-        self.selected_month = None
-        self.knowledge_type = None
+        self.selected_age_range: str | None = None
+        self.selected_month: int | None = None
+        self.selected_category: str | None = None
+        self.selected_page: int = 0
+        self.knowledge_group = None
+        self.knowledge_list = None
 
-        for label, code in BUCKETS:
+        for label, code in AGE_RANGES:
             btn = discord.ui.Button(
                 label=label,
                 style=discord.ButtonStyle.primary,
             )
 
             async def bucket_cb(itx: discord.Interaction, c=code):
-                self.bucket_code = c
+                self.selected_age_range = c
                 self.build_level2_months()
                 await self.update_view(itx)
 
@@ -73,9 +72,14 @@ class KnowledgeMenuView(discord.ui.View):
     # Level 2：選月份（1月~12月 / 13~24 / 25~36）
     def build_level2_months(self):
         self.clear_items()
+        self.selected_month: int | None = None
+        self.selected_category: str | None = None
+        self.selected_page: int = 0
+        self.knowledge_group = None
+        self.knowledge_list = None
 
         current_row = 0
-        months = months_in_bucket(self.bucket_code)
+        months = months_in_bucket(self.selected_age_range)
         for idx, month in enumerate(months):
             row = (idx // 3)
             btn = discord.ui.Button(
@@ -87,6 +91,10 @@ class KnowledgeMenuView(discord.ui.View):
 
             async def month_cb(itx: discord.Interaction, mv=month):
                 self.selected_month = mv
+                self.knowledge_group = await self.client.api_utils.get_mission_info(
+                    month_id=mv,
+                    group_by='mission_type',
+                )
                 self.build_level3_type()
                 await self.update_view(itx)
 
@@ -107,32 +115,36 @@ class KnowledgeMenuView(discord.ui.View):
         back.callback = back_cb
         self.add_item(back)
 
-    # Level 3：選知識類型（五大照護 / 成長週報）
+    # Level 3：選知識類型
     def build_level3_type(self):
         self.clear_items()
+        self.selected_category: str | None = None
+        self.selected_page: int = 0
+        self.knowledge_type = None
+        self.knowledge_list = None
 
-        type_buttons = [
-            ("五大照護里程碑", "care"),
-            ("成長週報", "growth"),
-        ]
-
-        for label, code in type_buttons:            
+        current_row = 0
+        for i, c in enumerate(self.knowledge_group.keys()):            
             btn = discord.ui.Button(
-                label=label,
+                label=c,
                 style=discord.ButtonStyle.primary,
             )
+            btn.row = i // 3  # 0-2 排
+            current_row = btn.row
+            async def category_cb(itx: discord.Interaction, lbl=c):
+                self.selected_category = lbl
+                self.knowledge_list = self.knowledge_group[lbl]
+                self.build_level4_post()
+                await self.update_view(itx)
 
-            async def type_cb(itx: discord.Interaction, t=code, lbl=label):
-                self.knowledge_type = t
-                await self.handle_type_click(itx, t)
-
-            btn.callback = type_cb
+            btn.callback = category_cb
             self.add_item(btn)
 
         # 返回到月份選擇
         back = discord.ui.Button(
             label="返回月份選擇",
             style=discord.ButtonStyle.secondary,
+            row=current_row + 1,
         )
 
         async def back_cb(itx: discord.Interaction):
@@ -142,87 +154,244 @@ class KnowledgeMenuView(discord.ui.View):
         back.callback = back_cb
         self.add_item(back)
 
-    # 最後一步：依「月齡 + 類型」呼叫 API，送出里程碑 dropdown
-    async def handle_type_click(self, itx: discord.Interaction, knowledge_type: str):
-        user_id = str(itx.user.id)
-        month_val = self.selected_month
-        type_label = self.TYPE_LABEL.get(knowledge_type, "內容")
+    # -------- Level 4：選擇具體Post --------
+    def build_level4_post(self, page: int = 0):
+        self.clear_items()
+        self.selected_page = page
+        
+        # 計算分頁
+        start_idx = page * self.page_size
+        end_idx = min(start_idx + self.page_size, len(self.knowledge_list))
+        selected_page_posts = self.knowledge_list[start_idx:end_idx]
+        menu_options = {
+            'selected_age_range': self.selected_age_range,
+            'selected_month': self.selected_month,
+            'selected_category': self.selected_category,
+            'selected_page': self.selected_page,
+        }
 
-        knowledge_list = await self.client.api_utils.get_student_milestones(
-            user_id,
-            month_id=month_val,
-            query_type=self.TYPE_LABEL.get(knowledge_type, None),
-        )
-
-        view = discord.ui.View()
-        view.add_item(KnowledgePostSelect(self.client, user_id, knowledge_list))
-
-        embed = discord.Embed(
-            title=f"📚 {month_val}個月的{type_label}",
-            description="請從下拉選單中選擇想查看的內容：\n\n🔒 **專屬內容提示**\n> 部分內容僅提供已購買繪本的家長查看喔！",
-            color=0xeeb2da,
-        )
-
-        await itx.response.send_message(
-            embed=embed,
-            view=view,
-            ephemeral=True,
-        )
-
-class KnowledgePostSelect(discord.ui.Select):
-    def __init__(self, client, user_id, knowledge_list):
-        options = []
-        for mission in knowledge_list:
-            mission_id = int(mission['mission_id'])
-            if mission['mission_available'] <= 0:
-                continue
-            else:
-                if mission.get('mission_type') is not None and mission['mission_type'] != "":
-                    description = f"{mission['mission_type']}"
-                else:
-                    description = f"{mission['book_type']} | {mission['volume_title']}"
-
-                if mission.get('photo_mission') and mission['photo_mission'] and mission['photo_mission'] != "":
-                    description += f" | {mission['photo_mission']}"
-
-                mission_available = mission['mission_available']
-
-            options.append(
-                discord.SelectOption(
-                    label=mission['mission_title'],
-                    description=description,
-                    value=f"{mission_id}_{mission_available}"
-                )
+        current_row = 0
+        for i, post in enumerate(selected_page_posts):
+            button = KnowledgePostButton(
+                self.client, 
+                self.user_id,
+                menu_options,
+                post
             )
+            button.row = i // 2  # 0-2 排
+            current_row = button.row
+            self.add_item(button)
 
-        mission = knowledge_list[0]
-        class_type = '里程碑' if '里程碑' in mission.get('mission_type') else '成長週報'
-        super().__init__(
-            placeholder=f"查看{class_type}...",
-            min_values=1,
-            max_values=1,
-            options=options
+        back_button = discord.ui.Button(
+            label="返回知識分類",
+            style=discord.ButtonStyle.secondary,
+            emoji="◀",
+            row=current_row+1
         )
+        
+        async def back_to_type(itx: discord.Interaction):
+            self.build_level3_type()
+            await self.update_view(itx)
+        
+        back_button.callback = back_to_type
+        self.add_item(back_button)
+        
+        # 上一頁按鈕
+        if page > 0:
+            prev_button = discord.ui.Button(
+                label="上一頁", 
+                style=discord.ButtonStyle.secondary,
+                row=current_row+1
+            )
+            
+            async def prev_page(itx: discord.Interaction):
+                self.build_level4_post(page - 1)
+                await self.update_view(itx)
+            
+            prev_button.callback = prev_page
+            self.add_item(prev_button)
+        
+        # 頁面指示器
+        total_pages = (len(self.knowledge_list) - 1) // self.page_size + 1
+        if total_pages > 1:
+            page_indicator = discord.ui.Button(
+                label=f"{page + 1}/{total_pages}",
+                style=discord.ButtonStyle.secondary,
+                disabled=True,
+                row=current_row+1
+            )
+            self.add_item(page_indicator)
+        
+        # 下一頁按鈕
+        if end_idx < len(self.knowledge_list):
+            next_button = discord.ui.Button(
+                label="下一頁", 
+                style=discord.ButtonStyle.secondary,
+                row=current_row+1
+            )
+            
+            async def next_page(itx: discord.Interaction):
+                self.build_level4_post(page + 1)
+                await self.update_view(itx)
+            
+            next_button.callback = next_page
+            self.add_item(next_button)
 
+class KnowledgePostButton(discord.ui.Button):
+    def __init__(self, client, user_id, menu_options, post_info):
         self.client = client
         self.user_id = user_id
+        self.post_info = post_info
+        self.menu_options = menu_options
+
+        super().__init__(
+            label=post_info['mission_title'],
+            style=discord.ButtonStyle.primary,
+            custom_id=f"knowledge_post_{post_info['mission_id']}"
+        )
 
     async def callback(self, interaction: discord.Interaction):
-        selected_mission = self.values[0]
-        selected_mission_id = int(selected_mission.split('_')[0])
-        mission_available = int(selected_mission.split('_')[-1])
-        mission = await self.client.api_utils.get_mission_info(selected_mission_id)
-        class_type = '里程碑' if '里程碑' in mission.get('mission_type') else '成長週報'
+        await interaction.response.defer()
+        knowledge_list = await self.client.api_utils.get_mission_info(
+            month_id=self.menu_options['selected_month'],
+            mission_type=self.menu_options['selected_category']
+        )
 
-        if not mission_available:
-            await interaction.followup.send("僅提供購買繪本的家長查看喔！", ephemeral=True)
-            return
+        view = KnowledgePostView(
+            self.client,
+            self.user_id,
+            self.post_info,
+            knowledge_list,
+            self.menu_options
+        )
+        embed, files = await view.build_post_embed()
+        if files:
+            await interaction.edit_original_response(embed=None, view=view, attachments=files)
+        else:
+            await interaction.edit_original_response(embed=embed, view=view, attachments=[])
 
-        self.view.stop()
-        await interaction.response.edit_message(content=f"選擇{class_type}: {mission['mission_title']}", view=None)
-        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
-        if channel is None or not isinstance(channel, discord.TextChannel):
-            raise Exception('Invalid channel')
+class KnowledgePostView(discord.ui.View):
+    def __init__(self, client, user_id, post_info, knowledge_list, menu_options=None, timeout: float = 3600):
+        super().__init__(timeout=timeout)
+        self.client = client
+        self.user_id = user_id
+        self.post_info = post_info
+        self.menu_options = menu_options
+        self.knowledge_list = knowledge_list
 
-        msg_task = f"START_CLASS_{selected_mission_id} <@{self.user_id}>"
-        await channel.send(msg_task)
+        # current post index
+        self.current_post_index = 0
+        for idx, post in enumerate(self.knowledge_list):
+            if post['mission_id'] == self.post_info['mission_id']:
+                self.current_post_index = idx
+                break
+
+        self.setup_back_button()
+        self.setup_navigation_buttons()
+
+    def setup_back_button(self):
+        back_button = discord.ui.Button(
+            label="返回上一層",
+            style=discord.ButtonStyle.secondary,
+        )
+
+        async def back_cb(itx: discord.Interaction):
+            knowledge_group = await self.client.api_utils.get_mission_info(
+                month_id=self.menu_options['selected_month'],
+                group_by='mission_type',
+            )
+            knowledge_list = knowledge_group[self.menu_options['selected_category']]
+            # rebuild book selection view
+            menu_view = KnowledgeMenuView(self.client, self.user_id)
+            menu_view.selected_age_range = self.menu_options['selected_age_range']
+            menu_view.selected_month = self.menu_options['selected_month']
+            menu_view.selected_category = self.menu_options['selected_category']
+            menu_view.knowledge_group = knowledge_group
+            menu_view.knowledge_list = knowledge_list
+            menu_view.build_level4_post(page=self.menu_options['selected_page'])
+            await itx.response.edit_message(embed=None, view=menu_view, attachments=[])
+
+        back_button.callback = back_cb
+        self.add_item(back_button)
+
+    def setup_navigation_buttons(self):
+        prev_button = discord.ui.Button(
+            label="上一篇文章",
+            style=discord.ButtonStyle.secondary,
+            disabled=(self.current_post_index == 0) # disable if first post
+        )
+
+        async def prev_cb(itx: discord.Interaction):
+            if self.current_post_index > 0:
+                self.current_post_index -= 1
+                self.post_info = self.knowledge_list[self.current_post_index]
+
+                prev_button.disabled = (self.current_post_index == 0)
+                next_button.disabled = (self.current_post_index == len(self.knowledge_list) - 1)
+
+                embed, files = await self.build_post_embed()
+                if files:
+                    await itx.response.edit_message(embed=None, view=self, attachments=files)
+                else:
+                    await itx.response.edit_message(embed=embed, view=self, attachments=[])
+            else:
+                await itx.response.send_message("已經是第一篇文章囉！", ephemeral=True)
+
+        prev_button.callback = prev_cb
+        self.add_item(prev_button)
+
+        next_button = discord.ui.Button(
+            label="下一篇文章",
+            style=discord.ButtonStyle.primary,
+            disabled=(self.current_post_index == len(self.knowledge_list) - 1) # disable if last post
+        )
+
+        async def next_cb(itx: discord.Interaction):
+            if self.current_post_index + 1 < len(self.knowledge_list):
+                self.current_post_index += 1
+                self.post_info = self.knowledge_list[self.current_post_index]
+
+                # 更新按鈕狀態
+                prev_button.disabled = (self.current_post_index == 0)
+                next_button.disabled = (self.current_post_index == len(self.knowledge_list) - 1)
+
+                embed, files = await self.build_post_embed()
+                if files:
+                    await itx.response.edit_message(embed=None, view=self, attachments=files)
+                else:
+                    await itx.response.edit_message(embed=embed, view=self, attachments=[])
+            else:
+                await itx.response.send_message("已經是最後一篇文章囉！", ephemeral=True)
+
+        next_button.callback = next_cb
+        self.add_item(next_button)
+
+    async def build_post_embed(self):
+        video_url = self.post_info.get('mission_video_contents', '').strip()
+        image_url = self.post_info.get('mission_image_contents', '').strip()
+        instruction = ""
+        if video_url and image_url:
+            instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
+        elif video_url:
+            instruction = f"▶️ [教學影片]({video_url})\n"
+
+        embed = discord.Embed(
+            title=f"🧠 **{self.post_info['mission_title']}**",
+            description=(
+                f"{self.post_info['mission_instruction']}\n\n"
+                f"{instruction}\n"
+            ),
+            color=0xeeb2da
+        )
+        embed.set_author(name=f"{self.post_info['mission_milestone']}")
+        embed.set_footer(text="用科學育兒，用愛紀錄成長")
+
+        files = []
+        if '週' in self.post_info['mission_milestone']:
+            for url in self.post_info['mission_image_contents'].split(','):
+                if url.strip():
+                    file = await create_file_from_url(url.strip())
+                    if file:
+                        files.append(file)
+
+        return embed, files

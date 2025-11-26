@@ -52,16 +52,6 @@ class TaskSelectView(discord.ui.View):
             self.purchase_button.callback = self.purchase_button_callback
             self.add_item(self.purchase_button)
 
-        if task_type == "go_next_post":
-            label = "看下一則"
-            self.next_post_button = discord.ui.Button(
-                custom_id="next_post_button",
-                label=label,
-                style=discord.ButtonStyle.primary
-            )
-            self.next_post_button.callback = self.go_next_post_button_callback
-            self.add_item(self.next_post_button)
-
         if task_type == "go_skip_aside_text":
             label = "跳過"
             self.go_skip_aside_text_button = discord.ui.Button(
@@ -215,17 +205,6 @@ class TaskSelectView(discord.ui.View):
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=1)
-
-    async def go_next_post_button_callback(self, interaction):
-        for item in self.children:
-            item.disabled = True
-        await interaction.response.edit_message(view=self)
-
-        user_id = str(interaction.user.id)  
-        next_mission_id = self.mission_result['next_mission_id']
-
-        from bot.handlers.knowledge_post_handler import handle_knowledge_post_start
-        await handle_knowledge_post_start(self.client, user_id, next_mission_id)
     
     async def go_skip_aside_text_button_callback(self, interaction):
         await interaction.response.defer()

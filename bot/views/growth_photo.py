@@ -9,7 +9,6 @@ from collections import defaultdict
 
 from bot.config import config
 from bot.views.task_select_view import TaskSelectView
-from bot.views.album_select_view import AlbumView
 from bot.utils.message_tracker import (
     save_task_entry_record,
     delete_mission_record
