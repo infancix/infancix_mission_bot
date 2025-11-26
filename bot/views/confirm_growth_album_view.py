@@ -5,7 +5,6 @@ from datetime import datetime
 
 from bot.config import config
 from bot.views.photo_mission import PhotoTaskSelect
-from bot.views.album_select_view import AlbumSelect
 
 weekday_map = {
     0: "星期一",

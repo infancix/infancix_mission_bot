@@ -59,7 +59,7 @@ class MissionBot(discord.Client):
             await interaction.response.defer(ephemeral=True)
             message = await interaction.followup.send(
                 "請先選擇想看的育兒知識",
-                view=KnowledgeMenuView(self),
+                view=KnowledgeMenuView(self, str(interaction.user.id)),
                 ephemeral=True
             )
         except Exception as e:
@@ -68,9 +68,11 @@ class MissionBot(discord.Client):
     async def query_bookcase_menu(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
+            view=BookMenuView(self, str(interaction.user.id))
+            embed = view.get_current_embed()
             message = await interaction.followup.send(
-                "請先選擇製作的繪本：",
-                view=BookMenuView(self),
+                embed=embed,
+                view=view,
                 ephemeral=True
             )
         except Exception as e:
