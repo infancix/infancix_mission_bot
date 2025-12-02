@@ -188,7 +188,7 @@ def save_theme_book_edit_record(user_id: str, message_id: str, book_id: int, res
     if user_id not in records or str(book_id) not in records[user_id]:
         records[user_id] = {}  # remove all the previous records for this user
 
-    records[user_id][str(mission_id)] = {
+    records[user_id][str(book_id)] = {
         "message_id": message_id,
         "result": result,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -106,6 +106,7 @@ def prepare_api_request(client, message, student_mission_info):
         saved_result = get_mission_record(user_id, mission_id)
         attachment = extract_attachment_info(message.attachments[0].url)
         saved_result['attachment'] = attachment
+        saved_result['message'] = "已收到您的錄音檔"
         return {
             'needs_ai_prediction': False,
             'direct_action': 'audio_upload',
