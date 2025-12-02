@@ -104,10 +104,8 @@ async def prepare_api_request(client, message, student_mission_info):
 
     # Get saved mission record
     saved_result = get_mission_record(user_id, mission_id)
-    if not saved_result.get('attachments'):
-        saved_result['attachments'] = []
-    if not saved_result.get("aside_texts"):
-        saved_result["aside_texts"] = []
+    if not saved_result:
+        saved_result = await client.api_utils.load_current_mission_status(client, user_id, student_mission_info['book_id'])
 
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
@@ -422,6 +420,44 @@ async def convert_heic_to_jpg_attachment(client, heic_attachment):
         print(f"HEIC 轉換失敗: {e}")
         return None
 
+# --------------------- Mission Status Loader ---------------------
+async def load_current_mission_status(client, user_id, book_id):
+    mission_ids = config.theme_book_mission_map.get(book_id, [])
+    mission_statuses = {}
+    for mission_id in mission_ids:
+        status = await client.api_utils.get_student_mission_status(user_id, mission_id)
+        mission_statuses[mission_id] = status or {}
+
+    mission_results = {}
+    # process baby name and relation/identity
+    aside_text = mission_statuses[mission_ids[0]].get('aside_text', None)
+    if aside_text:
+        if book_id == 16:
+            mission_results['baby_name'] = aside_text.split("|")[0]
+            mission_results['relation_or_identity'] = aside_text.split("|")[1] if len(aside_text.split("|")) > 1 else None
+        else:
+            mission_results['baby_name'] = aside_text
+
+    # process cover and attachments
+    mission_results['cover'] = {
+        "photo_index": 0,
+        "url": mission_statuses[mission_ids[0]].get('image_url', None),
+    }
+    mission_results['attachments'], mission_results['aside_texts'] = [], []
+    for mission_id in mission_ids[1:]:
+        status = mission_statuses.get(mission_id, {})
+        mission_results['assignments'].append({
+            "photo_index": mission_id - mission_ids[0],
+            "url": status.get('image_url', None),
+        })
+        mission_results['aside_texts'].append({
+            "photo_index": mission_id - mission_ids[0],
+            "aside_text": status.get('aside_text', None),
+        })
+
+    return mission_results
+
+# --------------------- Embed Builders ---------------------
 def build_theme_mission_instruction_embed(mission_info):
     embed = discord.Embed(
         title=mission_info['mission_type'],
