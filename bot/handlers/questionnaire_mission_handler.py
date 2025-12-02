@@ -137,8 +137,11 @@ async def process_questionnaire_photo_mission_filling(client, message, student_m
     save_mission_record(user_id, mission_id, mission_result)
 
     # validate mission result
-    if mission_result.get('attachment') and mission_result['attachment'].get('url') and mission_result.get('aside_text') is not None:
-        mission_result['is_ready'] = True
+    if mission_result.get('attachment') and mission_result['attachment'].get('url'):
+        if mission_result.get('aside_text') is not None:
+            mission_result['is_ready'] = True
+        elif mission_result.get('aside_text') == '跳過':
+            mission_result['is_ready'] = True
 
     if mission_result.get('is_ready'):
         aside_text = mission_result.get('aside_text') if mission_result.get('aside_text') and mission_result.get('aside_text') != '跳過' else None
@@ -161,6 +164,7 @@ def prepare_api_request(client, message, student_mission_info):
     if message.attachments:
         attachment = extract_attachment_info(message.attachments[0].url)
         saved_result['attachment'] = attachment
+        saved_result['message'] = "已收到您的照片"
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',

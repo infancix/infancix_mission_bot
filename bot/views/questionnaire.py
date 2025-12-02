@@ -26,7 +26,7 @@ class QuestionnaireView(discord.ui.View):
         self.message = None
         self.min_selections = self.questionnaire[current_round].get('min_selections', 1)
         self.max_selections = self.questionnaire[current_round].get('max_selections', 3)
-        self.clicked_options = set() or self.student_mission_info.get('clicked_options', set())
+        self.clicked_options = self.student_mission_info.get('clicked_options', [])
         self.is_response = None
 
         # Get questionnaire
@@ -40,35 +40,6 @@ class QuestionnaireView(discord.ui.View):
             )
             button.callback = self.create_callback(idx)
             self.add_item(button)
-
-        if self.max_selections > 1:
-            self.submit_button = discord.ui.Button(
-                custom_id="submit_button",
-                label="確認送出" if self.current_round + 1 == self.total_rounds else "下一題",
-                style=discord.ButtonStyle.success,
-                disabled=True if len(self.clicked_options) < self.max_selections else False
-            )
-            self.submit_button.callback = self.submit_callback
-            self.add_item(self.submit_button)
-
-    def generate_summary_embed(self):
-        description = ""
-        for round_idx, record in enumerate(self.clicked_options):
-            description += (
-                f"❓**{self.questionnaire[round_idx]['question']}**\n\n"
-                f"你選擇了以下選項：\n"
-            )
-            for option in record['clicked_options']:
-                description += f"- {option}\n"
-            description += "\n----\n"
-
-        embed = discord.Embed(
-            title="🔍 確認內容",
-            description=description,
-            color=0xeeb2da
-        )
-        embed.set_footer(text="請確認以上選項，確認無誤後按下「確認送出」")
-        return embed
 
     async def _safe_send(self, interaction: 'discord.Interaction' = None, content: str = None, update_view=None, **kwargs):
         """Unified safe interaction helper.
@@ -154,11 +125,11 @@ class QuestionnaireView(discord.ui.View):
                             self.children[-1].disabled = True
                 else:
                     if len(self.clicked_options) < self.max_selections:
-                        self.clicked_options.add(selected_option)
+                        self.clicked_options.append(selected_option)
                         self.children[idx].style = discord.ButtonStyle.secondary
 
                 # single-select flow: immediately submit
-                if self.max_selections == 1:
+                if self.max_selections == 1 or len(self.clicked_options) == self.max_selections:
                     for item in self.children:
                         if item.custom_id.startswith("questionnaire_"):
                             item.disabled = True
@@ -169,21 +140,8 @@ class QuestionnaireView(discord.ui.View):
                     await self.submit_callback(interaction)
                     return
 
-                # multi-select flow: update view and send ephemeral hint
-                content = f"已選擇 {len(self.clicked_options)}/{self.max_selections} 個選項"
-                if len(self.clicked_options) >= self.min_selections:
-                    for item in self.children:
-                        if item.custom_id.startswith("questionnaire_"):
-                            item.disabled = True
-                        elif getattr(item, 'custom_id', None) == "submit_button":
-                            item.disabled = False
-                    if self.current_round + 1 < self.total_rounds:
-                        content = "✅ 選擇完成！確認後按下「下一題」"
-                    else:
-                        content = "✅ 選擇完成！確認後按下「確認送出」"
-
                 # update the public message view and notify the user ephemerally
-                await self._safe_send(interaction, content, update_view=self, ephemeral=True)
+                await self._safe_send(interaction, update_view=self, ephemeral=True)
 
             except Exception as e:
                 self.client.logger.error(f"處理按鈕邏輯時發生錯誤: {e}")
@@ -192,7 +150,7 @@ class QuestionnaireView(discord.ui.View):
         return callback
 
     async def submit_callback(self, interaction: discord.Interaction):
-        await self._safe_send(interaction, "更新中...", ephemeral=True)
+        await self._safe_send(interaction, "繪本製作中", ephemeral=True)
         try:
             save_questionnaire_record(str(interaction.user.id), str(self.message.id), self.mission_id, self.current_round, self.clicked_options)
             self.client.logger.info(f"✅ 已儲存問卷紀錄，使用者 {interaction.user.id} 任務 {self.mission_id} 回合 {self.current_round}")
