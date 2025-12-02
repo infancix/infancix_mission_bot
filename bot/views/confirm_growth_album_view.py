@@ -5,6 +5,7 @@ from datetime import datetime
 
 from bot.config import config
 from bot.views.photo_mission import PhotoTaskSelect
+from bot.views.album_select_view import AlbumButton
 
 weekday_map = {
     0: "星期一",
@@ -58,29 +59,23 @@ class ConfirmGrowthAlbumView(discord.ui.View):
 
         self.user_id = user_id
         self.albums_info = albums_info
+        self.page_size = 4
         self.message = None
         self.call_incompleted_missions = True
-        self.setup_select_options()
+        self.build_select_book_menu()
 
-    def setup_select_options(self):
-        need_processed_albums, need_processed_missions = [], []
-        collected_book_ids = set()
-        for item in self.albums_info:
-            if item.get('purchase_status', '未購買') == '已購買' and item.get('shipping_status', '待確認') != '待確認':
-                need_processed_albums.append(item)
-                collected_book_ids.add(item['book_id'])
-            if len(need_processed_albums) >= 5:
-                break
-
-        for mission in self.incomplete_missions:
-            if int(mission['mission_id']) < 7000 and mission['book_id'] in collected_book_ids:
-                need_processed_missions.append(mission)
-
-        if len(need_processed_missions) > 25:
-            self.add_item(AlbumSelect(self.client, self.user_id, need_processed_albums))
-            self.call_incompleted_missions = False
-        else:
-            self.add_item(PhotoTaskSelect(self.client, self.user_id, self.incomplete_missions[:25]))
+    def build_select_book_menu(self, page: int = 0):
+        current_row = 0
+        for i, book in enumerate(self.albums_info):
+            button = AlbumButton(
+                self.client,
+                self.user_id,
+                menu_options=None,
+                book_info=book
+            )
+            button.row = i // 2  # 0-2 排
+            current_row = button.row
+            self.add_item(button)
 
     def preview_embed(self):
         current_day = datetime.now().day
