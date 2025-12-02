@@ -36,7 +36,6 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
         'current_step': 1
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
-    await client.api_utils.add_to_testing_whiltlist(user_id)
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
@@ -94,6 +93,7 @@ def prepare_api_request(client, message, student_mission_info):
         saved_result = get_mission_record(user_id, mission_id)
         attachment = extract_attachment_info(message.attachments[0].url)
         saved_result['attachment'] = attachment
+        saved_result['message'] = "已收到您的錄音檔"
         return {
             'needs_ai_prediction': False,
             'direct_action': 'audio_upload',

@@ -96,6 +96,7 @@ async def prepare_api_request(client, message, student_mission_info):
     if message.attachments:        
         attachment = extract_attachment_info(message.attachments[0].url)
         saved_result['attachment'] = attachment
+        saved_result['message'] = "已收到您的照片"
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',

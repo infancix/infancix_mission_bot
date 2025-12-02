@@ -134,6 +134,7 @@ def prepare_api_request(client, message, student_mission_info):
 
         replace_attachment = extract_attachment_info(message.attachments[0].url)
         saved_result['attachment'][photo_index-1] = replace_attachment
+        saved_result['message'] = "已收到您的照片"
         saved_result['is_ready'] = True
         return {
             'needs_ai_prediction': False,

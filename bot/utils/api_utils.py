@@ -295,9 +295,6 @@ class APIUtils:
         }
         return await self._post_request(endpoint, payload)
 
-    async def add_to_testing_whiltlist(self, user_id, endpoint='growth_album/add_to_whitelist'):
-        return await self._get_request(f"{endpoint}?discord_id={user_id}")
-
     ## ------------------ API for generate photo / album request ----------------
     async def submit_generate_album_request(self, user_id, book_id, endpoint='process_album_and_autofill'):
         payload = {
