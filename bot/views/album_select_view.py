@@ -7,6 +7,7 @@ from bot.config import config
 from bot.utils.id_utils import encode_ids
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
 from bot.views.task_select_view import TaskSelectView
+from bot.views.theme_book_view import ThemeBookView
 
 weekday_map = {
     0: "星期一",
@@ -318,6 +319,10 @@ class AlbumButton(discord.ui.Button):
         book_info = await self.client.api_utils.get_album_info(book_id=self.book_info['book_id'])
         book_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, book_id=self.book_info['book_id'])
         book_info.update(book_status)
+        completed_missions = await self.client.api_utils.get_student_complete_photo_mission(
+            user_id=str(interaction.user.id),
+            book_id=self.book_info['book_id']
+        )
         incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(
             user_id=str(interaction.user.id),
             book_id=self.book_info['book_id']
@@ -327,6 +332,7 @@ class AlbumButton(discord.ui.Button):
             self.client,
             self.user_id,
             book_info,
+            completed_missions,
             incomplete_missions,
             self.menu_options
         )
@@ -334,7 +340,7 @@ class AlbumButton(discord.ui.Button):
         await interaction.edit_original_response(embed=embed, view=view)
 
 class AlbumView(discord.ui.View):
-    def __init__(self, client, user_id, album_info, incomplete_missions, menu_options={}, timeout=None):
+    def __init__(self, client, user_id, album_info, completed_missions=[], incomplete_missions=[], menu_options={}, timeout=None):
         self.client = client
         self.album_info = album_info
         self.user_id = user_id
@@ -342,6 +348,7 @@ class AlbumView(discord.ui.View):
         self.baby_id = album_info['baby_id']
         self.menu_options = menu_options
         self.design_id = encode_ids(self.baby_id, self.book_id)
+        self.completed_missions = completed_missions
         self.incomplete_missions = incomplete_missions
         self.next_mission_id = None
         self.message = None
@@ -376,15 +383,36 @@ class AlbumView(discord.ui.View):
         self.add_item(back_button)
 
     def setup_revise_button(self):
-        disabled = False if self.album_info.get('shipping_status', '待確認') == '待確認' else True
+        disabled = False
+        if self.completed_missions is None or len(self.completed_missions) == 0:
+            disabled = True
+        if self.album_info.get('shipping_status', '待確認') != '待確認':
+            disabled = True
         revise_button = discord.ui.Button(
-            label="修改照片(TODO)",
+            label="修改繪本內容",
             style=discord.ButtonStyle.primary,
-            disabled=True #disabled, # 先關閉修改照片功能
+            disabled=disabled,
         )
 
         async def revise_cb(itx: discord.Interaction):
-            await self.go_next_missions_button_callback(itx)
+            book_info = await self.client.api_utils.get_album_info(book_id=self.book_id) or {}
+            book_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, book_id=self.book_id)
+            book_info.update(book_status)
+            submitted_missions = await self.client.api_utils.get_student_complete_photo_mission(
+                user_id=str(itx.user.id),
+                book_id=self.book_id
+            )
+
+            if self.menu_options['book_type'] == '成長繪本':
+                view = EditGrowthBookView(self.client, str(itx.user.id), book_info, submitted_missions, self.menu_options)
+                embed, file_path, filename = view.build_preview_page()
+                file = discord.File(fp=file_path, filename=filename)
+                await itx.response.edit_message(embed=embed, view=view, attachments=[file])
+            else:
+                view = ThemeBookView(self.client, book_info)
+                embed, file_path, filename = view.get_current_embed(str(itx.user.id))
+                file = discord.File(file_path, filename=filename)
+                await itx.response.edit_message(embed=embed, view=view, attachments=[file])            
 
         revise_button.callback = revise_cb
         self.add_item(revise_button)
@@ -635,3 +663,165 @@ class AlbumView(discord.ui.View):
             except discord.Forbidden:
                 print(f"無法傳送訊息給用戶 {self.user_id}，可能已封鎖機器人。")
 
+class EditGrowthBookView(discord.ui.View):
+    def __init__(self, client, user_id, book_info, submitted_missions, menu_options={}, timeout=None):
+        super().__init__(timeout=timeout)
+        self.client = client
+        self.book_info = book_info
+        self.user_id = user_id
+        self.book_id = book_info['book_id']
+        self.baby_id = book_info['baby_id']
+        self.submitted_missions = [m for m in submitted_missions if m['mission_id'] in config.growth_book_mission_map.get(self.book_id, [])]
+        self.menu_options = menu_options
+        self.message = None
+
+        # Pagination state
+        self.total_pages = len(self.submitted_missions)
+        self.mission_ids = [m['mission_id'] for m in self.submitted_missions]
+        self.current_page = 0
+        self.current_mission_id = self.mission_ids[self.current_page] if self.mission_ids else None
+
+        # Setup buttons
+        self.setup_buttons()
+
+    # -------- 共用工具 --------
+    def clear_items(self):
+        for c in list(self.children):
+            self.remove_item(c)
+
+    async def update_view(self, itx: discord.Interaction, update_embed: discord.Embed, file_path: str, filename: str):
+        file = discord.File(fp=file_path, filename=filename)
+        await itx.response.edit_message(embed=update_embed, view=self, attachments=[file])
+
+    def setup_buttons(self):
+        # 上一頁按鈕
+        prev_button = discord.ui.Button(
+            label="上一頁", 
+            style=discord.ButtonStyle.primary,
+            row=0,
+            disabled=self.current_page == 0
+        )
+            
+        async def prev_page(itx: discord.Interaction):
+            self.current_page -= 1
+            await self.client.api_utils.update_student_current_mission(str(itx.user.id), self.mission_ids[self.current_page])
+            embed, file_path, filename = self.build_preview_page(self.current_page)
+            await self.update_view(itx, embed, file_path, filename)
+            
+        prev_button.callback = prev_page
+        self.add_item(prev_button)
+        
+        # 頁面指示器
+        page_indicator = discord.ui.Button(
+            label=f"{self.current_page + 1}/{self.total_pages}",
+            style=discord.ButtonStyle.secondary,
+            disabled=True,
+            row=0
+        )
+        self.add_item(page_indicator)
+        
+        # 下一頁按鈕
+        next_button = discord.ui.Button(
+            label="下一頁", 
+            style=discord.ButtonStyle.primary,
+            row=0,
+            disabled=self.current_page == self.total_pages - 1
+        )
+            
+        async def next_page(itx: discord.Interaction):
+            self.current_page += 1
+            await self.client.api_utils.update_student_current_mission(str(itx.user.id), self.mission_ids[self.current_page])
+            embed, file_path, filename = self.build_preview_page(self.current_page)
+            await self.update_view(itx, embed, file_path, filename)
+            
+        next_button.callback = next_page
+        self.add_item(next_button)
+        
+        restart_button = discord.ui.Button(
+            label="重新製作此頁",
+            style=discord.ButtonStyle.primary,
+            row=1
+        )
+        async def restart_cb(itx: discord.Interaction):
+            current_mission_id = self.mission_ids[self.current_page]
+            await self.restart_mission_button_callback(itx, current_mission_id)
+
+        restart_button.callback = restart_cb
+        self.add_item(restart_button)
+
+        back_button = discord.ui.Button(
+            label="返回繪本狀態",
+            style=discord.ButtonStyle.secondary,
+            row=1
+        )
+
+        async def back_cb(itx: discord.Interaction):
+            book_info = await self.client.api_utils.get_album_info(book_id=self.book_id) or {}
+            book_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, book_id=self.book_id)
+            book_info.update(book_status)
+            completed_missions = await self.client.api_utils.get_student_complete_photo_mission(
+                user_id=str(itx.user.id),
+                book_id=self.book_id
+            )
+            incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(
+                user_id=str(itx.user.id),
+                book_id=self.book_id
+            )
+
+            view = AlbumView(
+                self.client,
+                self.user_id,
+                book_info,
+                completed_missions,
+                incomplete_missions,
+                self.menu_options
+            )
+            embed = view.preview_embed()
+            await itx.response.edit_message(embed=embed, view=view, attachments=[])
+
+        back_button.callback = back_cb
+        self.add_item(back_button)
+
+    def build_preview_page(self, page: int = 0):
+        self.clear_items()
+        self.current_page = page
+        current_mission_id = self.mission_ids[page]
+        current_page_url = f"attachment://{current_mission_id}.jpg"
+        description = """📖 **瀏覽你的繪本**
+
+用 **[◀][▶]** 翻頁，不滿意某一頁就點 **[🔄 重新製作此頁]**
+
+看完後點 **[返回繪本]** 即可
+"""
+        embed = discord.Embed(
+            title=f"**{self.book_info['book_title']}**",
+            description=description,
+            color=0xeeb2da,
+        )
+        embed.set_author(name=self.book_info['book_collection'])
+
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{current_mission_id}.jpg"
+        filename = f"{current_mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
+
+        # Setup buttons again
+        self.setup_buttons()
+
+        return embed, file_path, filename
+
+    async def restart_mission_button_callback(self, interaction: discord.Interaction, current_mission_id: int):
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+        if channel is None or not isinstance(channel, discord.TextChannel):
+            raise Exception('Invalid channel')
+
+        if config.ENV:
+            msg_task = f"START_MISSION_DEV_{current_mission_id} <@{self.user_id}>"
+        else:
+            msg_task = f"START_MISSION_{current_mission_id} <@{self.user_id}>"
+        await channel.send(msg_task)

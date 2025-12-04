@@ -76,6 +76,14 @@ class APIUtils:
             + (f'&query_min_notification_day={query_min_notification_day}' if query_min_notification_day else '')
         )
 
+    async def get_student_complete_photo_mission(self, user_id, book_id=None):
+        response = await self._get_request(f'photo_mission/completed_mission_list?discord_id={user_id}' \
+            + (f'&book_id={book_id}' if book_id else '')
+        )
+        if bool(response) == False:
+            return []
+        return response
+
     async def get_student_incomplete_photo_mission(self, user_id, book_id=None):
         response = await self._get_request(f'photo_mission/incompleted_mission_list?discord_id={user_id}' + (f'&book_id={book_id}' if book_id else ''))
         if bool(response) == False:

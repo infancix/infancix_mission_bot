@@ -11,7 +11,7 @@ AGE_RANGES = [
 
 def months_in_bucket(selected_age_range: str) -> list[int]:
     if selected_age_range == "1-12":
-        return list(range(1, 13))      # 1~12
+        return list(range(1, 5))      # 1~12
     if selected_age_range == "13-24":
         return list(range(13, 25))     # 13~24
     if selected_age_range == "25-36":
