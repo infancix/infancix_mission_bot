@@ -9,7 +9,6 @@ from collections import defaultdict
 
 from bot.config import config
 from bot.views.task_select_view import TaskSelectView
-from bot.views.album_select_view import AlbumView
 from bot.utils.message_tracker import (
     save_task_entry_record,
     delete_mission_record
@@ -109,11 +108,14 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        timestamp = f"{int(time.time())}{random.randint(1000, 9999)}"
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={timestamp}")
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{self.mission_id}.jpg"
+        filename = f"{self.mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
-        return embed
+
+        return embed, file_path, filename
 
     async def complete_callback(self, interaction):
         await interaction.response.defer()

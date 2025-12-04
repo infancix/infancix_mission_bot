@@ -9,7 +9,6 @@ from discord.ui import View, Button
 
 from bot.config import config
 from bot.utils.message_tracker import (
-    load_quiz_message_records,
     load_task_entry_records,
     load_growth_photo_records,
     load_theme_book_edit_records,
@@ -24,7 +23,6 @@ from bot.views.growth_photo import GrowthPhotoView
 from bot.views.theme_book_view import ThemeBookView
 from bot.views.questionnaire import QuestionnaireView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
-from bot.views.quiz import QuizView
 
 async def run_scheduler():
     while True:
@@ -32,8 +30,10 @@ async def run_scheduler():
         await asyncio.sleep(10)
 
 async def daily_job(client):
-    client.logger.debug('Running job now...')
+    if config.ENV:
+        return
 
+    client.logger.debug('Running job now...')
     target_channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
     if target_channel is None or not isinstance(target_channel, discord.TextChannel):
         raise Exception('Invalid channel')
@@ -49,6 +49,9 @@ async def daily_job(client):
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
 
 async def monthly_print_reminder_job(client):
+    if config.ENV:
+        return
+
     today = date.today()
     # check if today is the 1st of the month
     if today.day != 1 and today.day != 4:
@@ -124,20 +127,6 @@ async def load_confirm_growth_album_messages(client):
             client.logger.info(f"✅ Restore confirmed growth album for user {user_id}")
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore confirmed growth album for {user_id}: {e}")
-
-async def load_quiz_message(client):
-    records = load_quiz_message_records()
-    for user_id, (message_id, mission_id, current_round, correct_cnt) in records.items():
-        try:
-            channel = await client.fetch_user(user_id)
-            student_mission_info = await client.api_utils.get_student_mission_status(user_id, int(mission_id))
-            student_mission_info['user_id'] = user_id
-            message = await channel.fetch_message(int(message_id))
-            view = QuizView(client, int(mission_id), current_round, correct_cnt, student_mission_info)
-            await message.edit(view=view)
-            client.logger.info(f"✅ Restored quiz for user {user_id}")
-        except Exception as e:
-            client.logger.warning(f"⚠️ Failed to restore quiz for {user_id}: {e}")
 
 async def load_theme_book_edit_messages(client):
     records = load_theme_book_edit_records()
