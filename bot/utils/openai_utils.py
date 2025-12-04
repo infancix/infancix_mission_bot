@@ -143,7 +143,7 @@ class OpenAIUtils:
         aside_text = assistant_result.get("aside_text")
         aside_text = aside_text if aside_text != "null" and aside_text != '' else None
         att = assistant_result.get("attachment") or {}
-        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (aside_text is not None))
+        is_ready = bool(att.get("url") and (aside_text is not None))
 
         processed = normalize_aside_text(aside_text) if aside_text is not None else None
         print(f"Processed aside text: {processed}, line count: {line_count(processed)}")
@@ -155,7 +155,7 @@ class OpenAIUtils:
                 msg = "⚠️ 文字超過 2 行，請縮短或調整至 30 字或 2 行以內。"
                 is_ready = False
         elif not is_ready and skip_aside_text:
-            is_ready = bool(att.get("id") and att.get("url"))
+            is_ready = bool(att.get("url"))
 
         return {
             "message": msg,
@@ -172,7 +172,7 @@ class OpenAIUtils:
         content = assistant_result.get("content")
         content = content if content != "null" and content != '' else None
         att = assistant_result.get("attachment", {})
-        is_attachment_ready = bool(att.get("id") and att.get("url") and att.get("filename"))
+        is_attachment_ready = bool(att.get("url"))
         is_ready = bool(is_attachment_ready and content is not None)
 
         # revise message
@@ -215,7 +215,7 @@ class OpenAIUtils:
                 assistant_result.get("height") or \
                 assistant_result.get("weight") or \
                 assistant_result.get("head_circumference")
-            step_3 = bool(att.get("id") and att.get("url") and att.get("filename"))
+            step_3 = bool(att.get("url"))
             is_ready = step_1 and step_2 and step_3
 
         # revise message
@@ -249,7 +249,7 @@ class OpenAIUtils:
     def process_relationship_validation(self, assistant_result: Dict[str, Any]) -> Dict[str, Any]:
         att = assistant_result.get("attachment") or {}
         relation_or_identity = assistant_result.get("relation_or_identity", None)
-        is_ready = bool(att.get("id") and att.get("url") and att.get("filename") and (relation_or_identity is not None))
+        is_ready = bool(att.get("url") and (relation_or_identity is not None))
 
         # revise message
         if is_ready:
@@ -281,17 +281,17 @@ class OpenAIUtils:
         if assistant_result.get("baby_name"):
             step_1 = True
 
-        if assistant_result.get("cover") and assistant_result["cover"].get("id") and assistant_result["cover"].get("url") and assistant_result["cover"].get("filename"):
+        if assistant_result.get("cover") and assistant_result["cover"].get("url"):
             step_2 = True
             if book_id == 16 and not assistant_result.get("relation_or_identity"):
                 ask_for_relation_or_identity = True
                 step_2 = False
 
-        attachments = [att for att in assistant_result.get("attachments", []) if att.get("id") and att.get("url") and att.get("filename")]
+        attachments = [att for att in assistant_result.get("attachments", []) if att.get("url")]
         if len(attachments) >= 6:
             step_3 = True        
 
-        aside_texts = [att for att in assistant_result.get("aside_texts", []) if att.get("aside_text") is not None and att.get("aside_text") != "" and att.get("aside_text") != "null"]
+        aside_texts = [att for att in assistant_result.get("aside_texts", []) if att.get("aside_text") and att.get("aside_text") not in ["", "null"]]
         if book_id in [13, 14, 15, 16]:
             step_4 = step_3 and len(aside_texts) >= 6
         else:

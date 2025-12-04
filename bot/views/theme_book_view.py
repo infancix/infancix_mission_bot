@@ -172,7 +172,8 @@ class SubmitButton(discord.ui.Button):
         student_mission_info = {
             'user_id': str(interaction.user.id),
             'mission_id': view.base_mission_id,
-            'current_step': 4,
+            'current_step': 5,
+            'total_steps': 5,
             'score': 1
         }
         await view.client.api_utils.update_student_mission_status(**student_mission_info)

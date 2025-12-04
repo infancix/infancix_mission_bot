@@ -56,6 +56,55 @@ async def handle_theme_mission_start(client, user_id, mission_id):
     await user.dm_channel.send(embed=embed)
     return
 
+async def handle_theme_mission_restart(client, user_id, book_id, mission_id=None):
+    user_id = str(user_id)
+
+    # Delete mission cache
+    delete_mission_record(user_id)
+    if user_id in client.photo_mission_replace_index:
+        del client.photo_mission_replace_index[user_id]
+
+    # Load mission info
+    if not mission_id:
+        mission_ids = config.theme_book_mission_map.get(book_id, [])
+        if not mission_ids:
+            return
+        mission_id = mission_ids[0]
+
+    mission = await client.api_utils.get_mission_info(mission_id)
+
+    mission_result = await load_current_mission_status(client, user_id, book_id)
+    client.logger.info(f"Loaded mission record from API for user {user_id}, mission {mission_id}: {mission_result}")
+
+    # define current step based on loaded data
+    if len(mission_result.get('aside_texts', [])) > 0:
+        current_step = 4
+    elif len(mission_result.get('attachments', [])) > 0:
+        current_step = 3
+    elif mission_result.get('cover'):
+        current_step = 2
+    elif mission_result.get('baby_name'):
+        # book_id 16 需要額外檢查 relation_or_identity
+        current_step = 1 if (book_id == 16 and not mission_result.get('relation_or_identity')) else 2
+    else:
+        current_step = 1
+
+    mission_result['step_1_completed'] = current_step >= 2
+    mission_result['step_2_completed'] = current_step >= 3
+    mission_result['step_3_completed'] = current_step >= 4
+
+    # Mission restart
+    student_mission_info = {
+        **mission,
+        'user_id': user_id,
+        'current_step': current_step,
+        'total_steps': 5
+    }
+    await client.api_utils.update_student_mission_status(**student_mission_info)
+
+    # Save loaded mission record
+    save_mission_record(user_id, mission_id, mission_result)
+
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_theme_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
@@ -99,13 +148,25 @@ async def process_theme_mission_filling(client, message, student_mission_info):
 
 async def prepare_api_request(client, message, student_mission_info):
     user_id = str(message.author.id)
+    book_id = student_mission_info['book_id']
     mission_id = student_mission_info['mission_id']
     current_step = student_mission_info.get('current_step', 1)
 
     # Get saved mission record
     saved_result = get_mission_record(user_id, mission_id)
     if not saved_result:
-        saved_result = await client.api_utils.load_current_mission_status(client, user_id, student_mission_info['book_id'])
+        saved_result = {
+            'baby_name': None,
+            'relation_or_identity': None,
+            'cover': None,
+            'attachments': [],
+            'aside_texts': [],
+            'is_ready': False
+        }
+    if 'attachments' not in saved_result:
+        saved_result['attachments'] = []
+    if 'aside_texts' not in saved_result:
+        saved_result['aside_texts'] = []
 
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
@@ -135,14 +196,15 @@ async def prepare_api_request(client, message, student_mission_info):
 
             # Save attachment info
             saved_result['attachments'][photo_index-1] = replace_attachment
+            saved_result['message'] = '已收到照片'
 
             # Reset aside text for specific book IDs
             if book_id in [13, 14, 15, 16]:
                 saved_result['aside_texts'][photo_index-1] = {
                     "photo_index": photo_index,
-                    "aside_text": None
+                    "aside_text": '[使用者選擇跳過]'
                 }
-                saved_result['is_ready'] = False
+                saved_result['is_ready'] = True
 
             return {
                 'needs_ai_prediction': False,
@@ -423,6 +485,15 @@ async def convert_heic_to_jpg_attachment(client, heic_attachment):
 # --------------------- Mission Status Loader ---------------------
 async def load_current_mission_status(client, user_id, book_id):
     mission_ids = config.theme_book_mission_map.get(book_id, [])
+    if not mission_ids:
+        return {
+            "baby_name": None,
+            "relation_or_identity": None,
+            "cover": {"photo_index": 0, "url": None},
+            "attachments": [],
+            "aside_texts": [],
+        }
+
     mission_statuses = {}
     for mission_id in mission_ids:
         status = await client.api_utils.get_student_mission_status(user_id, mission_id)
@@ -430,29 +501,37 @@ async def load_current_mission_status(client, user_id, book_id):
 
     mission_results = {}
     # process baby name and relation/identity
-    aside_text = mission_statuses[mission_ids[0]].get('aside_text', None)
-    if aside_text:
+    cover_status = mission_statuses.get(mission_ids[0], {})
+    aside_text_cover = cover_status.get("aside_text")
+    if aside_text_cover:
         if book_id == 16:
-            mission_results['baby_name'] = aside_text.split("|")[0]
-            mission_results['relation_or_identity'] = aside_text.split("|")[1] if len(aside_text.split("|")) > 1 else None
+            parts = aside_text_cover.split("|")
+            mission_results["baby_name"] = parts[0] if len(parts) > 0 else None
+            mission_results["relation_or_identity"] = parts[1] if len(parts) > 1 else None
         else:
-            mission_results['baby_name'] = aside_text
+            mission_results["baby_name"] = aside_text_cover
+    else:
+        mission_results["baby_name"] = None
+        if book_id == 16:
+            mission_results["relation_or_identity"] = None
 
     # process cover and attachments
-    mission_results['cover'] = {
+    mission_results["cover"] = {
         "photo_index": 0,
-        "url": mission_statuses[mission_ids[0]].get('image_url', None),
+        "url": cover_status.get("image_url", None),
     }
     mission_results['attachments'], mission_results['aside_texts'] = [], []
     for mission_id in mission_ids[1:]:
         status = mission_statuses.get(mission_id, {})
-        mission_results['assignments'].append({
+        mission_results["attachments"].append({
             "photo_index": mission_id - mission_ids[0],
-            "url": status.get('image_url', None),
+            "url": status.get("image_url", None),
         })
-        mission_results['aside_texts'].append({
+
+        raw_aside_text = status.get("aside_text")
+        mission_results["aside_texts"].append({
             "photo_index": mission_id - mission_ids[0],
-            "aside_text": status.get('aside_text', None),
+            "aside_text": status.get("aside_text") if raw_aside_text not in (None, "", "null") else "[使用者選擇跳過]",
         })
 
     return mission_results

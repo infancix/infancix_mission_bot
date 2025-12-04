@@ -32,6 +32,7 @@ from bot.handlers.audio_mission_handler import (
 )
 from bot.handlers.theme_mission_handler import (
     handle_theme_mission_start,
+    handle_theme_mission_restart,
     process_theme_mission_filling
 )
 from bot.views.growth_photo import GrowthPhotoView
@@ -96,6 +97,7 @@ async def handle_album(client, user_id, match):
     baby_id = int(match.group(1))
     book_id = int(match.group(2))
     if book_id in config.theme_book_mission_map:
+        await handle_theme_mission_restart(client, user_id, book_id)
         await handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id)
     else:
         await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
@@ -307,12 +309,13 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
 
 async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     album_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
+    completed_missions = await client.api_utils.get_student_complete_photo_mission(user_id, book_id)
     incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
     if album_info is None:
         client.logger.error(f"Album not found for user {user_id}, book {book_id}")
         return
 
-    view = AlbumView(client, user_id, album_info, incomplete_missions)
+    view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
     embed = view.preview_embed()
     try:
         # Send the album preview to the user
@@ -351,15 +354,25 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
         if str(user_id) in records:
             book_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
             channel = await client.fetch_user(user_id)
-            message = await channel.fetch_message(int(edit_status['message_id']))
-            await message.delete()
+
+            # Try to delete old message, but don't fail if it doesn't exist
+            try:
+                message = await channel.fetch_message(int(edit_status['message_id']))
+                await message.delete()
+            except discord.NotFound:
+                client.logger.info(f"ℹ️ Old message not found for {user_id}, skipping delete")
+            except discord.Forbidden:
+                client.logger.warning(f"⚠️ No permission to delete message for {user_id}")
+            except Exception as delete_error:
+                client.logger.warning(f"⚠️ Unexpected error deleting message for {user_id}: {delete_error}")
 
             # Create a new one
             book_info = edit_status.get('result', None)
             view = ThemeBookView(client, book_info)
             embed, file_path, filename = view.get_current_embed(str(user_id))
+            file = discord.File(file_path, filename=filename)
             await asyncio.sleep(0.5)
-            view.message = await user.send(
+            view.message = await channel.send(
                 embed=embed,
                 view=view,
                 file=file,
@@ -377,10 +390,11 @@ async def handle_confirm_growth_album_mission_start(client, user_id, mission_id)
 
 async def handle_notify_album_job(client, user_id, mission_id, book_id):
     album_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
+    completed_missions = await client.api_utils.get_student_complete_photo_mission(user_id, book_id)
     incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
     client.logger.info(f"Album status for user {user_id}, book {book_id}: {album_info}, incomplete missions: {len(incomplete_missions)}")
     if album_info and album_info.get("purchase_status", "未購買") == "已購買" and album_info.get("shipping_status", "待確認") == "待確認":
-        view = AlbumView(client, user_id, album_info, incomplete_missions)
+        view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
         embed = view.preview_embed()
         user = await client.fetch_user(user_id)
         if user.dm_channel is None:
