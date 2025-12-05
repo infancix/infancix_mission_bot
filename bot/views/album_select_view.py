@@ -336,8 +336,9 @@ class AlbumButton(discord.ui.Button):
             incomplete_missions,
             self.menu_options
         )
-        embed = view.preview_embed()
-        await interaction.edit_original_response(embed=embed, view=view)
+        embed, file_path, filename = view.preview_embed()
+        file = discord.File(file_path, filename=filename)
+        await interaction.edit_original_response(embed=embed, view=view, attachments=[file])
 
 class AlbumView(discord.ui.View):
     def __init__(self, client, user_id, album_info, completed_missions=[], incomplete_missions=[], menu_options={}, timeout=None):
@@ -357,7 +358,7 @@ class AlbumView(discord.ui.View):
             timeout = calculate_deadline_timeout(self.client)
         super().__init__(timeout=timeout)
 
-        if self.menu_options is not None:
+        if self.menu_options:
             self.setup_back_button()
         self.setup_revise_button()
         self.setup_main_cta_button()
@@ -377,7 +378,7 @@ class AlbumView(discord.ui.View):
             menu_view.book_list = book_list
             menu_view.build_level3_book(page=self.menu_options['current_page'])
             embed = menu_view.get_current_embed()
-            await itx.response.edit_message(embed=embed, view=menu_view)
+            await itx.response.edit_message(embed=embed, view=menu_view, attachments=[])
 
         back_button.callback = back_cb
         self.add_item(back_button)
@@ -482,10 +483,10 @@ class AlbumView(discord.ui.View):
 
     def preview_embed(self):
         if self.is_confirm_view_enabled():
-            preview_embed = self.confirm_preview_embed()
+            preview_embed, file_path, filename = self.confirm_preview_embed()
         else:
-            preview_embed = self.normal_preview_embed()
-        return preview_embed
+            preview_embed, file_path, filename = self.normal_preview_embed()
+        return preview_embed, file_path, filename
 
     def normal_preview_embed(self):
         embed = discord.Embed(
@@ -512,11 +513,23 @@ class AlbumView(discord.ui.View):
                 f"🛍️ 購買繪本: @社群管家阿福將私訊您，協助您下單。"
             )
 
-        embed.set_image(url=self.album_info['book_cover_url'])
+        intro_mission_id = config.book_intro_mission_map.get(self.book_id)
+        if self.need_intro_mission():
+            if self.album_info.get('lang_version', 'zh') == 'zh':
+                baby_id = 2024000001 # 中文繪本示範寶寶ID
+            else:
+                baby_id = 2024000002 # 英文繪本示範寶寶ID
+        else:
+            baby_id = self.baby_id
+
+        file_path = f"/home/ubuntu/canva_exports/{baby_id}/{intro_mission_id}.jpg"
+        filename = f"{intro_mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
         embed.set_footer(
             text="有任何問題，隨時聯絡社群客服「阿福」。"
         )
-        return embed
+        return embed, file_path, filename
 
     def confirm_preview_embed(self):
         now = datetime.now()
@@ -561,10 +574,16 @@ class AlbumView(discord.ui.View):
             color=0xeeb2da,
             timestamp=datetime.now()
         )
+
+        intro_mission_id = config.book_intro_mission_map.get(self.book_id)
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{intro_mission_id}.jpg"
+        filename = f"{intro_mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
         embed.set_footer(
             text="有任何問題，隨時聯絡社群客服「阿福」。"
         )
-        return embed
+        return embed, file_path, filename
 
     async def go_next_missions_button_callback(self, interaction: discord.Interaction, next_mission_id=None):
         await interaction.response.defer()
@@ -776,8 +795,9 @@ class EditGrowthBookView(discord.ui.View):
                 incomplete_missions,
                 self.menu_options
             )
-            embed = view.preview_embed()
-            await itx.response.edit_message(embed=embed, view=view, attachments=[])
+            embed, file_path, filename = view.preview_embed()
+            file = discord.File(file_path, filename=filename)
+            await itx.response.edit_message(embed=embed, view=view, attachments=[file])
 
         back_button.callback = back_cb
         self.add_item(back_button)

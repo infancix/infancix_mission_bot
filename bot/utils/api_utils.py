@@ -325,6 +325,7 @@ class APIUtils:
         payload = {
             'discord_id': str(user_id),
             'book_id': int(book_id),
+            'dev_mode': config.ENV
         }
         return await self._post_request(endpoint, payload)
 
@@ -332,6 +333,7 @@ class APIUtils:
         payload = {
             'discord_id': str(user_id),
             'mission_id': int(mission_id),
+            'dev_mode': config.ENV
         }
         return await self._post_request(endpoint, payload)
 

@@ -283,6 +283,8 @@ def _build_full_context(user_id: str, mission_id: int, current_request: str, cur
     # Add previously collected information
     if saved_result.get('baby_name'):
         context_parts.append(f"Baby name already collected: {saved_result['baby_name']}")
+    if saved_result.get('relation_or_identity'):
+        context_parts.append(f"Relation or identity already collected: {saved_result['relation_or_identity']}")
     if saved_result.get('aside_texts'):
         context_parts.append(f"Previous aside texts: {saved_result['aside_texts']}")
     return "\n".join(context_parts)

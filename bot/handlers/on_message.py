@@ -315,13 +315,15 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
         client.logger.error(f"Album not found for user {user_id}, book {book_id}")
         return
 
-    view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
-    embed = view.preview_embed()
     try:
+        # Create the album preview view
+        view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
+        embed, file_path, filename = view.preview_embed()
+        file = discord.File(file_path, filename=filename)
         # Send the album preview to the user
         user = await client.fetch_user(user_id)
         await asyncio.sleep(0.5)
-        await user.send(embed=embed, view=view)
+        await user.send(embed=embed, view=view, file=file)
         # Log the successful message send
         client.logger.info(f"Send album message to user {user_id}, book {book_id}")
     except Exception as e:
@@ -395,12 +397,13 @@ async def handle_notify_album_job(client, user_id, mission_id, book_id):
     client.logger.info(f"Album status for user {user_id}, book {book_id}: {album_info}, incomplete missions: {len(incomplete_missions)}")
     if album_info and album_info.get("purchase_status", "未購買") == "已購買" and album_info.get("shipping_status", "待確認") == "待確認":
         view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
-        embed = view.preview_embed()
+        embed, file_path, filename = view.preview_embed()
+        file = discord.File(file_path, filename=filename)
         user = await client.fetch_user(user_id)
         if user.dm_channel is None:
             await user.create_dm()
         await asyncio.sleep(0.5)
-        view.message = await user.send(embed=embed, view=view)
+        view.message = await user.send(embed=embed, view=view, file=file)
     return
 
 async def handle_notify_monthly_print_reminder_job(client, user_id, match):

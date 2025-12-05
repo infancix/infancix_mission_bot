@@ -61,26 +61,32 @@
   "theme_book_missions": [
     {
         "book_id": 13,
+        "book_intro_mission": 7001,
         "mission_ids": [7001, 7002, 7003, 7004, 7005, 7006, 7007]
     },
     {
         "book_id": 14,
+        "book_intro_mission": 7008,
         "mission_ids": [7008, 7009, 7010, 7011, 7012, 7013, 7014]
     },
     {
         "book_id": 15,
+        "book_intro_mission": 7015,
         "mission_ids": [7015, 7016, 7017, 7018, 7019, 7020, 7021]
     },
     {
         "book_id": 16,
+        "book_intro_mission": 7022,
         "mission_ids": [7022, 7023, 7024, 7025, 7026, 7027, 7028]
     },
     {
         "book_id": 17,
+        "book_intro_mission": 7029,
         "mission_ids": [7029, 7030, 7031, 7032, 7033, 7034, 7035]
     },
     {
         "book_id": 18,
+        "book_intro_mission": 7036,
         "mission_ids": [7036, 7037, 7038, 7039, 7040, 7041, 7042]
     }
   ]
