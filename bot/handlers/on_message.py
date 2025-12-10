@@ -38,7 +38,7 @@ from bot.handlers.theme_mission_handler import (
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
-from bot.views.theme_book_view import ThemeBookView
+from bot.views.theme_book_view import EditThemeBookView
 from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     save_task_entry_record,
@@ -332,7 +332,7 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
 
 async def handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id):
     book_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
-    view = ThemeBookView(client, book_info)
+    view = EditThemeBookView(client, book_info)
     embed, file_path, filename = view.get_current_embed(str(user_id))
     file = discord.File(file_path, filename=filename)
     try:
@@ -370,7 +370,7 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
 
             # Create a new one
             book_info = edit_status.get('result', None)
-            view = ThemeBookView(client, book_info)
+            view = EditThemeBookView(client, book_info)
             embed, file_path, filename = view.get_current_embed(str(user_id))
             file = discord.File(file_path, filename=filename)
             await asyncio.sleep(0.5)

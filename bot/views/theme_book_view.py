@@ -14,7 +14,7 @@ from bot.utils.message_tracker import (
 
 THEME_BOOK_PAGES = [0, 1, 2, 3, 4, 5, 6]
 
-class ThemeBookView(discord.ui.View):
+class EditThemeBookView(discord.ui.View):
     def __init__(self, client, book_info, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
@@ -26,6 +26,7 @@ class ThemeBookView(discord.ui.View):
         self.base_mission_id = self.mission_list[0]
         self.current_page = 0
         self.total_pages = len(THEME_BOOK_PAGES)
+        self.reward = 100
 
         self.update_buttons()
 
@@ -220,7 +221,7 @@ class SubmitButton(discord.ui.Button):
         completed_missions = await view.client.api_utils.get_student_complete_photo_mission(str(interaction.user.id), view.book_id)
         incomplete_missions = await view.client.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id), view.book_id)
         menu_options = {
-            'book_type': '主題繪本',
+            'book_type': '主題寶寶書',
             'age_code': 1,
             'current_page': 0
         }

@@ -7,7 +7,7 @@ from bot.config import config
 from bot.utils.id_utils import encode_ids
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
 from bot.views.task_select_view import TaskSelectView
-from bot.views.theme_book_view import ThemeBookView
+from bot.views.theme_book_view import EditThemeBookView
 
 weekday_map = {
     0: "星期一",
@@ -407,13 +407,21 @@ class AlbumView(discord.ui.View):
             if self.menu_options['book_type'] == '成長繪本':
                 view = EditGrowthBookView(self.client, str(itx.user.id), book_info, submitted_missions, self.menu_options)
                 embed, file_path, filename = view.build_preview_page()
-                file = discord.File(fp=file_path, filename=filename)
-                await itx.response.edit_message(embed=embed, view=view, attachments=[file])
+                try:
+                    file = discord.File(fp=file_path, filename=filename)
+                    await itx.response.edit_message(embed=embed, view=view, attachments=[file])
+                except FileNotFoundError:
+                    await itx.response.edit_message(embed=embed, view=view, attachments=[])
             else:
-                view = ThemeBookView(self.client, book_info)
+                from bot.handlers.theme_mission_handler import handle_theme_mission_restart
+                await handle_theme_mission_restart(self.client, str(itx.user.id), self.book_id)
+                view = EditThemeBookView(self.client, book_info)
                 embed, file_path, filename = view.get_current_embed(str(itx.user.id))
-                file = discord.File(file_path, filename=filename)
-                await itx.response.edit_message(embed=embed, view=view, attachments=[file])            
+                try:
+                    file = discord.File(file_path, filename=filename)
+                    await itx.response.edit_message(embed=embed, view=view, attachments=[file])
+                except FileNotFoundError:
+                    await itx.response.edit_message(embed=embed, view=view, attachments=[])
 
         revise_button.callback = revise_cb
         self.add_item(revise_button)

@@ -54,6 +54,12 @@ async def handle_theme_mission_start(client, user_id, mission_id):
     await user.dm_channel.send(embed=embed)
     embed = get_baby_registration_embed()
     await user.dm_channel.send(embed=embed)
+
+    saved_results = {
+        'previous_question': embed.description
+    }
+    save_mission_record(user_id, mission_id, saved_results)
+
     return
 
 async def handle_theme_mission_restart(client, user_id, book_id, mission_id=None):
@@ -287,6 +293,8 @@ def _build_full_context(user_id: str, mission_id: int, current_request: str, cur
         context_parts.append(f"Relation or identity already collected: {saved_result['relation_or_identity']}")
     if saved_result.get('aside_texts'):
         context_parts.append(f"Previous aside texts: {saved_result['aside_texts']}")
+    if saved_result.get('previous_question'):
+        context_parts.append(f"Previous question asked: {saved_result['previous_question']}")
     return "\n".join(context_parts)
 
 async def _handle_mission_step(client, message, student_mission_info, mission_result):
@@ -341,7 +349,19 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
                 return
 
     else:
-        if mission_result.get('step_1_completed') == True and not mission_result.get('step_2_completed') and not mission_result.get('ask_for_relation_or_identity'):
+        if user_id in client.photo_mission_replace_index and client.photo_mission_replace_index[user_id] > 0:
+            photo_index = client.photo_mission_replace_index[user_id]
+            # ask for aside text
+            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
+            if book_id == 14:
+                await message.channel.send(embed=embed)
+            else:
+                student_mission_info['photo_index'] = photo_index
+                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
+
+        elif mission_result.get('step_1_completed') == True and not mission_result.get('step_2_completed') and not mission_result.get('ask_for_relation_or_identity'):
             # ask for cover photo
             mission_info = await client.api_utils.get_mission_info(mission_id)
             embed = get_cover_instruction_embed(mission_info)
@@ -354,19 +374,9 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
         elif mission_result.get('ask_for_relation_or_identity'):
             # special handling for book_id 16 (relationship recognition)
             embed = get_identity_embed(student_mission_info)
+            mission_result['previous_question'] = embed.description
+            save_mission_record(user_id, mission_id, mission_result)
             await message.channel.send(embed=embed)
-
-        elif user_id in client.photo_mission_replace_index and client.photo_mission_replace_index[user_id] > 0:
-            photo_index = client.photo_mission_replace_index[user_id]
-            # ask for aside text
-            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
-            if book_id == 14:
-                await message.channel.send(embed=embed)
-            else:
-                student_mission_info['photo_index'] = photo_index
-                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
-                view.message = await message.channel.send(embed=embed, view=view)
-                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
 
         elif mission_result.get('step_2_completed') == True and not mission_result.get('step_3_completed'):
             attachments = mission_result.get('attachments', [])
@@ -385,6 +395,8 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
             photo_index = len(aside_texts) + 1
             # ask for aside text
             embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
+            mission_result['previous_question'] = embed.description
+            save_mission_record(user_id, mission_id, mission_result)
             if book_id == 14:
                 await message.channel.send(embed=embed)
             else:

@@ -20,7 +20,7 @@ from bot.utils.message_tracker import (
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
-from bot.views.theme_book_view import ThemeBookView
+from bot.views.theme_book_view import EditThemeBookView
 from bot.views.questionnaire import QuestionnaireView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
 
@@ -136,7 +136,7 @@ async def load_theme_book_edit_messages(client):
             for book_id, edit_status in records[user_id].items():
                 message = await channel.fetch_message(int(edit_status['message_id']))
                 result = edit_status.get('result', None)
-                view = ThemeBookView(client, result)
+                view = EditThemeBookView(client, result)
                 await message.edit(view=view)
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
         except Exception as e:
