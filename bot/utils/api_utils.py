@@ -24,8 +24,17 @@ class APIUtils:
     async def fetch_baby_list(self):
         return await self._get_request('get_baby_list')
 
-    async def get_mission_info(self, mission_id, endpoint='mission/mission_info'):
-        return await self._get_request(f"{endpoint}?mission_id={mission_id}")
+    async def get_mission_info(self, mission_id=None, month_id:int=None, mission_type:str=None, min_notification_day:int=None, group_by:str=None, endpoint='mission/mission_info'):
+        return await self._get_request(f"{endpoint}?"
+            + (f'mission_id={mission_id}' if mission_id else '')
+            + (f'&query_month={month_id}' if month_id else '')
+            + (f'&query_type={mission_type}' if mission_type else '')
+            + (f'&query_min_notification_day={min_notification_day}' if min_notification_day else '')
+            + (f'&group_by={group_by}' if group_by else '')
+        )
+
+    async def get_album_info(self, book_id, endpoint='growth_album/album_info'):
+        return await self._get_request(f"{endpoint}?book_id={book_id}")
 
     async def get_student_is_in_mission(self, user_id, endpoint='get_student_is_in_mission'):
         response = await self._post_request(endpoint, {'discord_id': str(user_id)})
@@ -36,8 +45,12 @@ class APIUtils:
     async def get_mission_default_content_by_id(self, user_id, mission_id, endpoint='photo_mission/default_mission_content'):
         return await self._get_request(f"{endpoint}?discord_id={user_id}&mission_id={mission_id}")
 
-    async def get_student_album_purchase_status(self, user_id, book_id=None, endpoint='growth_album/get_browse_growth_albums'):
-        response = await self._get_request(f'{endpoint}?discord_id={user_id}'+ (f'&book_id={book_id}' if book_id else ''))
+    async def get_student_album_purchase_status(self, user_id, book_id=None, age_range:int=None, book_type:str=None, endpoint='growth_album/get_browse_growth_albums'):
+        response = await self._get_request(f'{endpoint}?discord_id={user_id}' \
+            + (f'&book_id={book_id}' if book_id else '') \
+            + (f'&age_range={age_range}' if age_range else '') \
+            + (f'&book_type={book_type}' if book_type else '')
+        )
         if bool(response) == False:
             return None
         return response
@@ -56,8 +69,20 @@ class APIUtils:
     async def get_purchase_students_reminder_list(self, user_id=None):
         return await self._get_request('photo_mission/schedule/monthly_print_reminder' + (f'?discord_id={user_id}' if user_id else ''))
 
-    async def get_student_milestones(self, user_id):
-        return await self._get_request(f'get_student_milestones?discord_id={user_id}')
+    async def get_student_milestones(self, user_id, month_id:int=None, query_type:str=None, query_min_notification_day:int=None):
+        return await self._get_request(f'get_student_milestones?discord_id={user_id}' \
+            + (f'&query_month={month_id}' if month_id else '') \
+            + (f'&query_type={query_type}' if query_type else '') \
+            + (f'&query_min_notification_day={query_min_notification_day}' if query_min_notification_day else '')
+        )
+
+    async def get_student_complete_photo_mission(self, user_id, book_id=None):
+        response = await self._get_request(f'photo_mission/completed_mission_list?discord_id={user_id}' \
+            + (f'&book_id={book_id}' if book_id else '')
+        )
+        if bool(response) == False:
+            return []
+        return response
 
     async def get_student_incomplete_photo_mission(self, user_id, book_id=None):
         response = await self._get_request(f'photo_mission/incompleted_mission_list?discord_id={user_id}' + (f'&book_id={book_id}' if book_id else ''))
@@ -300,6 +325,7 @@ class APIUtils:
         payload = {
             'discord_id': str(user_id),
             'book_id': int(book_id),
+            'dev_mode': config.ENV
         }
         return await self._post_request(endpoint, payload)
 
@@ -307,6 +333,7 @@ class APIUtils:
         payload = {
             'discord_id': str(user_id),
             'mission_id': int(mission_id),
+            'dev_mode': config.ENV
         }
         return await self._post_request(endpoint, payload)
 

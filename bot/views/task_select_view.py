@@ -9,13 +9,13 @@ from bot.utils.drive_file_utils import create_file_from_url, create_preview_imag
 from bot.utils.message_tracker import save_task_entry_record, delete_task_entry_record, get_mission_record, save_mission_record
 
 class TaskSelectView(discord.ui.View):
-    def __init__(self, client, task_type, mission_id, mission_result=None, timeout=None):
+    def __init__(self, client, task_type, mission_id, mission_result={}, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.mission_id = mission_id
-        self.book_id = mission_result.get('book_id') if mission_result else 0
+        self.book_id = mission_result.get('book_id', 0)
+        self.mission_result = mission_result
         self.message = None
-        self.result = mission_result or {}
 
         if "go_book_instruction" in task_type:
             label = "開始製作繪本"
@@ -28,9 +28,9 @@ class TaskSelectView(discord.ui.View):
             self.add_item(self.go_book_instruction_button)
 
         if "go_next_mission" in task_type:
-            if self.result.get('next_book_title'):
-                label = f"製作《{self.result.get('next_book_title')}》"
-            elif self.result.get('is_first_mission'):
+            if self.mission_result.get('next_book_title'):
+                label = f"製作《{self.mission_result.get('next_book_title')}》"
+            elif self.mission_result.get('is_first_mission'):
                 label = "開始製作封面"
             else:
                 label = "繼續製作下一頁"
@@ -51,16 +51,6 @@ class TaskSelectView(discord.ui.View):
             )
             self.purchase_button.callback = self.purchase_button_callback
             self.add_item(self.purchase_button)
-
-        if task_type == "go_quiz":
-            label = "挑戰任務 GO!"
-            self.go_quiz_button = discord.ui.Button(
-                custom_id="go_quiz_button",
-                label=label,
-                style=discord.ButtonStyle.primary
-            )
-            self.go_quiz_button.callback = self.go_quiz_button_callback
-            self.add_item(self.go_quiz_button)
 
         if task_type == "go_skip_aside_text":
             label = "跳過"
@@ -149,7 +139,17 @@ class TaskSelectView(discord.ui.View):
                 style=discord.ButtonStyle.success
             )
             self.confirm_button.callback = self.confirm_button_callback
-            self.add_item(self.confirm_button)
+            self.add_item(self.confirm_button)            
+
+        if task_type == "skip_mission":
+            label = "跳過此任務"
+            self.skip_mission_button = discord.ui.Button(
+                custom_id="skip_mission_button",
+                label=label,
+                style=discord.ButtonStyle.secondary
+            )
+            self.skip_mission_button.callback = self.go_next_mission_button_callback
+            self.add_item(self.skip_mission_button)
 
     async def go_book_instruction_button_callback(self, interaction):
         for item in self.children:
@@ -183,7 +183,7 @@ class TaskSelectView(discord.ui.View):
         await interaction.response.edit_message(view=self)
 
         user_id = str(interaction.user.id)  
-        next_mission_id = self.result['next_mission_id']
+        next_mission_id = self.mission_result['next_mission_id']
         if next_mission_id in config.theme_mission_list:
             from bot.handlers.theme_mission_handler import handle_theme_mission_start
             await handle_theme_mission_start(self.client, user_id, next_mission_id)
@@ -205,19 +205,6 @@ class TaskSelectView(discord.ui.View):
         else:
             from bot.handlers.photo_mission_handler import handle_photo_mission_start
             await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=1)
-
-    async def go_quiz_button_callback(self, interaction):
-        for item in self.children:
-            item.disabled = True
-        await interaction.response.edit_message(view=self)
-
-        student_mission_info = await self.client.api_utils.get_student_mission_status(str(interaction.user.id), self.mission_id)
-        student_mission_info['user_id'] = str(interaction.user.id)
-        message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-        await interaction.channel.send(f"🔥 挑戰開始！讓我來看看你對「{student_mission_info['mission_title']}」的知識掌握得怎麼樣呢 🐾✨")
-        
-        from bot.handlers.quiz_mission_handler import handle_quiz_round
-        await handle_quiz_round(self.client, message, student_mission_info)
     
     async def go_skip_aside_text_button_callback(self, interaction):
         await interaction.response.defer()
@@ -292,13 +279,13 @@ class TaskSelectView(discord.ui.View):
 
         # update baby profile
         payload = {
-            'baby_name': self.result.get('baby_name'),
-            'baby_name_en': self.result.get('baby_name_en'),
-            'gender': self.result.get('gender'),
-            'birthday': self.result.get('birthday'),
-            'height': self.result.get('height'),
-            'weight': self.result.get('weight'),
-            'head_circumference': self.result.get('head_circumference'),
+            'baby_name': self.mission_result.get('baby_name'),
+            'baby_name_en': self.mission_result.get('baby_name_en'),
+            'gender': self.mission_result.get('gender'),
+            'birthday': self.mission_result.get('birthday'),
+            'height': self.mission_result.get('height'),
+            'weight': self.mission_result.get('weight'),
+            'head_circumference': self.mission_result.get('head_circumference'),
         }
         response = await self.client.api_utils.update_student_baby_profile(str(interaction.user.id), **payload)
         if not response:
@@ -307,10 +294,10 @@ class TaskSelectView(discord.ui.View):
         return True
 
     async def submit_image_data(self, interaction):
-        if self.result and self.result.get('attachment'):
-            attachment_obj = [self.result.get('attachment')]
+        if self.mission_result and self.mission_result.get('attachment'):
+            attachment_obj = [self.mission_result.get('attachment')]
             update_status = await self.client.api_utils.update_mission_image_content(
-                str(interaction.user.id), self.mission_id, attachment_obj, aside_text=self.result.get('aside_text'), content=self.result.get('content')
+                str(interaction.user.id), self.mission_id, attachment_obj, aside_text=self.mission_result.get('aside_text'), content=self.mission_result.get('content')
             )
 
             if bool(update_status):
@@ -349,7 +336,7 @@ class TaskSelectView(discord.ui.View):
 
         # Handle the add-on purchase logic here
         student_profile = await self.client.api_utils.get_student_profile(str(interaction.user.id))
-        if not student_profile or student_profile.get('gold', 0) < abs(self.result.get('reward', 200)):
+        if not student_profile or student_profile.get('gold', 0) < abs(self.mission_result.get('reward', 200)):
             embed = self.get_insufficient_coin_embed()
             await interaction.followup.send(embed=embed)
             delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
@@ -377,7 +364,7 @@ class TaskSelectView(discord.ui.View):
             color=0xeeb2da,
         )
         embed.set_footer(text="可以一次上傳多張喔!")
-        instruction_url = self.result.get('mission_instruction_image_url', '').split(',')[-1]
+        instruction_url = self.mission_result.get('mission_instruction_image_url', '').split(',')[-1]
         if instruction_url:
             instruction_url = create_preview_image_from_url(instruction_url)
         else:
@@ -391,7 +378,7 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        book_id = self.result['book_id']
+        book_id = self.mission_result['book_id']
         saved_result = get_mission_record(str(interaction.user.id), self.mission_id)
         saved_result['aside_texts'] = saved_result.get('aside_texts', [])
 
@@ -415,7 +402,7 @@ class TaskSelectView(discord.ui.View):
         from bot.handlers.theme_mission_handler import _handle_mission_step
         message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
         student_mission_info = {
-            **self.result,
+            **self.mission_result,
             'user_id': str(interaction.user.id),
             'current_step': 3,
         }
@@ -455,7 +442,7 @@ class TaskSelectView(discord.ui.View):
         )
         await interaction.followup.send(embed=confirm_embed, ephemeral=True)
 
-        book_id = self.result['book_id']
+        book_id = self.mission_result['book_id']
         await self.client.api_utils.update_student_confirmed_growth_album(str(interaction.user.id), book_id)
         self.stop()
 

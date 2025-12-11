@@ -14,7 +14,6 @@ from bot.handlers.utils import (
     daily_job,
     monthly_print_reminder_job,
     load_task_entry_messages,
-    load_quiz_message,
     load_growth_photo_messages,
     load_theme_book_edit_messages,
     load_questionnaire_messages,
@@ -25,10 +24,8 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
-from bot.utils.s3_image_utils import S3ImageUtils
-from bot.views.mission import MilestoneSelectView
-from bot.views.photo_mission import PhotoTaskSelectView
-from bot.views.album_select_view import AlbumSelectView, AlbumView
+from bot.views.album_select_view import BookMenuView
+from bot.views.menu_view import KnowledgeMenuView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -46,91 +43,44 @@ class MissionBot(discord.Client):
         self.logger = setup_logger('MissionBot')
         self.openai_utils = OpenAIUtils(api_key=config.OPENAI_API_KEY)
         self.api_utils = APIUtils(api_host=config.BABY_API_HOST, api_port=config.BABY_API_PORT)
-        self.s3_client = S3ImageUtils("infancix-app-storage-jp")
+
+        # variables to track user states
         self.photo_mission_replace_index = defaultdict(int)
         self.reset_baby_profile = defaultdict(int)
         self.skip_aside_text = defaultdict(int)
         self.skip_growth_info = defaultdict(int)
         self.submit_deadline = 5 # Default to 5th of each month
 
-        with open("bot/resource/mission_quiz.json", "r") as file:
-            self.mission_quiz = json.load(file)
-
         with open("bot/resource/mission_questionnaire.json", "r") as file:
             self.mission_questionnaire = json.load(file)
 
-    async def call_mission_start(self, interaction: discord.Interaction):
+    async def query_knowledge_menu(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
-            student_milestones = await self.api_utils.get_student_milestones(str(interaction.user.id))
-            milestone_view = MilestoneSelectView(self, str(interaction.user.id), student_milestones)
             message = await interaction.followup.send(
-                "🏆 ** 以下是您的任務進度，按下方按鈕開始任務**",
-                view=milestone_view,
+                "請先選擇想看的育兒知識",
+                view=KnowledgeMenuView(self, str(interaction.user.id)),
                 ephemeral=True
             )
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
 
-    async def call_photo_task(self, interaction: discord.Interaction):
-        try:
-            if not isinstance(interaction.channel, discord.channel.DMChannel):
-                message = await interaction.response.send_message(
-                    "嗨！請到「繪本工坊」查看製作繪本任務喔🧩",
-                    ephemeral=True
-                )
-                return
-
-            await interaction.response.defer(ephemeral=True)
-            incomplete_missions = await self.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id))
-            if len(incomplete_missions) > 0:
-                view = PhotoTaskSelectView(self, str(interaction.user.id), incomplete_missions)
-                message = await interaction.followup.send(
-                    "🧩 **以下是您未完成的照片任務，按下方按鈕開始製作繪本**",
-                    view=view,
-                    ephemeral=True
-                )
-            else:
-                message = await interaction.followup.send(
-                    "您目前沒有未完成的任務喔\n",
-                    ephemeral=True
-                )
-        except Exception as e:
-            print(f"Error while sending message: {str(e)}")
-
-    async def browse_growth_album(self, interaction: discord.Interaction):
+    async def query_bookcase_menu(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer(ephemeral=True)
-            albums_info = await self.api_utils.get_student_album_purchase_status(str(interaction.user.id))
-            album_view = AlbumSelectView(self, str(interaction.user.id), albums_info)
+            view=BookMenuView(self, str(interaction.user.id))
+            embed = view.get_current_embed()
             message = await interaction.followup.send(
-                "選擇下方選單，查看或確認送印您的成長繪本！",
-                view=album_view,
+                embed=embed,
+                view=view,
                 ephemeral=True
             )
-            album_view.message = message
         except Exception as e:
             print(f"Error while sending message: {str(e)}")
-
-    async def initiate_baby_data_update(self, interaction: discord.Interaction):
-        try:
-            if not interaction.response.is_done():
-                await interaction.response.defer(ephemeral=True)
-                self.reset_baby_profile[str(interaction.user.id)] = 1
-            await interaction.followup.send("開始修改寶寶資料！", ephemeral=True)
-
-            from bot.handlers.profile_handler import handle_registration_mission_start
-            await handle_registration_mission_start(self, str(interaction.user.id), mission_id=1001)
-
-        except Exception as e:
-            self.logger.error(f"Error while call_revise_baby_data: {str(e)}")
 
     async def setup_hook(self):
         await load_task_entry_messages(self)
         self.logger.info("Finished loading task entry messages")
-
-        await load_quiz_message(self)
-        self.logger.info("Finished loading quiz messages")
 
         await load_growth_photo_messages(self)
         self.logger.info("Finished loading growth photo messages")
@@ -146,31 +96,16 @@ class MissionBot(discord.Client):
 
         self.tree.add_command(
             app_commands.Command(
-                name="更新寶寶資料",
-                description="修改寶寶出生時的基本資料",
-                callback=self.initiate_baby_data_update
-            )
-        )
-
-        self.tree.add_command(
-            app_commands.Command(
-                name="查看育兒里程碑",
-                description="查看五大照護育兒里程碑",
-                callback=self.call_mission_start
-            )
-        )
-        self.tree.add_command(
-            app_commands.Command(
-                name="補上傳照片",
-                description="查看未完成繪本任務🧩",
-                callback=self.call_photo_task
+                name="科學育兒懶人包",
+                description="從寶寶的發展、照護知識，到陪伴爸媽的 0–3 歲育兒專欄，讓育兒路上不孤單。",
+                callback=self.query_knowledge_menu
             )
         )
         self.tree.add_command(
             app_commands.Command(
                 name="我的書櫃",
-                description="查看繪本進度📖",
-                callback=self.browse_growth_album
+                description="管理您的寶寶繪本：修改照片、繼續製作、查看進度，並完成送印📖",
+                callback=self.query_bookcase_menu
             )
         )
         self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))
@@ -204,8 +139,8 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
-
-    schedule.every().day.at("12:30").do(lambda: asyncio.create_task(monthly_print_reminder_job(client)))
+    if not config.ENV:
+        schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
+        schedule.every().day.at("12:30").do(lambda: asyncio.create_task(monthly_print_reminder_job(client)))
 
     client.run(config.DISCORD_TOKEN)
