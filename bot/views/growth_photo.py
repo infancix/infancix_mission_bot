@@ -287,7 +287,7 @@ class GrowthPhotoView(discord.ui.View):
 
         if self.message:
             try:
-                await self.message.edit(content="⚠️ 編輯逾時，可以在對話框輸入 [*/補上傳照片*]，重新製作喔！", view=self)
+                await self.message.edit(content="⚠️ 編輯逾時，可以在對話框輸入 [*/成長書櫃*]，重新製作喔！", view=self)
                 self.client.logger.info("GrowthALbumView: Invitation expired and message updated successfully.")
             except discord.NotFound:
                 self.client.logger.warning("GrowthALbumView: Failed to update expired invitation message as it was already deleted.")

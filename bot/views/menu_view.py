@@ -245,10 +245,15 @@ class KnowledgePostButton(discord.ui.Button):
         self.menu_options = menu_options
 
         super().__init__(
-            label=post_info['mission_title'],
+            label=self.setup_label(post_info),
             style=discord.ButtonStyle.primary,
             custom_id=f"knowledge_post_{post_info['mission_id']}"
         )
+
+    def setup_label(self, post_info):
+        if '週' in post_info.get('mission_milestone', ''):
+            return f"{post_info['mission_milestone']} | {post_info['mission_title']}"
+        return post_info['mission_title']
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()

@@ -51,11 +51,9 @@ def calculate_weekday(year, month, day):
 
 class ConfirmGrowthAlbumView(discord.ui.View):
     def __init__(self, client, user_id, albums_info, incomplete_missions, timeout=None):
+        super().__init__(timeout=timeout)
         self.client = client
         self.incomplete_missions = incomplete_missions
-        if timeout is None:
-            timeout = calculate_deadline_timeout(client)
-        super().__init__(timeout=timeout)
 
         self.user_id = user_id
         self.albums_info = albums_info
@@ -129,23 +127,15 @@ class ConfirmGrowthAlbumView(discord.ui.View):
         return embed
 
     async def on_timeout(self):
-        self.stop()
+        for item in self.children:
+            item.disabled = True
+
         if self.message:
-            for item in self.children:
-                item.disabled = True
-            await self.message.edit(view=self)
+            try:
+                await self.message.edit(view=self)
+                print("✅ 1周後後按鈕已自動 disable")
+            except discord.NotFound:
+                print("❌ 訊息已刪除，無法更新")
 
-        user = await self.client.fetch_user(self.user_id)
-        try:
-            timeout_embed = discord.Embed(
-                title="繪本送印逾時通知",
-                description=(
-                    "很抱歉，您未在期限內完成繪本送印。\n"
-                    "若有任何問題，隨時聯絡社群客服「阿福 <@1272828469469904937>」。"
-                ),
-                color=0xeeb2da,
-            )
-            await user.send(embed=timeout_embed)
-
-        except discord.Forbidden:
-            self.client.logger.error(f"無法傳送訊息給用戶 {self.user_id}，可能已封鎖機器人。")
+        delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
+        self.stop()

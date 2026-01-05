@@ -54,7 +54,7 @@ async def monthly_print_reminder_job(client):
 
     today = date.today()
     # check if today is the 1st of the month
-    if today.day != 1 and today.day != 4:
+    if today.day != 1 and today.day != 15:
         return
 
     client.logger.debug('Running monthly print reminder job now...')
