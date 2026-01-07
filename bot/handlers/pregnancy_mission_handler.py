@@ -36,13 +36,6 @@ async def handle_pregnancy_mission_start(client, user_id, mission_id):
         student_mission_info['current_step'] = 4 # end mission
         await client.api_utils.update_student_mission_status(**student_mission_info)
 
-        if int(mission_id) >= 125: # Under week 30
-            embed = get_pregnancy_status_embed()
-            view = TaskSelectView(client, "baby_born", mission_id, timeout=604800) # 7days = 604800 seconds
-            view.message = await user.send(embed=embed, view=view)
-            save_task_entry_record(user_id, str(view.message.id), "baby_born", mission_id)
-            await client.api_utils.store_message(user_id, 'assistant', f"[任務{mission_id}] 傳送[懷孕狀態登記]給使用者")
-
 @exception_handler(user_friendly_message="登記失敗，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_pregnancy_registration_message(client, message, student_mission_info):
     user_id = str(message.author.id)
@@ -100,13 +93,6 @@ def get_pregnancy_registration_embed():
     embed = discord.Embed(
         title="📝 請問您的預產期?",
         description="範例: 2025-05-01",
-        color=0xeeb2da,
-    )
-    return embed
-
-def get_pregnancy_status_embed():
-    embed = discord.Embed(
-        title="📝 請問您目前的狀態是",
         color=0xeeb2da,
     )
     return embed

@@ -82,25 +82,6 @@ class TaskSelectView(discord.ui.View):
             self.go_submit_button.callback = self.go_submit_button_callback
             self.add_item(self.go_submit_button)
 
-        if task_type == "baby_born":
-            label = "寶寶還在肚子裡，不想退房"
-            self.baby_not_born_button = discord.ui.Button(
-                custom_id="baby_not_born_button",
-                label=label,
-                style=discord.ButtonStyle.danger
-            )
-            self.baby_not_born_button.callback = self.baby_not_born_button_callback
-            self.add_item(self.baby_not_born_button)
-
-            label = "我家寶寶出生了"
-            self.baby_born_button = discord.ui.Button(
-                custom_id="baby_born_button",
-                label=label,
-                style=discord.ButtonStyle.success
-            )
-            self.baby_born_button.callback = self.baby_born_button_callback
-            self.add_item(self.baby_born_button)
-
         if task_type == "baby_optin":
             label = "送出"
             self.baby_optin_button = discord.ui.Button(
@@ -303,30 +284,6 @@ class TaskSelectView(discord.ui.View):
             if bool(update_status):
                 await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
                 self.client.logger.info(f"送出繪本任務 {self.mission_id}")
-
-    async def baby_born_button_callback(self, interaction):
-        await interaction.response.defer()
-        for item in self.children:
-            item.disabled = True
-        await interaction.edit_original_response(view=self)
-
-        await interaction.channel.send(f"🎉 恭喜你！寶寶已經出生了！可以製作您和寶寶的專屬繪本囉!")
-        await self.client.api_utils.update_student_profile(
-            str(interaction.user.id),
-            str(interaction.user.name),
-            '寶寶已出生'
-        )
-
-        # Call next mission
-        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
-        if channel is None or not isinstance(channel, discord.TextChannel):
-            raise Exception('Invalid channel')
-
-        msg_task = f"START_MISSION_1001 <@{str(interaction.user.id)}>"
-        await channel.send(msg_task)
-
-        # Delete task entry record
-        delete_task_entry_record(str(interaction.user.id), str(self.mission_id))
 
     async def check_add_on_button_callback(self, interaction):
         await interaction.response.defer()
