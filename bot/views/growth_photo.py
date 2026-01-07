@@ -146,7 +146,7 @@ class GrowthPhotoView(discord.ui.View):
         if self.reward > 0:
             embed = discord.Embed(
                 title="🎉 任務完成！",
-                description="🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}！\n\n",
+                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}！\n\n",
                 color=0xeeb2da,
             )
             await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
@@ -214,7 +214,10 @@ class GrowthPhotoView(discord.ui.View):
         await channel.send(msg_task)
 
         next_mission_id = config.book_first_mission_map.get(self.book_id)
-        msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
+        if config.ENV:
+            msg_task = f"START_MISSION_DEV_{next_mission_id} <@{self.user_id}>"
+        else:
+            msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
         await channel.send(msg_task)
 
     async def change_photo_callback(self, interaction: discord.Interaction):

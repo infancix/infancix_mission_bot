@@ -87,12 +87,41 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         mission_result = request_info.get('direct_response', {})
 
     # validate mission result
+    # Get required attachment count
+    required_count = config.get_required_attachment_count(mission_id, 'photo')
+
+    # Check if we have enough attachments
+    attachment = mission_result.get('attachment')
+    if required_count > 1:
+        # Multiple attachments required
+        current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
+        has_enough_attachments = current_count >= required_count
+    else:
+        # Single attachment required (original behavior)
+        has_enough_attachments = bool(attachment and (attachment.get('url') if isinstance(attachment, dict) else True))
+
+    # Now validate based on mission type
     if mission_id in config.photo_mission_without_aside_text:
-        mission_result['is_ready'] = True
+        mission_result['is_ready'] = has_enough_attachments
+        if not has_enough_attachments and required_count > 1:
+            current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
+            mission_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
     elif mission_id in config.photo_mission_with_aside_text:
         mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
+        # Override is_ready if we don't have enough attachments
+        if not has_enough_attachments:
+            mission_result['is_ready'] = False
+            current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
+            if required_count > 1:
+                mission_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
     elif mission_id in config.photo_mission_with_title_and_content:
         mission_result = client.openai_utils.process_content_validation(mission_result)
+        # Override is_ready if we don't have enough attachments
+        if not has_enough_attachments:
+            mission_result['is_ready'] = False
+            current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
+            if required_count > 1:
+                mission_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
     save_mission_record(user_id, mission_id, mission_result)
 
     if mission_result.get('is_ready'):
@@ -129,10 +158,15 @@ def prepare_api_request(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     saved_result = get_mission_record(user_id, mission_id) or {}
 
+    # Get required attachment count for this mission
+    required_count = config.get_required_attachment_count(mission_id, 'photo')
+
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
         photo_index = client.photo_mission_replace_index[user_id]
-        if not saved_result.get('attachment') or photo_index-1 >= len(saved_result['attachment']):
+        attachments_list = saved_result.get('attachment', []) if isinstance(saved_result.get('attachment'), list) else [saved_result.get('attachment')] if saved_result.get('attachment') else []
+
+        if not attachments_list or photo_index-1 >= len(attachments_list):
             return {
                 'needs_ai_prediction': False,
                 'direct_action': 'error',
@@ -140,7 +174,8 @@ def prepare_api_request(client, message, student_mission_info):
             }
 
         replace_attachment = extract_attachment_info(message.attachments[0].url)
-        saved_result['attachment'][photo_index-1] = replace_attachment
+        attachments_list[photo_index-1] = replace_attachment
+        saved_result['attachment'] = attachments_list if required_count > 1 else attachments_list[0]
         saved_result['message'] = "已收到您的照片"
         saved_result['is_ready'] = True
         return {
@@ -149,8 +184,24 @@ def prepare_api_request(client, message, student_mission_info):
             'direct_response': saved_result
         }
     elif message.attachments:
-        attachment = extract_attachment_info(message.attachments[0].url)
-        saved_result['attachment'] = attachment
+        # Handle multiple photos requirement
+        if required_count > 1:
+            if not saved_result.get('attachment'):
+                saved_result['attachment'] = []
+            elif not isinstance(saved_result['attachment'], list):
+                saved_result['attachment'] = [saved_result['attachment']]
+
+            # Add new attachments
+            for att in message.attachments:
+                if len(saved_result['attachment']) >= required_count:
+                    break
+                attachment = extract_attachment_info(att.url)
+                saved_result['attachment'].append(attachment)
+        else:
+            # Single photo requirement (original behavior)
+            attachment = extract_attachment_info(message.attachments[0].url)
+            saved_result['attachment'] = attachment
+
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',

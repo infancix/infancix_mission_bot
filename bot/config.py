@@ -41,6 +41,28 @@ class Config:
         self.book_intro_mission_map.update({book_id: mission_ids[0] for book_id, mission_ids in self.theme_book_mission_map.items()})
         self.theme_mission_list = [7001, 7008, 7015, 7022, 7029, 7036]
 
+    def get_required_attachment_count(self, mission_id, attachment_type='photo'):
+        """
+        Get the required number of attachments for a mission.
+
+        Args:
+            mission_id: The mission ID
+            attachment_type: 'photo', 'video', or 'audio'
+
+        Returns:
+            int: Required number of attachments (default: 1)
+        """
+        mission_id_str = str(mission_id)
+
+        if attachment_type == 'photo':
+            return int(self.photo_mission_required_count.get(mission_id_str, 1))
+        elif attachment_type == 'video':
+            return int(self.video_mission_required_count.get(mission_id_str, 1))
+        elif attachment_type == 'audio':
+            return int(self.audio_mission_required_count.get(mission_id_str, 1))
+        else:
+            return 1
+
     def get_prompt_file(self, mission_id):
         base_path = "bot/resource/prompts"
         if mission_id in self.baby_profile_registration_missions:
@@ -57,6 +79,8 @@ class Config:
             return f"{base_path}/image_with_content.txt"
         elif mission_id in self.add_on_photo_mission:
             return f"{base_path}/add_on_mission_prompt.txt"
+        elif mission_id in self.video_mission:
+            return f"{base_path}/video_mission_prompt.txt"
         elif mission_id in self.audio_mission:
             return f"{base_path}/audio_mission_prompt.txt"
         elif mission_id >= 7001 and mission_id <= 7042:
@@ -128,6 +152,26 @@ class Config:
             self.audio_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('audio_mission', [])
             ]
+
+            self.video_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('video_mission', [])
+            ]
+
+            # Load required attachment counts for missions
+            self.photo_mission_required_count = {}
+            self.video_mission_required_count = {}
+            self.audio_mission_required_count = {}
+
+            for book_data in growth_book_missions:
+                # Merge photo mission required counts from all books
+                if 'photo_mission_required_count' in book_data:
+                    self.photo_mission_required_count.update(book_data['photo_mission_required_count'])
+                # Merge video mission required counts from all books
+                if 'video_mission_required_count' in book_data:
+                    self.video_mission_required_count.update(book_data['video_mission_required_count'])
+                # Merge audio mission required counts from all books
+                if 'audio_mission_required_count' in book_data:
+                    self.audio_mission_required_count.update(book_data['audio_mission_required_count'])
 
             # final confirmation mission
             self.confirm_album_mission = [item for month_data in growth_book_missions

@@ -30,6 +30,10 @@ from bot.handlers.audio_mission_handler import (
     handle_audio_mission_start,
     process_audio_mission_filling
 )
+from bot.handlers.video_mission_handler import (
+    handle_video_mission_start,
+    process_video_mission_filling
+)
 from bot.handlers.theme_mission_handler import (
     handle_theme_mission_start,
     handle_theme_mission_restart,
@@ -150,8 +154,7 @@ async def handle_direct_message(client, message):
 
     # 影片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
-        await message.channel.send("請提供照片喔！")
-        return
+        message.content = "收到使用者的影片"
     else:
         if not message.content.strip():
             await message.channel.send(f"無法處理您上傳的檔案內容，請輸入文字訊息或確保檔案格式正確後再試一次。如需幫助，請聯絡客服。")
@@ -167,6 +170,8 @@ async def handle_direct_message(client, message):
         await process_pregnancy_registration_message(client, message, student_mission_info)
     elif mission_id in config.relation_or_identity_mission:
         await process_relation_identity_filling(client, message, student_mission_info)
+    elif mission_id in config.video_mission:
+        await process_video_mission_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
@@ -204,6 +209,8 @@ async def handle_start_mission(client, user_id, mission_id):
         await handle_relation_identity_mission_start(client, user_id, mission_id)
     elif mission_id in config.theme_mission_list:
         await handle_theme_mission_start(client, user_id, mission_id)
+    elif mission_id in config.video_mission:
+        await handle_video_mission_start(client, user_id, mission_id)
     elif mission_id in config.audio_mission:
         await handle_audio_mission_start(client, user_id, mission_id)
     elif mission_id in config.questionnaire_mission:
