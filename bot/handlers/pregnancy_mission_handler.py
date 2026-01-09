@@ -59,9 +59,17 @@ async def process_pregnancy_registration_message(client, message, student_missio
         )
         await client.api_utils.update_student_registration_done(user_id)
 
-        # Mission end
-        student_mission_info['current_step'] = 4
-        await client.api_utils.update_student_mission_status(**student_mission_info)
+        if mission_id == config.pregnant_registration_mission:
+            # Mission end
+            student_mission_info['current_step'] = 4
+            await client.api_utils.update_student_mission_status(**student_mission_info)
+
+            # Send log to Background channel
+            channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
+            if channel is None or not isinstance(channel, discord.TextChannel):
+                raise Exception('Invalid channel')
+            msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
+            await channel.send(msg_task)
         
         # Send new mission to user
         mission_id = get_pregnancy_current_mission(mission_result['due_date'])
@@ -79,14 +87,6 @@ async def process_pregnancy_registration_message(client, message, student_missio
 
         # Save task message
         await client.api_utils.store_message(user_id, 'assistant', msg)
-
-        if mission_id == config.pregnant_registration_mission:
-            # Send log to Background channel
-            channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
-            if channel is None or not isinstance(channel, discord.TextChannel):
-                raise Exception('Invalid channel')
-            msg_task = f"MISSION_{mission_id}_FINISHED <@{user_id}>"
-            await channel.send(msg_task)
 
 # -------------------- Helper Functions --------------------
 def get_pregnancy_registration_embed():
