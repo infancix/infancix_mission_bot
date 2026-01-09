@@ -107,7 +107,12 @@ class BookMenuView(discord.ui.View):
         self.book_list: list = []  # 繪本列表
         self.current_page: int = 0  # 當前頁碼
         self.page_size: int = 4  # 每頁顯示數量
-        self.build_level1()
+        #self.build_level1()
+
+        self.age_code = 1
+        self.book_type = '成長繪本'
+        self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+        self.build_level3_book(page=0)
 
     # -------- 共用工具 --------
     def clear_items(self):
@@ -239,8 +244,8 @@ class BookMenuView(discord.ui.View):
                 self.build_level1()
             await self.update_view(itx)
 
-        back_button.callback = back_to_type
-        self.add_item(back_button)
+        #back_button.callback = back_to_type
+        #self.add_item(back_button)
 
         # 上一頁按鈕
         if page > 0:
@@ -350,9 +355,10 @@ class AlbumButton(discord.ui.Button):
             incomplete_missions,
             self.menu_options
         )
-        embed, file_path, filename = view.preview_embed()
-        file = discord.File(file_path, filename=filename)
-        await interaction.edit_original_response(embed=embed, view=view, attachments=[file])
+        embed, file_path, filename, fallback_url = view.preview_embed()
+        await view.send_embed_with_file(
+            interaction, embed, view, file_path, filename, fallback_url, use_response=False
+        )
 
 class AlbumView(discord.ui.View):
     def __init__(self, client, user_id, album_info, completed_missions=[], incomplete_missions=[], menu_options={}, timeout=None):
@@ -373,6 +379,48 @@ class AlbumView(discord.ui.View):
             self.setup_back_button()
         self.setup_revise_button()
         self.setup_main_cta_button()
+
+    async def send_embed_with_file(self, interaction, embed, view=None, file_path=None, filename=None, fallback_url=None, use_response=True):
+        """
+        Helper to send embed with file attachment, with fallback to URL if file not found.
+
+        Args:
+            interaction: Discord interaction object
+            embed: Discord embed object
+            view: View object (defaults to self)
+            file_path: Path to file to attach
+            filename: Filename for attachment
+            fallback_url: Fallback URL to use if file not found
+            use_response: If True, use response.edit_message; if False, use edit_original_response
+        """
+        if view is None:
+            view = self
+
+        try:
+            if file_path:
+                file = discord.File(file_path, filename=filename)
+                if use_response:
+                    await interaction.response.edit_message(embed=embed, view=view, attachments=[file])
+                else:
+                    await interaction.edit_original_response(embed=embed, view=view, attachments=[file])
+            else:
+                raise FileNotFoundError("No file_path provided")
+        except FileNotFoundError:
+            if fallback_url:
+                self.client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+                embed.set_image(url=fallback_url)
+            if use_response:
+                await interaction.response.edit_message(embed=embed, view=view, attachments=[])
+            else:
+                await interaction.edit_original_response(embed=embed, view=view, attachments=[])
+        except Exception as e:
+            self.client.logger.error(f"Error loading file {file_path}: {e}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            if use_response:
+                await interaction.response.edit_message(embed=embed, view=view, attachments=[])
+            else:
+                await interaction.edit_original_response(embed=embed, view=view, attachments=[])
 
     def setup_back_button(self):
         back_button = discord.ui.Button(
@@ -418,21 +466,13 @@ class AlbumView(discord.ui.View):
             if self.menu_options['book_type'] == '成長繪本':
                 view = EditGrowthBookView(self.client, str(itx.user.id), book_info, submitted_missions, self.menu_options)
                 embed, file_path, filename = view.build_preview_page()
-                try:
-                    file = discord.File(fp=file_path, filename=filename)
-                    await itx.response.edit_message(embed=embed, view=view, attachments=[file])
-                except FileNotFoundError:
-                    await itx.response.edit_message(embed=embed, view=view, attachments=[])
+                await self.send_embed_with_file(itx, embed, view, file_path, filename, use_response=True)
             else:
                 from bot.handlers.theme_mission_handler import handle_theme_mission_restart
                 await handle_theme_mission_restart(self.client, str(itx.user.id), self.book_id)
                 view = EditThemeBookView(self.client, book_info)
                 embed, file_path, filename = view.get_current_embed(str(itx.user.id))
-                try:
-                    file = discord.File(file_path, filename=filename)
-                    await itx.response.edit_message(embed=embed, view=view, attachments=[file])
-                except FileNotFoundError:
-                    await itx.response.edit_message(embed=embed, view=view, attachments=[])
+                await self.send_embed_with_file(itx, embed, view, file_path, filename, use_response=True)
 
         revise_button.callback = revise_cb
         self.add_item(revise_button)
@@ -502,10 +542,10 @@ class AlbumView(discord.ui.View):
 
     def preview_embed(self):
         if self.is_confirm_view_enabled():
-            preview_embed, file_path, filename = self.confirm_preview_embed()
+            preview_embed, file_path, filename, fallback_url = self.confirm_preview_embed()
         else:
-            preview_embed, file_path, filename = self.normal_preview_embed()
-        return preview_embed, file_path, filename
+            preview_embed, file_path, filename, fallback_url = self.normal_preview_embed()
+        return preview_embed, file_path, filename, fallback_url
 
     def normal_preview_embed(self):
         embed = discord.Embed(
@@ -544,11 +584,12 @@ class AlbumView(discord.ui.View):
         file_path = f"/home/ubuntu/canva_exports/{baby_id}/{intro_mission_id}.jpg"
         filename = f"{intro_mission_id}.jpg"
         current_page_url = f"attachment://{filename}"
+        fallback_url = f"https://infancixbaby120.com/discord_image/{baby_id}/{intro_mission_id}.jpg"
         embed.set_image(url=current_page_url)
         embed.set_footer(
             text="有任何問題，隨時聯絡社群客服「阿福」。"
         )
-        return embed, file_path, filename
+        return embed, file_path, filename, fallback_url
 
     def confirm_preview_embed(self):
         now = datetime.now()
@@ -598,11 +639,12 @@ class AlbumView(discord.ui.View):
         file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{intro_mission_id}.jpg"
         filename = f"{intro_mission_id}.jpg"
         current_page_url = f"attachment://{filename}"
+        fallback_url = f"https://infancixbaby120.com/discord_image/{self.baby_id}/{intro_mission_id}.jpg"
         embed.set_image(url=current_page_url)
         embed.set_footer(
             text="有任何問題，隨時聯絡社群客服「阿福」。"
         )
-        return embed, file_path, filename
+        return embed, file_path, filename, fallback_url
 
     async def go_next_missions_button_callback(self, interaction: discord.Interaction, next_mission_id=None):
         await interaction.response.defer()
@@ -803,9 +845,8 @@ class EditGrowthBookView(discord.ui.View):
                 incomplete_missions,
                 self.menu_options
             )
-            embed, file_path, filename = view.preview_embed()
-            file = discord.File(file_path, filename=filename)
-            await itx.response.edit_message(embed=embed, view=view, attachments=[file])
+            embed, file_path, filename, fallback_url = view.preview_embed()
+            await view.send_embed_with_file(itx, embed, view, file_path, filename, fallback_url, use_response=True)
 
         back_button.callback = back_cb
         self.add_item(back_button)
