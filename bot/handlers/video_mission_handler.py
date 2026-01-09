@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
 async def handle_video_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -233,10 +234,19 @@ async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mis
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
-    title = f"🎬**{mission_info['photo_mission']}**"
-    desc = f"請上傳寶寶的影片 👇\n"
-    desc += f"💡 支援的影片格式：MP4、MOV、AVI、MKV、WEBM\n"
-    desc += f"💡 影片長度限制：每支影片最長 30 秒\n\n"
+    # Check if mission_id exists in mission_instruction.json
+    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+
+    if instruction_data:
+        # Use custom instruction from mission_instruction.json
+        title = f"🎬 **{instruction_data['title']}**"
+        desc = instruction_data['description']
+    else:
+        # Use original embed from API data
+        title = f"🎬**{mission_info['photo_mission']}**"
+        desc = f"請上傳寶寶的影片 👇\n"
+        desc += f"💡 支援的影片格式：MP4、MOV、AVI、MKV、WEBM\n"
+        desc += f"💡 影片長度限制：每支影片最長 30 秒\n\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()

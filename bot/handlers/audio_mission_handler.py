@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
 async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -233,15 +234,17 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
-    title = f"🎙️**{mission_info['photo_mission']}**"
-    desc = f"此任務有兩種方式，爸媽可擇一完成 👇\n"
-    if mission_info['mission_id'] == 14:
-        desc += (
-            f"① 哄睡話語 — 可直接用 Discord 錄音功能。\n"
-            f"💡 長按對話框右側的🎙️即可錄音。\n\n"
-            f"② 噓噓聲 — Discord 錄不到噓噓聲，請用手機錄音後再上傳檔案。\n"
-            f"💡 不確定怎麼\"噓\"？可點下方影片查看教學。\n\n"
-        )
+    # Check if mission_id exists in mission_instruction.json
+    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+
+    if instruction_data:
+        # Use custom instruction from mission_instruction.json
+        title = f"🎙️ **{instruction_data['title']}**"
+        desc = instruction_data['description']
+    else:
+        # Use original embed from API data
+        title = f"🎙️**{mission_info['photo_mission']}**"
+        desc = "長按對話框右側的🎙️即可錄音。\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()

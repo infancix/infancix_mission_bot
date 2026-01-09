@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
 async def handle_relation_identity_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -80,11 +81,15 @@ async def process_relation_identity_filling(client, message, student_mission_inf
     elif mission_result.get("relation_or_identity", None) is None:
         if int(mission_id) in config.relation_mission:
             embed = get_relation_embed(student_mission_info)
-        elif int(mission_id) == 56:
-            embed = get_little_friend_embed(student_mission_info)
-        else:
+            await message.channel.send(embed=embed)
+        elif int(mission_id) in config.identity_mission:
             embed = get_identity_embed(student_mission_info)
-        await message.channel.send(embed=embed)
+            await message.channel.send(embed=embed)
+        else:
+            instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+            if instruction_data:
+                embed = build_embed(student_mission_info, instruction_data)
+                await message.channel.send(embed=embed)
     else:
         await message.channel.send(mission_result['message'])
     return
@@ -237,12 +242,10 @@ def get_identity_embed(mission_info):
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
-def get_little_friend_embed(mission_info):
+def build_embed(mission_info, instruction_data):
     embed = discord.Embed(
-        title="請問這位朋友的名字是?",
-        description=(
-            "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
-        ),
+        title=instruction_data['title'],
+        description=instruction_data['description'],
         color=0xeeb2da,
     )
     embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
