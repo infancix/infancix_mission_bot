@@ -112,7 +112,7 @@ def prepare_api_request(client, message, student_mission_info):
     }
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
-async def process_add_on_photo_mission_filling(client, message, student_mission_info):
+async def process_add_on_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     prompt_path = config.get_prompt_file(mission_id)

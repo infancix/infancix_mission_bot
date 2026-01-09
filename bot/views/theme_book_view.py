@@ -228,6 +228,15 @@ class SubmitButton(discord.ui.Button):
 
         from bot.views.album_select_view import AlbumView
         view = AlbumView(view.client, str(interaction.user.id), book_info, completed_missions, incomplete_missions, menu_options)
-        embed, file_path, filename = view.preview_embed()
-        file = discord.File(file_path, filename=filename)
-        await interaction.followup.send(embed=embed, view=view, file=file)
+        embed, file_path, filename, fallback_url = view.preview_embed()
+        try:
+            file = discord.File(file_path, filename=filename)
+            await interaction.followup.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            self.client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)
+        except Exception as e:
+            self.client.logger.error(f"Error loading album preview for book {self.book_info['book_id']}: {e}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)

@@ -166,3 +166,39 @@ def get_user_id(source: discord.Interaction | discord.Message) -> str:
         return str(source.user.id)
     else:
         return str(source.author.id)
+
+async def start_mission_by_id(client, user_id: str, mission_id: int, send_weekly_report: int = 1):
+    """
+    Route and start a mission based on its ID.
+
+    Args:
+        client: The Discord client
+        user_id: User ID as string
+        mission_id: Mission ID to start
+        send_weekly_report: Whether to send weekly report (default: 1)
+    """
+    if mission_id in config.theme_mission_list:
+        from bot.handlers.theme_mission_handler import handle_theme_mission_start
+        await handle_theme_mission_start(client, user_id, mission_id)
+    elif mission_id in config.audio_mission:
+        from bot.handlers.audio_mission_handler import handle_audio_mission_start
+        await handle_audio_mission_start(client, user_id, mission_id)
+    elif mission_id in config.video_mission:
+        from bot.handlers.video_mission_handler import handle_video_mission_start
+        await handle_video_mission_start(client, user_id, mission_id)
+    elif mission_id in config.questionnaire_mission:
+        from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
+        await handle_questionnaire_mission_start(client, user_id, mission_id)
+    elif mission_id in config.baby_profile_registration_missions:
+        from bot.handlers.profile_handler import handle_registration_mission_start
+        await handle_registration_mission_start(client, user_id, mission_id)
+    elif mission_id in config.relation_or_identity_mission:
+        from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+        await handle_relation_identity_mission_start(client, user_id, mission_id)
+    elif mission_id in config.add_on_photo_mission:
+        from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
+        await handle_add_on_mission_start(client, user_id, mission_id)
+    else:
+        # Default to photo mission
+        from bot.handlers.photo_mission_handler import handle_photo_mission_start
+        await handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=send_weekly_report)

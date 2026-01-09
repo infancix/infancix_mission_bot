@@ -112,16 +112,6 @@ class TaskSelectView(discord.ui.View):
             self.skip_theme_book_aside_text_button.callback = self.skip_theme_book_aside_text_button_callback
             self.add_item(self.skip_theme_book_aside_text_button)
 
-        if task_type == "confirm_print":
-            label = "確認送印"
-            self.confirm_button = discord.ui.Button(
-                custom_id="confirm_button",
-                label=label,
-                style=discord.ButtonStyle.success
-            )
-            self.confirm_button.callback = self.confirm_button_callback
-            self.add_item(self.confirm_button)            
-
         if task_type == "skip_mission":
             label = "跳過此任務"
             self.skip_mission_button = discord.ui.Button(
@@ -163,29 +153,10 @@ class TaskSelectView(discord.ui.View):
             item.disabled = True
         await interaction.response.edit_message(view=self)
 
-        user_id = str(interaction.user.id)  
+        from bot.handlers.utils import start_mission_by_id
+        user_id = str(interaction.user.id)
         next_mission_id = self.mission_result['next_mission_id']
-        if next_mission_id in config.theme_mission_list:
-            from bot.handlers.theme_mission_handler import handle_theme_mission_start
-            await handle_theme_mission_start(self.client, user_id, next_mission_id)
-        elif next_mission_id in config.audio_mission:
-            from bot.handlers.audio_mission_handler import handle_audio_mission_start
-            await handle_audio_mission_start(self.client, user_id, next_mission_id)
-        elif next_mission_id in config.questionnaire_mission:
-            from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
-            await handle_questionnaire_mission_start(self.client, user_id, next_mission_id)
-        elif next_mission_id in config.baby_profile_registration_missions:
-            from bot.handlers.profile_handler import handle_registration_mission_start
-            await handle_registration_mission_start(self.client, user_id, next_mission_id)
-        elif next_mission_id in config.relation_or_identity_mission:
-            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
-            await handle_relation_identity_mission_start(self.client, user_id, next_mission_id)
-        elif next_mission_id in config.add_on_photo_mission:
-            from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
-            await handle_add_on_mission_start(self.client, user_id, next_mission_id)
-        else:
-            from bot.handlers.photo_mission_handler import handle_photo_mission_start
-            await handle_photo_mission_start(self.client, user_id, next_mission_id, send_weekly_report=1)
+        await start_mission_by_id(self.client, user_id, next_mission_id, send_weekly_report=1)
     
     async def go_skip_aside_text_button_callback(self, interaction):
         await interaction.response.defer()
@@ -379,36 +350,6 @@ class TaskSelectView(discord.ui.View):
         await channel.send(msg_task)
 
         await interaction.channel.send(f"🛒 已收到您的購買請求！社群客服「阿福 <@1272828469469904937>」會儘快與您聯繫。")
-
-    async def confirm_button_callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        for item in self.children:
-            item.disabled = True
-        await interaction.edit_original_response(view=self)
-
-        confirm_embed = discord.Embed(
-            title="📘 已確認送印！",
-            description=(
-                "這本屬於您與寶寶的成長故事，將進入印刷流程。\n\n"
-                "📦 **印刷期與運送期**\n"
-                "約需**30 個工作天**，完成後將寄送至您的指定地址。\n\n"
-                "🎶 **親子共讀課 X Music Together 會員專屬**\n"
-                "您的繪本將於**課程當天**發放，無需等待郵寄！\n"
-            ),
-            color=0xeeb2da,
-        )
-        await interaction.followup.send(embed=confirm_embed, ephemeral=True)
-
-        book_id = self.mission_result['book_id']
-        await self.client.api_utils.update_student_confirmed_growth_album(str(interaction.user.id), book_id)
-        self.stop()
-
-        # Send log to Background channel
-        channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
-        if channel is None or not isinstance(channel, discord.TextChannel):
-            raise Exception('Invalid channel')
-        msg_task = f"BOOK_{book_id}_CONFIRM_FINISHED <@{str(interaction.user.id)}>"
-        await channel.send(msg_task)
 
     async def on_timeout(self):
         for item in self.children:

@@ -5,7 +5,10 @@ import re
 import time
 
 from bot.config import config
-from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start, process_questionnaire_photo_mission_filling
+from bot.handlers.questionnaire_mission_handler import (
+    handle_questionnaire_mission_start,
+    process_questionnaire_mission_filling
+)
 from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
@@ -20,7 +23,7 @@ from bot.handlers.photo_mission_handler import (
 ) 
 from bot.handlers.add_on_mission_handler import (
     handle_add_on_mission_start,
-    process_add_on_photo_mission_filling
+    process_add_on_mission_filling
 )
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
@@ -175,9 +178,9 @@ async def handle_direct_message(client, message):
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
-        await process_add_on_photo_mission_filling(client, message, student_mission_info)
+        await process_add_on_mission_filling(client, message, student_mission_info)
     elif mission_id in config.questionnaire_mission:
-        await process_questionnaire_photo_mission_filling(client, message, student_mission_info)
+        await process_questionnaire_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.theme_mission_list:
@@ -198,32 +201,20 @@ async def handle_direct_message(client, message):
     return
 
 async def handle_start_mission(client, user_id, mission_id):
+    from bot.handlers.utils import start_mission_by_id
+
     mission_id = int(mission_id)
+
+    # Handle special cases first
     if mission_id == 1000:
         await handle_app_instruction(client, user_id, mission_id)
     elif mission_id >= 101 and mission_id <= 135:
         await handle_pregnancy_mission_start(client, user_id, mission_id)
-    elif mission_id in config.baby_profile_registration_missions:
-        await handle_registration_mission_start(client, user_id, mission_id)
-    elif mission_id in config.relation_or_identity_mission:
-        await handle_relation_identity_mission_start(client, user_id, mission_id)
-    elif mission_id in config.theme_mission_list:
-        await handle_theme_mission_start(client, user_id, mission_id)
-    elif mission_id in config.video_mission:
-        await handle_video_mission_start(client, user_id, mission_id)
-    elif mission_id in config.audio_mission:
-        await handle_audio_mission_start(client, user_id, mission_id)
-    elif mission_id in config.questionnaire_mission:
-        await handle_questionnaire_mission_start(client, user_id, mission_id)
-    elif mission_id in config.add_on_photo_mission:
-        await handle_add_on_mission_start(client, user_id, mission_id)
-    elif mission_id in config.photo_mission_list:
-        await handle_photo_mission_start(client, user_id, mission_id)
     elif mission_id in config.confirm_album_mission:
         await handle_confirm_growth_album_mission_start(client, user_id, mission_id)
     else:
-        print(f"Unhandled mission ID: {mission_id}")
-        return
+        # Use shared mission routing function for common mission types
+        await start_mission_by_id(client, user_id, mission_id, send_weekly_report=1)
 
 async def handle_app_instruction(client, user_id, mission_id):
     user = await client.fetch_user(user_id)
@@ -325,12 +316,26 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     try:
         # Create the album preview view
         view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
-        embed, file_path, filename = view.preview_embed()
-        file = discord.File(file_path, filename=filename)
+        embed, file_path, filename, fallback_url = view.preview_embed()
+
         # Send the album preview to the user
         user = await client.fetch_user(user_id)
         await asyncio.sleep(0.5)
-        await user.send(embed=embed, view=view, file=file)
+
+        try:
+            file = discord.File(file_path, filename=filename)
+            await user.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            await user.send(embed=embed, view=view)
+        except Exception as e:
+            client.logger.error(f"Error loading file {file_path}: {e}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            await user.send(embed=embed, view=view)
+
         # Log the successful message send
         client.logger.info(f"Send album message to user {user_id}, book {book_id}")
     except Exception as e:
@@ -404,13 +409,25 @@ async def handle_notify_album_job(client, user_id, mission_id, book_id):
     client.logger.info(f"Album status for user {user_id}, book {book_id}: {album_info}, incomplete missions: {len(incomplete_missions)}")
     if album_info and album_info.get("purchase_status", "未購買") == "已購買" and album_info.get("shipping_status", "待確認") == "待確認":
         view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
-        embed, file_path, filename = view.preview_embed()
-        file = discord.File(file_path, filename=filename)
+        embed, file_path, filename, fallback_url = view.preview_embed()
         user = await client.fetch_user(user_id)
         if user.dm_channel is None:
             await user.create_dm()
         await asyncio.sleep(0.5)
-        view.message = await user.send(embed=embed, view=view, file=file)
+
+        try:
+            file = discord.File(file_path, filename=filename)
+            view.message = await user.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            view.message = await user.send(embed=embed, view=view)
+        except Exception as e:
+            client.logger.error(f"Error loading file {file_path}: {e}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            view.message = await user.send(embed=embed, view=view)
     return
 
 async def handle_notify_monthly_print_reminder_job(client, user_id, match):
