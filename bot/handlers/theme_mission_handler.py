@@ -637,16 +637,16 @@ def get_story_pages_embed(book_id, mission_info, photo_index, required_photos=6,
 
 def get_aside_text_instruction_embed(book_id, mission_info, mission_result, photo_index):
     if book_id == 13:
-        title = "請問照片裡的動物是什麼？"
+        title = "請問照片裡的動物是什麼？(2-4字) "
         description = "例如：大象、長頸鹿、獅子等⋯⋯"
     elif book_id == 14:
-        title = "請問照片中的人是誰呢？(15字以內)"
-        description = "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)"
+        title = "請問照片中的家人是誰？ (2-4字) "
+        description = "⚠️ 限填「一個」稱謂 ，\n例如：爸爸、阿公、阿姨。\n (也可以輸入名字喔!)\n\n❌請勿寫例如: 爸爸和媽媽。"
     elif book_id == 15:
-        title = "請問照片中的物品是什麼？"
+        title = "請問照片中的物品是什麼？(2-4字) "
         description = "例如：奶瓶、玩偶、碗、襪子等。"
     elif book_id == 16:
-        title = "請描述寶寶和特定陪伴者的互動(15字以內)"
+        title = "請描述寶寶和特定陪伴者的互動？(5個字以內) "
         description = "例如：一起玩耍、閱讀故事書、散步等。"
     else:
         title = "請輸入照片描述"
