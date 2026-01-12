@@ -14,7 +14,7 @@ from bot.utils.message_tracker import (
 
 THEME_BOOK_PAGES = [0, 1, 2, 3, 4, 5, 6]
 
-class ThemeBookView(discord.ui.View):
+class EditThemeBookView(discord.ui.View):
     def __init__(self, client, book_info, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
@@ -26,6 +26,7 @@ class ThemeBookView(discord.ui.View):
         self.base_mission_id = self.mission_list[0]
         self.current_page = 0
         self.total_pages = len(THEME_BOOK_PAGES)
+        self.reward = 100
 
         self.update_buttons()
 
@@ -149,7 +150,7 @@ class SubmitButton(discord.ui.Button):
     def __init__(self):
         super().__init__(
             style=discord.ButtonStyle.success,
-            label="送出 (送出即無法修改)",
+            label="送出",
             row=1
         )
 
@@ -166,25 +167,41 @@ class SubmitButton(discord.ui.Button):
         if str(interaction.user.id) in view.client.photo_mission_replace_index:
             del view.client.photo_mission_replace_index[str(interaction.user.id)]
 
-        mission_info = await view.client.api_utils.get_mission_info(view.base_mission_id)
-        reward = mission_info.get('reward', 100)
+        previous_status = await view.client.api_utils.get_student_mission_status(str(interaction.user.id), view.base_mission_id)
+        if previous_status.get('mission_completion_percentage') >= 1:
+            view.reward = 0
+
         # Mission Completed
         student_mission_info = {
             'user_id': str(interaction.user.id),
             'mission_id': view.base_mission_id,
-            'current_step': 4,
+            'current_step': 5,
+            'total_steps': 5,
             'score': 1
         }
         await view.client.api_utils.update_student_mission_status(**student_mission_info)
 
+        # reset user state
+        delete_theme_book_edit_record(str(interaction.user.id), view.base_mission_id)
+        delete_task_entry_record(str(interaction.user.id), view.base_mission_id)
+        delete_mission_record(str(interaction.user.id))
+
         # Send completion message
-        embed = discord.Embed(
-            title="🎆 任務完成",
-            description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{reward}\n\n📚 已匯入繪本，於對話框輸入 */我的書櫃* 查看整本",
-            color=0xeeb2da,
-        )
-        await interaction.followup.send(embed=embed)
-        await view.client.api_utils.add_gold(str(interaction.user.id), gold=reward)
+        if view.reward > 0:
+            embed = discord.Embed(
+                title="🎆 任務完成",
+                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{view.reward}\n\n📚 已匯入繪本，於對話框輸入 */我的書櫃* 查看整本",
+                color=0xeeb2da,
+            )
+            await interaction.followup.send(embed=embed)
+            await view.client.api_utils.add_gold(str(interaction.user.id), gold=view.reward)
+        else:
+            embed = discord.Embed(
+                title="修改完成",
+                description="✅ 照片內容已更新\n💡 此任務已完成過，無額外獎勵",
+                color=0xeeb2da,
+            )
+            await interaction.followup.send(embed=embed)
 
         # Send log to Background channel
         channel = view.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
@@ -196,6 +213,30 @@ class SubmitButton(discord.ui.Button):
         msg_task = f"MISSION_{view.base_mission_id}_FINISHED <@{str(interaction.user.id)}>"
         await channel.send(msg_task)
 
-        delete_theme_book_edit_record(str(interaction.user.id), view.base_mission_id)
-        delete_task_entry_record(str(interaction.user.id), view.base_mission_id)
-        delete_mission_record(str(interaction.user.id))
+        # Check for incomplete missions
+        book_info = await view.client.api_utils.get_album_info(book_id=view.book_id) or {}
+        book_status = await view.client.api_utils.get_student_album_purchase_status(str(interaction.user.id), book_id=view.book_id)
+        book_info.update(book_status)
+
+        completed_missions = await view.client.api_utils.get_student_complete_photo_mission(str(interaction.user.id), view.book_id)
+        incomplete_missions = await view.client.api_utils.get_student_incomplete_photo_mission(str(interaction.user.id), view.book_id)
+        menu_options = {
+            'book_type': '主題寶寶書',
+            'age_code': 1,
+            'current_page': 0
+        }
+
+        from bot.views.album_select_view import AlbumView
+        view = AlbumView(view.client, str(interaction.user.id), book_info, completed_missions, incomplete_missions, menu_options)
+        embed, file_path, filename, fallback_url = view.preview_embed()
+        try:
+            file = discord.File(file_path, filename=filename)
+            await interaction.followup.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            self.client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)
+        except Exception as e:
+            self.client.logger.error(f"Error loading album preview for book {self.book_info['book_id']}: {e}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)

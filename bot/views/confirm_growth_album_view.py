@@ -5,7 +5,7 @@ from datetime import datetime
 
 from bot.config import config
 from bot.views.photo_mission import PhotoTaskSelect
-from bot.views.album_select_view import AlbumSelect
+from bot.views.album_select_view import AlbumButton
 
 weekday_map = {
     0: "星期一",
@@ -51,37 +51,29 @@ def calculate_weekday(year, month, day):
 
 class ConfirmGrowthAlbumView(discord.ui.View):
     def __init__(self, client, user_id, albums_info, incomplete_missions, timeout=None):
+        super().__init__(timeout=timeout)
         self.client = client
         self.incomplete_missions = incomplete_missions
-        if timeout is None:
-            timeout = calculate_deadline_timeout(client)
-        super().__init__(timeout=timeout)
 
         self.user_id = user_id
         self.albums_info = albums_info
+        self.page_size = 4
         self.message = None
         self.call_incompleted_missions = True
-        self.setup_select_options()
+        self.build_select_book_menu()
 
-    def setup_select_options(self):
-        need_processed_albums, need_processed_missions = [], []
-        collected_book_ids = set()
-        for item in self.albums_info:
-            if item.get('purchase_status', '未購買') == '已購買' and item.get('shipping_status', '待確認') != '待確認':
-                need_processed_albums.append(item)
-                collected_book_ids.add(item['book_id'])
-            if len(need_processed_albums) >= 5:
-                break
-
-        for mission in self.incomplete_missions:
-            if int(mission['mission_id']) < 7000 and mission['book_id'] in collected_book_ids:
-                need_processed_missions.append(mission)
-
-        if len(need_processed_missions) > 25:
-            self.add_item(AlbumSelect(self.client, self.user_id, need_processed_albums))
-            self.call_incompleted_missions = False
-        else:
-            self.add_item(PhotoTaskSelect(self.client, self.user_id, self.incomplete_missions[:25]))
+    def build_select_book_menu(self, page: int = 0):
+        current_row = 0
+        for i, book in enumerate(self.albums_info):
+            button = AlbumButton(
+                self.client,
+                self.user_id,
+                menu_options=None,
+                book_info=book
+            )
+            button.row = i // 2  # 0-2 排
+            current_row = button.row
+            self.add_item(button)
 
     def preview_embed(self):
         current_day = datetime.now().day
@@ -135,23 +127,15 @@ class ConfirmGrowthAlbumView(discord.ui.View):
         return embed
 
     async def on_timeout(self):
-        self.stop()
+        for item in self.children:
+            item.disabled = True
+
         if self.message:
-            for item in self.children:
-                item.disabled = True
-            await self.message.edit(view=self)
+            try:
+                await self.message.edit(view=self)
+                print("✅ 1周後後按鈕已自動 disable")
+            except discord.NotFound:
+                print("❌ 訊息已刪除，無法更新")
 
-        user = await self.client.fetch_user(self.user_id)
-        try:
-            timeout_embed = discord.Embed(
-                title="繪本送印逾時通知",
-                description=(
-                    "很抱歉，您未在期限內完成繪本送印。\n"
-                    "若有任何問題，隨時聯絡社群客服「阿福 <@1272828469469904937>」。"
-                ),
-                color=0xeeb2da,
-            )
-            await user.send(embed=timeout_embed)
-
-        except discord.Forbidden:
-            self.client.logger.error(f"無法傳送訊息給用戶 {self.user_id}，可能已封鎖機器人。")
+        delete_task_entry_record(str(self.message.author.id), str(self.mission_id))
+        self.stop()

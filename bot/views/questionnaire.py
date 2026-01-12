@@ -19,19 +19,20 @@ class QuestionnaireView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.client = client
         self.mission_id = mission_id
-        self.questionnaire = self.client.mission_questionnaire[str(mission_id)]
-        self.total_rounds = len(self.questionnaire)
         self.current_round = current_round
         self.student_mission_info = student_mission_info
         self.message = None
-        self.min_selections = self.questionnaire[current_round].get('min_selections', 1)
-        self.max_selections = self.questionnaire[current_round].get('max_selections', 3)
-        self.clicked_options = set() or self.student_mission_info.get('clicked_options', set())
+        self.total_rounds = 1  # Simplified: one question per view
+
+        # Get current questionnaire (only one question)
+        self.questionnaire = self.client.mission_questionnaire[str(self.mission_id)][current_round]
+        self.min_selections = self.questionnaire.get('min_selections', 1)
+        self.max_selections = self.questionnaire.get('max_selections', 3)
+        self.clicked_options = self.student_mission_info.get('clicked_options', [])
         self.is_response = None
 
-        # Get questionnaire
-        self.questionnaire = self.client.mission_questionnaire[str(self.mission_id)][current_round]
-        self.options = self.questionnaire['options']
+        # Get options (use .get() to avoid KeyError for non-choice questions)
+        self.options = self.questionnaire.get('options', [])
         for idx, option in enumerate(self.options):
             button = discord.ui.Button(
                 label=option,
@@ -41,194 +42,123 @@ class QuestionnaireView(discord.ui.View):
             button.callback = self.create_callback(idx)
             self.add_item(button)
 
-        if self.max_selections > 1:
-            self.submit_button = discord.ui.Button(
-                custom_id="submit_button",
-                label="確認送出" if self.current_round + 1 == self.total_rounds else "下一題",
-                style=discord.ButtonStyle.success,
-                disabled=True if len(self.clicked_options) < self.max_selections else False
+        # Add skip button if there's a next mission
+        if student_mission_info and student_mission_info.get('next_mission_id'):
+            skip_button = discord.ui.Button(
+                label="跳過此任務",
+                custom_id=f"questionnaire_skip_{self.mission_id}",
+                style=discord.ButtonStyle.secondary
             )
-            self.submit_button.callback = self.submit_callback
-            self.add_item(self.submit_button)
+            skip_button.callback = self.skip_callback
+            self.add_item(skip_button)
 
-    def generate_summary_embed(self):
-        description = ""
-        for round_idx, record in enumerate(self.clicked_options):
-            description += (
-                f"❓**{self.questionnaire[round_idx]['question']}**\n\n"
-                f"你選擇了以下選項：\n"
-            )
-            for option in record['clicked_options']:
-                description += f"- {option}\n"
-            description += "\n----\n"
-
-        embed = discord.Embed(
-            title="🔍 確認內容",
-            description=description,
-            color=0xeeb2da
-        )
-        embed.set_footer(text="請確認以上選項，確認無誤後按下「確認送出」")
-        return embed
-
-    async def _safe_send(self, interaction: 'discord.Interaction' = None, content: str = None, update_view=None, **kwargs):
-        """Unified safe interaction helper.
-
-        - If update_view is provided, attempt to edit the stored message's view.
-        - If content is provided and interaction is provided, try response.send_message,
-          fallback to followup.send. If interaction is None or send fails, try editing
-          the stored message content as a last resort.
-        """
-        # 1) update public view if requested
-        if update_view is not None:
-            if self.message:
-                try:
-                    await self.message.edit(view=update_view)
-                except discord.NotFound:
-                    try:
-                        self.client.logger.error("❌ 訊息已刪除，無法更新")
-                    except Exception:
-                        pass
-                except Exception as e:
-                    try:
-                        self.client.logger.debug(f"_safe_send update_view failed: {e}")
-                    except Exception:
-                        pass
-
-        # 2) send ephemeral / direct content if requested
-        if content is None:
-            return
-
-        if interaction is not None:
-            try:
-                await interaction.response.send_message(content, **kwargs)
-                return
-            except discord.errors.InteractionResponded:
-                try:
-                    await interaction.followup.send(content, **kwargs)
-                    return
-                except Exception:
-                    pass
-            except Exception:
-                try:
-                    await interaction.followup.send(content, **kwargs)
-                    return
-                except Exception:
-                    pass
-
-        # fallback: edit the public message content if available
+    async def update_view(self, interaction: discord.Interaction):
+        """Update the message view (buttons)"""
         try:
-            if self.message:
-                await self.message.edit(content=content)
-        except Exception:
-            pass
-
-    async def _ensure_deferred(self, interaction: discord.Interaction):
-        """Ensure the interaction is deferred if possible. If already responded, do nothing."""
-        try:
-            # Only defer if the interaction hasn't been responded to yet
-            await interaction.response.defer()
+            await interaction.response.edit_message(view=self)
         except discord.errors.InteractionResponded:
-            # already deferred/responded; that's fine
-            return
-        except Exception as e:
-            # log unexpected issues but continue; we prefer to keep flow simple
-            try:
-                self.client.logger.debug(f"_ensure_deferred: {e}")
-            except Exception:
-                pass
+            await self.message.edit(view=self)
+
+    async def send_ephemeral(self, interaction: discord.Interaction, content: str):
+        """Send ephemeral message to user"""
+        try:
+            await interaction.response.send_message(content, ephemeral=True)
+        except discord.errors.InteractionResponded:
+            await interaction.followup.send(content, ephemeral=True)
 
     def create_callback(self, idx):
         async def callback(interaction: discord.Interaction):
-            # Ensure interaction is deferred if not already; keep logic simple otherwise.
-            await self._ensure_deferred(interaction)
-
             try:
                 selected_option = self.options[idx]
                 if selected_option in self.clicked_options:
                     # remove selection if already selected
                     self.clicked_options.remove(selected_option)
                     self.children[idx].style = discord.ButtonStyle.primary
-                    if len(self.clicked_options) < self.max_selections:
-                        # keep submit button disabled until enough selections
-                        if self.children and hasattr(self.children[-1], 'disabled'):
-                            self.children[-1].disabled = True
                 else:
                     if len(self.clicked_options) < self.max_selections:
-                        self.clicked_options.add(selected_option)
+                        self.clicked_options.append(selected_option)
                         self.children[idx].style = discord.ButtonStyle.secondary
 
-                # single-select flow: immediately submit
-                if self.max_selections == 1:
+                # single-select or max selections reached: immediately submit
+                if self.max_selections == 1 or len(self.clicked_options) == self.max_selections:
+                    # Disable all buttons
                     for item in self.children:
                         if item.custom_id.startswith("questionnaire_"):
                             item.disabled = True
 
-                    await self._safe_send(interaction, update_view=self)
-
-                    # trigger submit (it uses safe send internally)
+                    await self.update_view(interaction)
+                    # trigger submit
                     await self.submit_callback(interaction)
                     return
 
-                # multi-select flow: update view and send ephemeral hint
-                content = f"已選擇 {len(self.clicked_options)}/{self.max_selections} 個選項"
-                if len(self.clicked_options) >= self.min_selections:
-                    for item in self.children:
-                        if item.custom_id.startswith("questionnaire_"):
-                            item.disabled = True
-                        elif getattr(item, 'custom_id', None) == "submit_button":
-                            item.disabled = False
-                    if self.current_round + 1 < self.total_rounds:
-                        content = "✅ 選擇完成！確認後按下「下一題」"
-                    else:
-                        content = "✅ 選擇完成！確認後按下「確認送出」"
-
-                # update the public message view and notify the user ephemerally
-                await self._safe_send(interaction, content, update_view=self, ephemeral=True)
+                # update the message view
+                await self.update_view(interaction)
 
             except Exception as e:
                 self.client.logger.error(f"處理按鈕邏輯時發生錯誤: {e}")
-                await self._safe_send(interaction, "發生錯誤，請重試", ephemeral=True)
+                await self.send_ephemeral(interaction, "發生錯誤，請重試")
 
         return callback
 
     async def submit_callback(self, interaction: discord.Interaction):
-        await self._safe_send(interaction, "更新中...", ephemeral=True)
+        await self.send_ephemeral(interaction, "繪本製作中")
+        user_id = str(interaction.user.id)
         try:
-            save_questionnaire_record(str(interaction.user.id), str(self.message.id), self.mission_id, self.current_round, self.clicked_options)
+            save_questionnaire_record(user_id, str(self.message.id), self.mission_id, self.current_round, self.clicked_options)
             self.client.logger.info(f"✅ 已儲存問卷紀錄，使用者 {interaction.user.id} 任務 {self.mission_id} 回合 {self.current_round}")
 
-            current_step = 3 if self.current_round + 1 == self.total_rounds else 2
+            # Save results
+            mission_result = get_mission_record(user_id, self.mission_id) or {}
+            click_summary = "、".join(opt.split('.')[-1] for opt in self.clicked_options)
+
+            # Simplified: always save to first element since total_rounds = 1
+            mission_result['aside_texts'] = [click_summary]
+            save_mission_record(user_id, self.mission_id, mission_result)
+
+            # Simplified: always go to completion since total_rounds = 1
             student_mission_info = {
-                'user_id': str(interaction.user.id),
+                'user_id': user_id,
                 'mission_id': self.mission_id,
-                'current_step': current_step,
+                'current_step': self.student_mission_info['current_step'] + 1
             }
             await self.client.api_utils.update_student_mission_status(**student_mission_info)
-            self.client.logger.info(f"✅ 更新任務狀態，使用者 {interaction.user.id} 任務 {self.mission_id} 狀態 {current_step}")
 
-            # Proceed to next step or end
-            if self.current_round + 1 < self.total_rounds:
-                from bot.handlers.questionnaire_mission_handler import handle_questionnaire_round
-                message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-                await handle_questionnaire_round(self.client, message, student_mission_info, self.current_round + 1)
-            else:
-                from bot.handlers.questionnaire_mission_handler import handle_questionnaire_completion
-                message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
-                await handle_questionnaire_completion(self.client, message, student_mission_info)
+            # Complete questionnaire round
+            from bot.handlers.questionnaire_mission_handler import handle_questionnaire_next_mission
+            message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+            await handle_questionnaire_next_mission(self.client, message, student_mission_info, mission_result)
 
             self.stop()
 
         except Exception as e:
             self.client.logger.error(f"submit_callback 發生錯誤: {e}")
-            await self._safe_send(interaction, "❌ 發生錯誤，請稍後再試。", ephemeral=True)
+            await self.send_ephemeral(interaction, "❌ 發生錯誤，請稍後再試。")
+
+    async def skip_callback(self, interaction: discord.Interaction):
+        """Skip current questionnaire mission and go to next mission"""
+        # Disable all buttons
+        for item in self.children:
+            item.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        from bot.handlers.utils import start_mission_by_id
+        user_id = str(interaction.user.id)
+        next_mission_id = self.student_mission_info.get('next_mission_id')
+
+        if next_mission_id:
+            await start_mission_by_id(self.client, user_id, next_mission_id, send_weekly_report=0)
+
+        self.stop()
 
     async def on_timeout(self):
+        """Disable buttons on timeout"""
         for item in self.children:
             item.disabled = True
 
-        await self._safe_send(None, update_view=self)
-        try:
-            self.client.logger.info("⏰ 時間到，已禁用按鈕")
-        except Exception:
-            pass
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+                self.client.logger.info("⏰ 時間到，已禁用按鈕")
+            except Exception:
+                pass
         self.stop()

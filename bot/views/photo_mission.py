@@ -95,27 +95,8 @@ class PhotoTaskSelect(discord.ui.Select):
         await self.call_mission_start(selected_mission_id)
 
     async def call_mission_start(self, selected_mission_id):
-        if selected_mission_id in config.theme_mission_list:
-            from bot.handlers.theme_mission_handler import handle_theme_mission_start
-            await handle_theme_mission_start(self.client, self.user_id, selected_mission_id)
-        elif selected_mission_id in config.audio_mission:
-            from bot.handlers.audio_mission_handler import handle_audio_mission_start
-            await handle_audio_mission_start(self.client, self.user_id, selected_mission_id)
-        elif selected_mission_id in config.questionnaire_mission:
-            from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
-            await handle_questionnaire_mission_start(self.client, self.user_id, selected_mission_id)
-        elif selected_mission_id in config.baby_profile_registration_missions:
-            from bot.handlers.profile_handler import handle_registration_mission_start
-            await handle_registration_mission_start(self.client, self.user_id, selected_mission_id)
-        elif selected_mission_id in config.relation_or_identity_mission:
-            from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
-            await handle_relation_identity_mission_start(self.client, self.user_id, selected_mission_id)
-        elif selected_mission_id in config.add_on_photo_mission:
-            from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
-            await handle_add_on_mission_start(self.client, self.user_id, selected_mission_id)
-        else:
-            from bot.handlers.photo_mission_handler import handle_photo_mission_start
-            await handle_photo_mission_start(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
+        from bot.handlers.utils import start_mission_by_id
+        await start_mission_by_id(self.client, self.user_id, selected_mission_id, send_weekly_report=0)
 
 class PreviousButton(discord.ui.Button):
     def __init__(self, enabled=True):

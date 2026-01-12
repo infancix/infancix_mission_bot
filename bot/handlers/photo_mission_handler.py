@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
 async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -41,20 +42,27 @@ async def handle_photo_mission_start(client, user_id, mission_id, send_weekly_re
     }
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
+    # Prepare next mission
+    book_id = mission.get('book_id', 0)
+    incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
+    next_mission_id = None
+    for m in incomplete_missions:
+        if m['mission_id'] != mission_id:
+            next_mission_id = m['mission_id']
+            student_mission_info['next_mission_id'] = next_mission_id
+            break
+
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
         await user.create_dm()
 
-    if int(mission_id) in config.add_on_photo_mission:
-        embed = get_add_on_photo_embed(mission)
-        view = TaskSelectView(client, "check_add_on", mission_id, mission_result=mission)
-        view.message = await user.send(embed=embed, view=view)
-        save_task_entry_record(user_id, str(view.message.id), "check_add_on", mission_id, result=mission)
-    else:
-        embed, files = await build_photo_mission_embed(mission, baby, book)
-        if send_weekly_report and files:
-            await user.send(files=files)
-        await user.send(embed=embed)
+    embed, files = await build_photo_mission_embed(mission, baby, book)
+    if send_weekly_report and files:
+        await user.send(files=files)
+
+    view = TaskSelectView(client, "skip_mission", mission_id, mission_result=student_mission_info)
+    view.message = await user.send(embed=embed, view=view)
+    save_task_entry_record(user_id, str(view.message.id), "skip_mission", mission_id, result=student_mission_info)
     return
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
@@ -80,16 +88,36 @@ async def process_photo_mission_filling(client, message, student_mission_info):
         mission_result = request_info.get('direct_response', {})
 
     # validate mission result
-    if mission_id in config.photo_mission_without_aside_text:
-        mission_result['is_ready'] = True
-    elif mission_id in config.photo_mission_with_aside_text:
-        mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
-    elif mission_id in config.photo_mission_with_title_and_content:
-        mission_result = client.openai_utils.process_content_validation(mission_result)
+    # Get required attachment count
+    required_count = config.get_required_attachment_count(mission_id, 'photo')
+
+    # Check if we have enough attachments
+    attachment = mission_result.get('attachment')
+    if required_count > 1:
+        # Multiple attachments required
+        current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
+        has_enough_attachments = current_count >= required_count
+    else:
+        # Single attachment required (original behavior)
+        has_enough_attachments = bool(attachment and (attachment.get('url') if isinstance(attachment, dict) else True))
+
+    if not has_enough_attachments:
+        mission_result['is_ready'] = False
+        mission_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
+    else:
+        student_mission_info['current_step'] = 2
+        if mission_id in config.photo_mission_without_aside_text:
+            mission_result['is_ready'] = True
+            student_mission_info['current_step'] = 3
+        if mission_id in config.photo_mission_with_aside_text:
+            mission_result = client.openai_utils.process_aside_text_validation(mission_result, skip_aside_text=client.skip_aside_text.get(user_id, False))
+        elif mission_id in config.photo_mission_with_title_and_content:
+            mission_result = client.openai_utils.process_content_validation(mission_result)
+
     save_mission_record(user_id, mission_id, mission_result)
 
     if mission_result.get('is_ready'):
-        if  mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
+        if mission_id in config.photo_mission_without_aside_text or client.skip_aside_text.get(user_id, False):
             await submit_image_data(client, message, student_mission_info, mission_result)
             return
         else:
@@ -98,19 +126,23 @@ async def process_photo_mission_filling(client, message, student_mission_info):
             view.message = await message.channel.send(embed=embed, view=view)
             save_task_entry_record(user_id, str(view.message.id), "go_submit", mission_id, result=mission_result)
     else:
-        if student_mission_info['current_step'] == 1:
+        if student_mission_info['current_step'] == 2:
             if mission_id in config.photo_mission_with_title_and_content:
                 embed = get_letter_embed()
                 await message.channel.send(embed=embed)
+                mission_result['previous_question'] = embed.description
             else:
                 embed = get_aside_text_embed()
                 view = TaskSelectView(client, 'go_skip_aside_text', mission_id, mission_result=mission_result)
                 view.message = await message.channel.send(embed=embed, view=view)
                 save_task_entry_record(user_id, str(view.message.id), "go_skip_aside_text", mission_id, result=mission_result)
+                mission_result['previous_question'] = embed.description
 
             # Update mission status
-            student_mission_info['current_step'] = 2
+            student_mission_info['current_step'] = 3
             await client.api_utils.update_student_mission_status(**student_mission_info)
+            save_mission_record(user_id, mission_id, mission_result)
+
         else:
             # Continue to collect additional information
             await message.channel.send(mission_result['message'])
@@ -122,10 +154,15 @@ def prepare_api_request(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     saved_result = get_mission_record(user_id, mission_id) or {}
 
+    # Get required attachment count for this mission
+    required_count = config.get_required_attachment_count(mission_id, 'photo')
+
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
         photo_index = client.photo_mission_replace_index[user_id]
-        if not saved_result.get('attachment') or photo_index-1 >= len(saved_result['attachment']):
+        attachments_list = saved_result.get('attachment', []) if isinstance(saved_result.get('attachment'), list) else [saved_result.get('attachment')] if saved_result.get('attachment') else []
+
+        if not attachments_list or photo_index-1 >= len(attachments_list):
             return {
                 'needs_ai_prediction': False,
                 'direct_action': 'error',
@@ -133,7 +170,8 @@ def prepare_api_request(client, message, student_mission_info):
             }
 
         replace_attachment = extract_attachment_info(message.attachments[0].url)
-        saved_result['attachment'][photo_index-1] = replace_attachment
+        attachments_list[photo_index-1] = replace_attachment
+        saved_result['attachment'] = attachments_list if required_count > 1 else attachments_list[0]
         saved_result['message'] = "已收到您的照片"
         saved_result['is_ready'] = True
         return {
@@ -142,26 +180,53 @@ def prepare_api_request(client, message, student_mission_info):
             'direct_response': saved_result
         }
     elif message.attachments:
-        attachment = extract_attachment_info(message.attachments[0].url)
-        saved_result['attachment'] = attachment
+        # Handle multiple photos requirement
+        if required_count > 1:
+            if not saved_result.get('attachment'):
+                saved_result['attachment'] = []
+            elif not isinstance(saved_result['attachment'], list):
+                saved_result['attachment'] = [saved_result['attachment']]
+
+            # Add new attachments
+            for att in message.attachments:
+                if len(saved_result['attachment']) >= required_count:
+                    break
+                attachment = extract_attachment_info(att.url)
+                saved_result['attachment'].append(attachment)
+        else:
+            # Single photo requirement (original behavior)
+            attachment = extract_attachment_info(message.attachments[0].url)
+            saved_result['attachment'] = attachment
+
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',
             'direct_response': saved_result
         }
-    elif student_mission_info['current_step'] > 1:
-        user_message = "User provide aside_text:\n" + message.content
     else:
-        user_message = message.content
+        user_message = "Current user reply: " + message.content
 
     # Build full context for AI prediction
     context_parts = []
-    if saved_result.get('attachment') and saved_result['attachment'].get('url'):
-        context_parts.append(f"Current attachments detail: {saved_result['attachment']}")
+
+    # Add attachment status (without detailed info to avoid confusion)
+    if saved_result.get('attachment'):
+        if isinstance(saved_result['attachment'], list):
+            context_parts.append(f"Photo upload status: {len(saved_result['attachment'])} photos already uploaded")
+        else:
+            context_parts.append(f"Photo upload status: Photo already uploaded")
+
+    # Add conversation flow context
+    if saved_result.get("previous_question"):
+        context_parts.append(f"Previous question asked to user:\n{saved_result['previous_question']}")
+
+    # Add previously collected text data
     if saved_result.get('aside_text'):
-        context_parts.append(f"Current aside text: {saved_result['aside_text']}")
+        context_parts.append(f"User's aside_text (already provided):\n{saved_result['aside_text']}")
+
     if saved_result.get('content'):
-        context_parts.append(f"Current content: {saved_result['content']}")
+        context_parts.append(f"User's content/story (already provided):\n{saved_result['content']}")
+
     context = "\n".join(context_parts) if context_parts else "No prior context."
 
     return {
@@ -228,8 +293,16 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
-    title = f"📸**{mission_info['photo_mission']}**"
-    desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
+    # Check if mission_id exists in mission_instruction.json
+    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+    if instruction_data:
+        # Use custom instruction from mission_instruction.json
+        title = f"📸 **{instruction_data['title']}**"
+        desc = instruction_data['description']
+    else:
+        # Use original embed from API data
+        title = f"📸**{mission_info['photo_mission']}**"
+        desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()
@@ -247,7 +320,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
             f"> {instruction} \n"
         )
 
-    elif int(mission_info['mission_id']) == 1003:
+    if int(mission_info['mission_id']) == 1003 and not instruction_data:
         desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
 
     embed = discord.Embed(
@@ -277,7 +350,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
     )
 
     files = []
-    if '成長週報' in mission_info['mission_type']:
+    if '週' in mission_info['mission_milestone']:
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())

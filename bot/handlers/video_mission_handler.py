@@ -20,7 +20,7 @@ from bot.utils.drive_file_utils import create_file_from_url, create_preview_imag
 from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
-async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_report=1):
+async def handle_video_mission_start(client, user_id, mission_id, send_weekly_report=1):
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
     baby = await client.api_utils.get_baby_profile(user_id)
@@ -52,7 +52,7 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
     if user.dm_channel is None:
         await user.create_dm()
 
-    embed, files = await build_audio_mission_embed(mission, baby)
+    embed, files = await build_video_mission_embed(mission, baby)
     if send_weekly_report and files:
         await user.send(files=files)
 
@@ -61,8 +61,8 @@ async def handle_audio_mission_start(client, user_id, mission_id, send_weekly_re
     save_task_entry_record(user_id, str(view.message.id), "skip_mission", mission_id, result=student_mission_info)
     return
 
-@exception_handler(user_friendly_message="錄音檔上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
-async def process_audio_mission_filling(client, message, student_mission_info):
+@exception_handler(user_friendly_message="影片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
+async def process_video_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
@@ -84,7 +84,7 @@ async def process_audio_mission_filling(client, message, student_mission_info):
 
     # Validate mission result
     # Get required attachment count
-    required_count = config.get_required_attachment_count(mission_id, 'audio')
+    required_count = config.get_required_attachment_count(mission_id, 'video')
 
     # Check if we have enough attachments
     attachment = mission_result.get('attachment')
@@ -97,21 +97,21 @@ async def process_audio_mission_filling(client, message, student_mission_info):
             mission_result['is_ready'] = True
         else:
             mission_result['is_ready'] = False
-            mission_result['message'] = f"目前已收到 {current_count} 個錄音檔，還需要 {required_count - current_count} 個錄音檔喔！"
+            mission_result['message'] = f"目前已收到 {current_count} 個影片，還需要 {required_count - current_count} 個影片喔！"
     else:
         # Single attachment required (original behavior)
         if attachment and (attachment.get('url') if isinstance(attachment, dict) else True):
             mission_result['is_ready'] = True
         else:
             mission_result['is_ready'] = False
-            mission_result['message'] = "請上傳錄音檔喔！"
+            mission_result['message'] = "請上傳影片喔！"
 
     save_mission_record(user_id, mission_id, mission_result)
 
     if mission_result.get('is_ready'):
         embed = get_waiting_embed()
         await message.channel.send(embed=embed)
-        await submit_audio_data(client, message, student_mission_info, mission_result)
+        await submit_video_data(client, message, student_mission_info, mission_result)
     else:
         await message.channel.send(mission_result['message'])
 
@@ -123,10 +123,10 @@ def prepare_api_request(client, message, student_mission_info):
     saved_result = get_mission_record(user_id, mission_id) or {}
 
     # Get required attachment count for this mission
-    required_count = config.get_required_attachment_count(mission_id, 'audio')
+    required_count = config.get_required_attachment_count(mission_id, 'video')
 
     if message.attachments:
-        # Handle multiple audios requirement
+        # Handle multiple videos requirement
         if required_count > 1:
             if not saved_result.get('attachment'):
                 saved_result['attachment'] = []
@@ -142,18 +142,18 @@ def prepare_api_request(client, message, student_mission_info):
 
             current_count = len(saved_result['attachment'])
             if current_count >= required_count:
-                saved_result['message'] = f"已收到 {current_count} 個錄音檔"
+                saved_result['message'] = f"已收到 {current_count} 個影片"
             else:
-                saved_result['message'] = f"已收到 {current_count} 個錄音檔，還需要 {required_count - current_count} 個錄音檔"
+                saved_result['message'] = f"已收到 {current_count} 個影片，還需要 {required_count - current_count} 個影片"
         else:
-            # Single audio requirement (original behavior)
+            # Single video requirement (original behavior)
             attachment = extract_attachment_info(message.attachments[0].url)
             saved_result['attachment'] = attachment
-            saved_result['message'] = "已收到您的錄音檔"
+            saved_result['message'] = "已收到您的影片"
 
         return {
             'needs_ai_prediction': False,
-            'direct_action': 'audio_upload',
+            'direct_action': 'video_upload',
             'direct_response': saved_result
         }
     else:
@@ -164,7 +164,7 @@ def prepare_api_request(client, message, student_mission_info):
     if saved_result.get('attachment'):
         context_parts = []
         if isinstance(saved_result['attachment'], list):
-            context_parts.append(f"Current attachments: {len(saved_result['attachment'])} audios collected")
+            context_parts.append(f"Current attachments: {len(saved_result['attachment'])} videos collected")
         context_parts.append(f"Attachments detail: {saved_result['attachment']}")
         context = "\n".join(context_parts)
     else:
@@ -178,11 +178,11 @@ def prepare_api_request(client, message, student_mission_info):
     }
 
 # --------------------- Event Handlers ---------------------
-async def submit_audio_data(client, message, student_mission_info, mission_result):
+async def submit_video_data(client, message, student_mission_info, mission_result):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
-    # Process the audio attachment
+    # Process the video attachment
     if isinstance(mission_result.get('attachment'), list):
         attachment_obj = mission_result.get('attachment')
     else:
@@ -212,7 +212,7 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
         "aside_text": None
     }
 
-async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mission=True):
+async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mission=True):
     # Prepare description based on style
     if baby_info is None:
         author = "恭喜寶寶出生！"
@@ -239,12 +239,14 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
 
     if instruction_data:
         # Use custom instruction from mission_instruction.json
-        title = f"🎙️ **{instruction_data['title']}**"
+        title = f"🎬 **{instruction_data['title']}**"
         desc = instruction_data['description']
     else:
         # Use original embed from API data
-        title = f"🎙️**{mission_info['photo_mission']}**"
-        desc = "長按對話框右側的🎙️即可錄音。\n"
+        title = f"🎬**{mission_info['photo_mission']}**"
+        desc = f"請上傳寶寶的影片 👇\n"
+        desc += f"💡 支援的影片格式：MP4、MOV、AVI、MKV、WEBM\n"
+        desc += f"💡 影片長度限制：每支影片最長 30 秒\n\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()

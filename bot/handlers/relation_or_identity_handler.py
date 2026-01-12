@@ -17,6 +17,7 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.decorator import exception_handler
 from bot.utils.drive_file_utils import create_file_from_url, create_preview_image_from_url
+from bot.utils.mission_instruction_utils import get_mission_instruction
 from bot.config import config
 
 async def handle_relation_identity_mission_start(client, user_id, mission_id, send_weekly_report=1):
@@ -80,11 +81,15 @@ async def process_relation_identity_filling(client, message, student_mission_inf
     elif mission_result.get("relation_or_identity", None) is None:
         if int(mission_id) in config.relation_mission:
             embed = get_relation_embed(student_mission_info)
-        elif int(mission_id) == 56:
-            embed = get_little_friend_embed(student_mission_info)
-        else:
+            await message.channel.send(embed=embed)
+        elif int(mission_id) in config.identity_mission:
             embed = get_identity_embed(student_mission_info)
-        await message.channel.send(embed=embed)
+            await message.channel.send(embed=embed)
+        else:
+            instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+            if instruction_data:
+                embed = build_embed(student_mission_info, instruction_data)
+                await message.channel.send(embed=embed)
     else:
         await message.channel.send(mission_result['message'])
     return
@@ -175,6 +180,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
 
     title = f"📸**{mission_info['photo_mission']}**"
     desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
+    if int(mission_info['mission_id']) == 1003:
+        desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()
@@ -192,9 +199,6 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
             f"> {instruction} \n"
         )
 
-    elif int(mission_info['mission_id']) == 1003:
-        desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
-
     embed = discord.Embed(
         title=title,
         description=desc,
@@ -208,7 +212,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
     )
 
     files = []
-    if '成長週報' in mission_info['mission_type']:
+    if '週' in mission_info['mission_milestone']:
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
@@ -219,7 +223,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
 
 def get_relation_embed(mission_info):
     embed = discord.Embed(
-        title="📝 照片裡的人和寶寶關係是?",
+        title="📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
         description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
         color=0xeeb2da,
     )
@@ -237,12 +241,10 @@ def get_identity_embed(mission_info):
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
-def get_little_friend_embed(mission_info):
+def build_embed(mission_info, instruction_data):
     embed = discord.Embed(
-        title="請問這位朋友的名字是?",
-        description=(
-            "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
-        ),
+        title=instruction_data['title'],
+        description=instruction_data['description'],
         color=0xeeb2da,
     )
     embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")

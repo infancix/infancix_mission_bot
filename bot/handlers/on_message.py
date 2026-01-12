@@ -5,8 +5,10 @@ import re
 import time
 
 from bot.config import config
-from bot.handlers.quiz_mission_handler import handle_quiz_mission_start
-from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start, process_questionnaire_photo_mission_filling
+from bot.handlers.questionnaire_mission_handler import (
+    handle_questionnaire_mission_start,
+    process_questionnaire_mission_filling
+)
 from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
@@ -21,7 +23,7 @@ from bot.handlers.photo_mission_handler import (
 ) 
 from bot.handlers.add_on_mission_handler import (
     handle_add_on_mission_start,
-    process_add_on_photo_mission_filling
+    process_add_on_mission_filling
 )
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
@@ -31,14 +33,19 @@ from bot.handlers.audio_mission_handler import (
     handle_audio_mission_start,
     process_audio_mission_filling
 )
+from bot.handlers.video_mission_handler import (
+    handle_video_mission_start,
+    process_video_mission_filling
+)
 from bot.handlers.theme_mission_handler import (
     handle_theme_mission_start,
+    handle_theme_mission_restart,
     process_theme_mission_filling
 )
 from bot.views.growth_photo import GrowthPhotoView
 from bot.views.album_select_view import AlbumView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
-from bot.views.theme_book_view import ThemeBookView
+from bot.views.theme_book_view import EditThemeBookView
 from bot.views.task_select_view import TaskSelectView
 from bot.utils.message_tracker import (
     save_task_entry_record,
@@ -66,8 +73,8 @@ async def handle_background_message(client, message):
 
     patterns = [
         (rf'START_MISSION_{prefix}(\d+)', handle_mission),
-        (rf'PHOTO_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_photo),
-        (rf'ALBUM_GENERATION_COMPLETED{prefix}_(\d+)_(\d+)', handle_album),
+        (rf'PHOTO_GENERATION_COMPLETED_{prefix}(\d+)_(\d+)', handle_photo),
+        (rf'ALBUM_GENERATION_COMPLETED_{prefix}(\d+)_(\d+)', handle_album),
         (rf'MONTHLY_PRINT_{prefix}REMINDER', handle_notify_monthly_print_reminder_job),
     ]
     for pattern, handler in patterns:
@@ -97,6 +104,7 @@ async def handle_album(client, user_id, match):
     baby_id = int(match.group(1))
     book_id = int(match.group(2))
     if book_id in config.theme_book_mission_map:
+        await handle_theme_mission_restart(client, user_id, book_id)
         await handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id)
     else:
         await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
@@ -149,8 +157,7 @@ async def handle_direct_message(client, message):
 
     # 影片
     elif message.attachments and message.attachments[0].filename.lower().endswith(('.mp4', '.mov', '.avi', '.mkv', '.webm')):
-        await message.channel.send("請提供照片喔！")
-        return
+        message.content = "收到使用者的影片"
     else:
         if not message.content.strip():
             await message.channel.send(f"無法處理您上傳的檔案內容，請輸入文字訊息或確保檔案格式正確後再試一次。如需幫助，請聯絡客服。")
@@ -166,12 +173,14 @@ async def handle_direct_message(client, message):
         await process_pregnancy_registration_message(client, message, student_mission_info)
     elif mission_id in config.relation_or_identity_mission:
         await process_relation_identity_filling(client, message, student_mission_info)
+    elif mission_id in config.video_mission:
+        await process_video_mission_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
     elif mission_id in config.add_on_photo_mission:
-        await process_add_on_photo_mission_filling(client, message, student_mission_info)
+        await process_add_on_mission_filling(client, message, student_mission_info)
     elif mission_id in config.questionnaire_mission:
-        await process_questionnaire_photo_mission_filling(client, message, student_mission_info)
+        await process_questionnaire_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
         await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.theme_mission_list:
@@ -192,32 +201,20 @@ async def handle_direct_message(client, message):
     return
 
 async def handle_start_mission(client, user_id, mission_id):
+    from bot.handlers.utils import start_mission_by_id
+
     mission_id = int(mission_id)
+
+    # Handle special cases first
     if mission_id == 1000:
         await handle_app_instruction(client, user_id, mission_id)
     elif mission_id >= 101 and mission_id <= 135:
         await handle_pregnancy_mission_start(client, user_id, mission_id)
-    elif mission_id in config.baby_profile_registration_missions:
-        await handle_registration_mission_start(client, user_id, mission_id)
-    elif mission_id in config.relation_or_identity_mission:
-        await handle_relation_identity_mission_start(client, user_id, mission_id)
-    elif mission_id in config.theme_mission_list:
-        await handle_theme_mission_start(client, user_id, mission_id)
-    elif mission_id in config.audio_mission:
-        await handle_audio_mission_start(client, user_id, mission_id)
-    elif mission_id in config.questionnaire_mission:
-        await handle_questionnaire_mission_start(client, user_id, mission_id)
-    elif mission_id in config.add_on_photo_mission:
-        await handle_add_on_mission_start(client, user_id, mission_id)
-    elif mission_id in config.photo_mission_list:
-        await handle_photo_mission_start(client, user_id, mission_id)
-    elif mission_id < 100 and mission_id not in config.photo_mission_list:
-        await handle_quiz_mission_start(client, user_id, mission_id)
     elif mission_id in config.confirm_album_mission:
         await handle_confirm_growth_album_mission_start(client, user_id, mission_id)
     else:
-        print(f"Unhandled mission ID: {mission_id}")
-        return
+        # Use shared mission routing function for common mission types
+        await start_mission_by_id(client, user_id, mission_id, send_weekly_report=1)
 
 async def handle_app_instruction(client, user_id, mission_id):
     user = await client.fetch_user(user_id)
@@ -294,9 +291,10 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
             'book_id': mission_result['book_id']
         }
         view = GrowthPhotoView(client, user_id, int(mission_id), mission_result=mission_result)
-        embed = view.generate_embed(baby_id, int(mission_id))
+        embed, file_path, filename = view.generate_embed(baby_id, int(mission_id))
         await asyncio.sleep(0.5)
-        view.message = await user.send(embed=embed, view=view)
+        file = discord.File(file_path, filename=filename)
+        view.message = await user.send(embed=embed, view=view, file=file)
         # save and delete task status
         save_growth_photo_records(str(user_id), view.message.id, mission_id, result=mission_result)
         delete_task_entry_record(str(user_id), mission_id)
@@ -309,18 +307,35 @@ async def handle_notify_photo_ready_job(client, user_id, baby_id, mission_id):
 
 async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
     album_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
+    completed_missions = await client.api_utils.get_student_complete_photo_mission(user_id, book_id)
     incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
     if album_info is None:
         client.logger.error(f"Album not found for user {user_id}, book {book_id}")
         return
 
-    view = AlbumView(client, user_id, album_info, incomplete_missions)
-    embed = view.preview_embed()
     try:
+        # Create the album preview view
+        view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
+        embed, file_path, filename, fallback_url = view.preview_embed()
+
         # Send the album preview to the user
         user = await client.fetch_user(user_id)
         await asyncio.sleep(0.5)
-        await user.send(embed=embed, view=view)
+
+        try:
+            file = discord.File(file_path, filename=filename)
+            await user.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            await user.send(embed=embed, view=view)
+        except Exception as e:
+            client.logger.error(f"Error loading file {file_path}: {e}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            await user.send(embed=embed, view=view)
+
         # Log the successful message send
         client.logger.info(f"Send album message to user {user_id}, book {book_id}")
     except Exception as e:
@@ -329,7 +344,7 @@ async def handle_notify_album_ready_job(client, user_id, baby_id, book_id):
 
 async def handle_notify_theme_book_ready_job(client, user_id, baby_id, book_id):
     book_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
-    view = ThemeBookView(client, book_info)
+    view = EditThemeBookView(client, book_info)
     embed, file_path, filename = view.get_current_embed(str(user_id))
     file = discord.File(file_path, filename=filename)
     try:
@@ -353,15 +368,25 @@ async def handle_notify_theme_book_change_page(client, user_id, baby_id):
         if str(user_id) in records:
             book_id, edit_status = next(iter(records.get(str(user_id), {}).items()))
             channel = await client.fetch_user(user_id)
-            message = await channel.fetch_message(int(edit_status['message_id']))
-            await message.delete()
+
+            # Try to delete old message, but don't fail if it doesn't exist
+            try:
+                message = await channel.fetch_message(int(edit_status['message_id']))
+                await message.delete()
+            except discord.NotFound:
+                client.logger.info(f"ℹ️ Old message not found for {user_id}, skipping delete")
+            except discord.Forbidden:
+                client.logger.warning(f"⚠️ No permission to delete message for {user_id}")
+            except Exception as delete_error:
+                client.logger.warning(f"⚠️ Unexpected error deleting message for {user_id}: {delete_error}")
 
             # Create a new one
             book_info = edit_status.get('result', None)
-            view = ThemeBookView(client, book_info)
+            view = EditThemeBookView(client, book_info)
             embed, file_path, filename = view.get_current_embed(str(user_id))
+            file = discord.File(file_path, filename=filename)
             await asyncio.sleep(0.5)
-            view.message = await user.send(
+            view.message = await channel.send(
                 embed=embed,
                 view=view,
                 file=file,
@@ -379,16 +404,30 @@ async def handle_confirm_growth_album_mission_start(client, user_id, mission_id)
 
 async def handle_notify_album_job(client, user_id, mission_id, book_id):
     album_info = await client.api_utils.get_student_album_purchase_status(user_id, book_id)
+    completed_missions = await client.api_utils.get_student_complete_photo_mission(user_id, book_id)
     incomplete_missions = await client.api_utils.get_student_incomplete_photo_mission(user_id, book_id)
     client.logger.info(f"Album status for user {user_id}, book {book_id}: {album_info}, incomplete missions: {len(incomplete_missions)}")
     if album_info and album_info.get("purchase_status", "未購買") == "已購買" and album_info.get("shipping_status", "待確認") == "待確認":
-        view = AlbumView(client, user_id, album_info, incomplete_missions)
-        embed = view.preview_embed()
+        view = AlbumView(client, user_id, album_info, completed_missions, incomplete_missions)
+        embed, file_path, filename, fallback_url = view.preview_embed()
         user = await client.fetch_user(user_id)
         if user.dm_channel is None:
             await user.create_dm()
         await asyncio.sleep(0.5)
-        view.message = await user.send(embed=embed, view=view)
+
+        try:
+            file = discord.File(file_path, filename=filename)
+            view.message = await user.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            view.message = await user.send(embed=embed, view=view)
+        except Exception as e:
+            client.logger.error(f"Error loading file {file_path}: {e}, using fallback URL: {fallback_url}")
+            if fallback_url:
+                embed.set_image(url=fallback_url)
+            view.message = await user.send(embed=embed, view=view)
     return
 
 async def handle_notify_monthly_print_reminder_job(client, user_id, match):

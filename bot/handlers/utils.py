@@ -9,7 +9,6 @@ from discord.ui import View, Button
 
 from bot.config import config
 from bot.utils.message_tracker import (
-    load_quiz_message_records,
     load_task_entry_records,
     load_growth_photo_records,
     load_theme_book_edit_records,
@@ -21,10 +20,9 @@ from bot.utils.message_tracker import (
 )
 from bot.views.task_select_view import TaskSelectView
 from bot.views.growth_photo import GrowthPhotoView
-from bot.views.theme_book_view import ThemeBookView
+from bot.views.theme_book_view import EditThemeBookView
 from bot.views.questionnaire import QuestionnaireView
 from bot.views.confirm_growth_album_view import ConfirmGrowthAlbumView
-from bot.views.quiz import QuizView
 
 async def run_scheduler():
     while True:
@@ -32,8 +30,10 @@ async def run_scheduler():
         await asyncio.sleep(10)
 
 async def daily_job(client):
-    client.logger.debug('Running job now...')
+    if config.ENV:
+        return
 
+    client.logger.debug('Running job now...')
     target_channel = client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
     if target_channel is None or not isinstance(target_channel, discord.TextChannel):
         raise Exception('Invalid channel')
@@ -49,9 +49,12 @@ async def daily_job(client):
             client.logger.error(f"Failed to send control panel to user: {user_id}, {str(e)}")
 
 async def monthly_print_reminder_job(client):
+    if config.ENV:
+        return
+
     today = date.today()
     # check if today is the 1st of the month
-    if today.day != 1 and today.day != 4:
+    if today.day != 1 and today.day != 15:
         return
 
     client.logger.debug('Running monthly print reminder job now...')
@@ -125,20 +128,6 @@ async def load_confirm_growth_album_messages(client):
         except Exception as e:
             client.logger.warning(f"⚠️ Failed to restore confirmed growth album for {user_id}: {e}")
 
-async def load_quiz_message(client):
-    records = load_quiz_message_records()
-    for user_id, (message_id, mission_id, current_round, correct_cnt) in records.items():
-        try:
-            channel = await client.fetch_user(user_id)
-            student_mission_info = await client.api_utils.get_student_mission_status(user_id, int(mission_id))
-            student_mission_info['user_id'] = user_id
-            message = await channel.fetch_message(int(message_id))
-            view = QuizView(client, int(mission_id), current_round, correct_cnt, student_mission_info)
-            await message.edit(view=view)
-            client.logger.info(f"✅ Restored quiz for user {user_id}")
-        except Exception as e:
-            client.logger.warning(f"⚠️ Failed to restore quiz for {user_id}: {e}")
-
 async def load_theme_book_edit_messages(client):
     records = load_theme_book_edit_records()
     for user_id in records:
@@ -147,7 +136,7 @@ async def load_theme_book_edit_messages(client):
             for book_id, edit_status in records[user_id].items():
                 message = await channel.fetch_message(int(edit_status['message_id']))
                 result = edit_status.get('result', None)
-                view = ThemeBookView(client, result)
+                view = EditThemeBookView(client, result)
                 await message.edit(view=view)
             client.logger.info(f"✅ Restored theme book edits for user {user_id}")
         except Exception as e:
@@ -177,3 +166,39 @@ def get_user_id(source: discord.Interaction | discord.Message) -> str:
         return str(source.user.id)
     else:
         return str(source.author.id)
+
+async def start_mission_by_id(client, user_id: str, mission_id: int, send_weekly_report: int = 1):
+    """
+    Route and start a mission based on its ID.
+
+    Args:
+        client: The Discord client
+        user_id: User ID as string
+        mission_id: Mission ID to start
+        send_weekly_report: Whether to send weekly report (default: 1)
+    """
+    if mission_id in config.theme_mission_list:
+        from bot.handlers.theme_mission_handler import handle_theme_mission_start
+        await handle_theme_mission_start(client, user_id, mission_id)
+    elif mission_id in config.audio_mission:
+        from bot.handlers.audio_mission_handler import handle_audio_mission_start
+        await handle_audio_mission_start(client, user_id, mission_id)
+    elif mission_id in config.video_mission:
+        from bot.handlers.video_mission_handler import handle_video_mission_start
+        await handle_video_mission_start(client, user_id, mission_id)
+    elif mission_id in config.questionnaire_mission:
+        from bot.handlers.questionnaire_mission_handler import handle_questionnaire_mission_start
+        await handle_questionnaire_mission_start(client, user_id, mission_id)
+    elif mission_id in config.baby_profile_registration_missions:
+        from bot.handlers.profile_handler import handle_registration_mission_start
+        await handle_registration_mission_start(client, user_id, mission_id)
+    elif mission_id in config.relation_or_identity_mission:
+        from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
+        await handle_relation_identity_mission_start(client, user_id, mission_id)
+    elif mission_id in config.add_on_photo_mission:
+        from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
+        await handle_add_on_mission_start(client, user_id, mission_id)
+    else:
+        # Default to photo mission
+        from bot.handlers.photo_mission_handler import handle_photo_mission_start
+        await handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=send_weekly_report)

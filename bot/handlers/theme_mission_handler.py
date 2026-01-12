@@ -54,7 +54,62 @@ async def handle_theme_mission_start(client, user_id, mission_id):
     await user.dm_channel.send(embed=embed)
     embed = get_baby_registration_embed()
     await user.dm_channel.send(embed=embed)
+
+    saved_results = {
+        'previous_question': embed.description
+    }
+    save_mission_record(user_id, mission_id, saved_results)
+
     return
+
+async def handle_theme_mission_restart(client, user_id, book_id, mission_id=None):
+    user_id = str(user_id)
+
+    # Delete mission cache
+    delete_mission_record(user_id)
+    if user_id in client.photo_mission_replace_index:
+        del client.photo_mission_replace_index[user_id]
+
+    # Load mission info
+    if not mission_id:
+        mission_ids = config.theme_book_mission_map.get(book_id, [])
+        if not mission_ids:
+            return
+        mission_id = mission_ids[0]
+
+    mission = await client.api_utils.get_mission_info(mission_id)
+
+    mission_result = await load_current_mission_status(client, user_id, book_id)
+    client.logger.info(f"Loaded mission record from API for user {user_id}, mission {mission_id}: {mission_result}")
+
+    # define current step based on loaded data
+    if len(mission_result.get('aside_texts', [])) > 0:
+        current_step = 4
+    elif len(mission_result.get('attachments', [])) > 0:
+        current_step = 3
+    elif mission_result.get('cover'):
+        current_step = 2
+    elif mission_result.get('baby_name'):
+        # book_id 16 需要額外檢查 relation_or_identity
+        current_step = 1 if (book_id == 16 and not mission_result.get('relation_or_identity')) else 2
+    else:
+        current_step = 1
+
+    mission_result['step_1_completed'] = current_step >= 2
+    mission_result['step_2_completed'] = current_step >= 3
+    mission_result['step_3_completed'] = current_step >= 4
+
+    # Mission restart
+    student_mission_info = {
+        **mission,
+        'user_id': user_id,
+        'current_step': current_step,
+        'total_steps': 5
+    }
+    await client.api_utils.update_student_mission_status(**student_mission_info)
+
+    # Save loaded mission record
+    save_mission_record(user_id, mission_id, mission_result)
 
 @exception_handler(user_friendly_message="照片上傳失敗了，請稍後再試喔！\n若持續失敗，可私訊@社群管家( <@1272828469469904937> )協助。")
 async def process_theme_mission_filling(client, message, student_mission_info):
@@ -99,15 +154,25 @@ async def process_theme_mission_filling(client, message, student_mission_info):
 
 async def prepare_api_request(client, message, student_mission_info):
     user_id = str(message.author.id)
+    book_id = student_mission_info['book_id']
     mission_id = student_mission_info['mission_id']
     current_step = student_mission_info.get('current_step', 1)
 
     # Get saved mission record
     saved_result = get_mission_record(user_id, mission_id)
-    if not saved_result.get('attachments'):
+    if not saved_result:
+        saved_result = {
+            'baby_name': None,
+            'relation_or_identity': None,
+            'cover': None,
+            'attachments': [],
+            'aside_texts': [],
+            'is_ready': False
+        }
+    if 'attachments' not in saved_result:
         saved_result['attachments'] = []
-    if not saved_result.get("aside_texts"):
-        saved_result["aside_texts"] = []
+    if 'aside_texts' not in saved_result:
+        saved_result['aside_texts'] = []
 
     # Replace photo request
     if user_id in client.photo_mission_replace_index and message.attachments:
@@ -137,14 +202,15 @@ async def prepare_api_request(client, message, student_mission_info):
 
             # Save attachment info
             saved_result['attachments'][photo_index-1] = replace_attachment
+            saved_result['message'] = '已收到照片'
 
             # Reset aside text for specific book IDs
             if book_id in [13, 14, 15, 16]:
                 saved_result['aside_texts'][photo_index-1] = {
                     "photo_index": photo_index,
-                    "aside_text": None
+                    "aside_text": '[使用者選擇跳過]'
                 }
-                saved_result['is_ready'] = False
+                saved_result['is_ready'] = True
 
             return {
                 'needs_ai_prediction': False,
@@ -223,8 +289,12 @@ def _build_full_context(user_id: str, mission_id: int, current_request: str, cur
     # Add previously collected information
     if saved_result.get('baby_name'):
         context_parts.append(f"Baby name already collected: {saved_result['baby_name']}")
+    if saved_result.get('relation_or_identity'):
+        context_parts.append(f"Relation or identity already collected: {saved_result['relation_or_identity']}")
     if saved_result.get('aside_texts'):
         context_parts.append(f"Previous aside texts: {saved_result['aside_texts']}")
+    if saved_result.get('previous_question'):
+        context_parts.append(f"Previous question asked: {saved_result['previous_question']}")
     return "\n".join(context_parts)
 
 async def _handle_mission_step(client, message, student_mission_info, mission_result):
@@ -279,7 +349,19 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
                 return
 
     else:
-        if mission_result.get('step_1_completed') == True and not mission_result.get('step_2_completed') and not mission_result.get('ask_for_relation_or_identity'):
+        if user_id in client.photo_mission_replace_index and client.photo_mission_replace_index[user_id] > 0:
+            photo_index = client.photo_mission_replace_index[user_id]
+            # ask for aside text
+            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
+            if book_id == 14:
+                await message.channel.send(embed=embed)
+            else:
+                student_mission_info['photo_index'] = photo_index
+                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
+                view.message = await message.channel.send(embed=embed, view=view)
+                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
+
+        elif mission_result.get('step_1_completed') == True and not mission_result.get('step_2_completed') and not mission_result.get('ask_for_relation_or_identity'):
             # ask for cover photo
             mission_info = await client.api_utils.get_mission_info(mission_id)
             embed = get_cover_instruction_embed(mission_info)
@@ -292,19 +374,9 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
         elif mission_result.get('ask_for_relation_or_identity'):
             # special handling for book_id 16 (relationship recognition)
             embed = get_identity_embed(student_mission_info)
+            mission_result['previous_question'] = embed.description
+            save_mission_record(user_id, mission_id, mission_result)
             await message.channel.send(embed=embed)
-
-        elif user_id in client.photo_mission_replace_index and client.photo_mission_replace_index[user_id] > 0:
-            photo_index = client.photo_mission_replace_index[user_id]
-            # ask for aside text
-            embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
-            if book_id == 14:
-                await message.channel.send(embed=embed)
-            else:
-                student_mission_info['photo_index'] = photo_index
-                view = TaskSelectView(client, 'skip_theme_book_aside_text', mission_id, mission_result=student_mission_info)
-                view.message = await message.channel.send(embed=embed, view=view)
-                save_task_entry_record(user_id, str(view.message.id), "skip_theme_book_aside_text", mission_id, result=student_mission_info)
 
         elif mission_result.get('step_2_completed') == True and not mission_result.get('step_3_completed'):
             attachments = mission_result.get('attachments', [])
@@ -323,6 +395,8 @@ async def _handle_mission_step(client, message, student_mission_info, mission_re
             photo_index = len(aside_texts) + 1
             # ask for aside text
             embed = get_aside_text_instruction_embed(book_id, student_mission_info, mission_result, photo_index=photo_index)
+            mission_result['previous_question'] = embed.description
+            save_mission_record(user_id, mission_id, mission_result)
             if book_id == 14:
                 await message.channel.send(embed=embed)
             else:
@@ -422,6 +496,61 @@ async def convert_heic_to_jpg_attachment(client, heic_attachment):
         print(f"HEIC 轉換失敗: {e}")
         return None
 
+# --------------------- Mission Status Loader ---------------------
+async def load_current_mission_status(client, user_id, book_id):
+    mission_ids = config.theme_book_mission_map.get(book_id, [])
+    if not mission_ids:
+        return {
+            "baby_name": None,
+            "relation_or_identity": None,
+            "cover": {"photo_index": 0, "url": None},
+            "attachments": [],
+            "aside_texts": [],
+        }
+
+    mission_statuses = {}
+    for mission_id in mission_ids:
+        status = await client.api_utils.get_student_mission_status(user_id, mission_id)
+        mission_statuses[mission_id] = status or {}
+
+    mission_results = {}
+    # process baby name and relation/identity
+    cover_status = mission_statuses.get(mission_ids[0], {})
+    aside_text_cover = cover_status.get("aside_text")
+    if aside_text_cover:
+        if book_id == 16:
+            parts = aside_text_cover.split("|")
+            mission_results["baby_name"] = parts[0] if len(parts) > 0 else None
+            mission_results["relation_or_identity"] = parts[1] if len(parts) > 1 else None
+        else:
+            mission_results["baby_name"] = aside_text_cover
+    else:
+        mission_results["baby_name"] = None
+        if book_id == 16:
+            mission_results["relation_or_identity"] = None
+
+    # process cover and attachments
+    mission_results["cover"] = {
+        "photo_index": 0,
+        "url": cover_status.get("image_url", None),
+    }
+    mission_results['attachments'], mission_results['aside_texts'] = [], []
+    for mission_id in mission_ids[1:]:
+        status = mission_statuses.get(mission_id, {})
+        mission_results["attachments"].append({
+            "photo_index": mission_id - mission_ids[0],
+            "url": status.get("image_url", None),
+        })
+
+        raw_aside_text = status.get("aside_text")
+        mission_results["aside_texts"].append({
+            "photo_index": mission_id - mission_ids[0],
+            "aside_text": status.get("aside_text") if raw_aside_text not in (None, "", "null") else "[使用者選擇跳過]",
+        })
+
+    return mission_results
+
+# --------------------- Embed Builders ---------------------
 def build_theme_mission_instruction_embed(mission_info):
     embed = discord.Embed(
         title=mission_info['mission_type'],
@@ -508,16 +637,16 @@ def get_story_pages_embed(book_id, mission_info, photo_index, required_photos=6,
 
 def get_aside_text_instruction_embed(book_id, mission_info, mission_result, photo_index):
     if book_id == 13:
-        title = "請問照片裡的動物是什麼？"
+        title = "請問照片裡的動物是什麼？(2-4字) "
         description = "例如：大象、長頸鹿、獅子等⋯⋯"
     elif book_id == 14:
-        title = "請問照片中的人是誰呢？(15字以內)"
-        description = "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)"
+        title = "請問照片中的家人是誰？ (2-4字) "
+        description = "⚠️ 限填「一個」稱謂 ，\n例如：爸爸、阿公、阿姨。\n (也可以輸入名字喔!)\n\n❌請勿寫例如: 爸爸和媽媽。"
     elif book_id == 15:
-        title = "請問照片中的物品是什麼？"
+        title = "請問照片中的物品是什麼？(2-4字) "
         description = "例如：奶瓶、玩偶、碗、襪子等。"
     elif book_id == 16:
-        title = "請描述寶寶和特定陪伴者的互動(15字以內)"
+        title = "請描述寶寶和特定陪伴者的互動？(5個字以內) "
         description = "例如：一起玩耍、閱讀故事書、散步等。"
     else:
         title = "請輸入照片描述"

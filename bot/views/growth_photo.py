@@ -109,11 +109,14 @@ class GrowthPhotoView(discord.ui.View):
             description=description,
             color=0xeeb2da,
         )
-        timestamp = f"{int(time.time())}{random.randint(1000, 9999)}"
-        embed.set_image(url=f"https://infancixbaby120.com/discord_image/{baby_id}/{mission_id}.jpg?t={timestamp}")
+        file_path = f"/home/ubuntu/canva_exports/{self.baby_id}/{self.mission_id}.jpg"
+        filename = f"{self.mission_id}.jpg"
+        current_page_url = f"attachment://{filename}"
+        embed.set_image(url=current_page_url)
         if mission_id not in config.add_on_photo_mission:
             embed.set_footer(text="✨ 喜歡這一頁嗎？完成更多任務，就能集滿一本喔！")
-        return embed
+
+        return embed, file_path, filename
 
     async def complete_callback(self, interaction):
         await interaction.response.defer()
@@ -139,108 +142,21 @@ class GrowthPhotoView(discord.ui.View):
         from bot.handlers.utils import reset_user_state
         reset_user_state(self.client, str(interaction.user.id), self.mission_id)
 
-        # Check for incomplete missions
-        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, self.book_id)
-
-        embed = discord.Embed(
-            title="🎉 任務完成！",
-            description="",
-            color=0xeeb2da,
-        )
-
         # Send completion message
         if self.reward > 0:
-            embed.description += f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}！\n\n"
+            embed = discord.Embed(
+                title="🎉 任務完成！",
+                description=f"🎁 你獲得獎勵：🪙 金幣 Coin：+{self.reward}！\n\n",
+                color=0xeeb2da,
+            )
             await self.client.api_utils.add_gold(self.user_id, gold=self.reward)
-
-        if len(incomplete_missions) > 0:
-            embed.description += f"🔗 [繪本預覽](https://infancixbaby120.com/babiary/{self.design_id})\n\n"
-            embed.description += f"📖 繪本進度\n目前繪本尚有 {len(incomplete_missions)} 頁未完成，點擊下方按鈕繼續製作喔\n\n"
-            next_mission_id = incomplete_missions[0]['mission_id'] if incomplete_missions else None
-            payload = {
-                'user_id': self.user_id,
-                'book_id': self.book_id,
-                'mission_id': self.mission_id,
-                'next_mission_id': next_mission_id,
-            }
-            view = TaskSelectView(self.client, "go_next_mission", self.mission_id, mission_result=payload)
-            view.message = await interaction.followup.send(embed=embed, view=view)
-            save_task_entry_record(self.user_id, str(view.message.id), "go_next_mission", self.mission_id, payload)
         else:
-            if self.purchase_status != "已購買":
-                task_type = ["go_purchase"]
-                payload = {
-                    'user_id': self.user_id,
-                    'book_id': self.book_id,
-                    'mission_id': self.mission_id,
-                }
-
-                embed.description += (
-                    f"🔗 [繪本預覽](https://infancixbaby120.com/babiary/{self.design_id})\n\n"
-                    f"💛 您的體驗任務完成囉！\n"
-                    f"想收藏這本屬於你與寶寶的故事嗎？\n\n"
-                    f"🛍️ 購買繪本：\n"
-                    f"點擊下方按鈕社群管家阿福將私訊您，協助您下單。\n"
-                )
-                target_book_id = None
-                for book_id in config.available_books:
-                    incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, book_id)
-                    if len(incomplete_missions) > 0:
-                        target_book_id = book_id
-                        break
-
-                if target_book_id is not None:
-                    next_book_info = await self.client.api_utils.get_mission_info(config.book_first_mission_map[target_book_id])
-                    embed.description += (
-                        f"或是點擊按鈕體驗更多繪本吧！"
-                    )
-                    task_type.append("go_next_mission")
-                    payload['next_mission_id'] = config.book_first_mission_map[target_book_id]
-                    payload['next_book_title'] = f"{next_book_info['volume_title']} | {next_book_info['photo_mission']}"
-
-                task_type_str = "_".join(task_type)
-                view = TaskSelectView(self.client, task_type_str, self.mission_id, mission_result=payload)
-                view.message = await interaction.followup.send(embed=embed, view=view)
-                save_task_entry_record(self.user_id, str(view.message.id), task_type_str, self.mission_id, payload)
-
-            else:
-                # purchased user
-                if self.need_generated_full_album:
-                    # submit generate full album request
-                    await self.client.api_utils.submit_generate_album_request(self.user_id, self.book_id)
-                    self.client.logger.info(f"送出完整繪本產生任務 for user {self.user_id}, book {self.book_id}")
-                    embed.description += (
-                        f"⏳系統正在為您製作完整繪本，請耐心等待。完成後會在此通知您！\n\n"
-                    )
-                    embed.set_image(url=f"https://infancixbaby120.com/discord_assets/loading1.gif")
-                    await interaction.followup.send(embed=embed)
-                else:
-                    deadline_str, defer_str = self.get_deadline_and_defer_timestamp()
-                    embed.description += (
-                        f"你已經完成所有任務囉！\n\n"
-                        f"🔍 最後檢查:\n"
-                        f"請點擊下方連結確認整本內容：\n"
-                        f"📎[繪本預覽](https://infancixbaby120.com/babiary/{self.design_id})\n"
-                        f"確認完成後，請點下方按鈕送印。\n\n"
-                        f"🚚 運送機制\n"
-                        f"每月 5 號統一印製，送印後約 30 個工作天 即可收到繪本囉！\n\n"
-                        f"📌 **重要提醒**\n"
-                        f"修改截止日為 **{deadline_str} 23:59**\n"
-                        f"若未在期限內確認，將順延至 **{defer_str}** 才能送印！\n\n"
-                        f"🖼️ **如需修改照片**，請依下列步驟操作：\n"
-                        f"1️⃣ 於對話框輸入 */查看育兒里程碑* ，重啟任務\n"
-                        f"2️⃣ 確認完畢後，於對話框輸入 */我的書櫃* > 點選 `確認送印`"
-                    )
-                    task_type_str = "confirm_print"
-                    payload = {
-                        'user_id': self.user_id,
-                        'book_id': self.book_id,
-                        'mission_id': self.mission_id,
-                        'design_id': self.design_id
-                    }
-                    view = TaskSelectView(self.client, task_type_str, self.mission_id, mission_result=payload)
-                    view.message = await interaction.followup.send(embed=embed, view=view)
-                    save_task_entry_record(self.user_id, str(view.message.id), task_type_str, self.mission_id, payload)
+            embed = discord.Embed(
+                title="修改完成",
+                description="✅ 照片內容已更新\n💡 此任務已完成過，無額外獎勵",
+                color=0xeeb2da,
+            )
+        await interaction.followup.send(embed=embed)
 
         # Send log to Background channel
         channel = self.client.get_channel(config.BACKGROUND_LOG_CHANNEL_ID)
@@ -249,6 +165,34 @@ class GrowthPhotoView(discord.ui.View):
 
         msg_task = f"MISSION_{self.mission_id}_FINISHED <@{self.user_id}>"
         await channel.send(msg_task)
+
+        # Check for incomplete missions
+        book_info = await self.client.api_utils.get_album_info(book_id=self.book_id) or {}
+        book_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, book_id=self.book_id)
+        book_info.update(book_status)
+
+        completed_missions = await self.client.api_utils.get_student_complete_photo_mission(self.user_id, self.book_id)
+        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(self.user_id, self.book_id)
+
+        menu_options = {
+            'book_type': '成長繪本',
+            'age_code': 1,
+            'current_page': 0
+        }
+
+        view = AlbumView(self.client, self.user_id, book_info, completed_missions, incomplete_missions, menu_options)
+        embed, file_path, filename, fallback_url = view.preview_embed()
+        try:
+            file = discord.File(file_path, filename=filename)
+            await interaction.followup.send(embed=embed, view=view, file=file)
+        except FileNotFoundError:
+            self.client.logger.warning(f"File not found: {file_path}, using fallback URL: {fallback_url}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)
+        except Exception as e:
+            self.client.logger.error(f"Error loading album preview for book {self.book_info['book_id']}: {e}")
+            embed.set_image(url=fallback_url)
+            await interaction.followup.send(embed=embed, view=view)
 
     async def next_mission_button_callback(self, interaction):
         await interaction.response.defer()
@@ -279,7 +223,10 @@ class GrowthPhotoView(discord.ui.View):
         await channel.send(msg_task)
 
         next_mission_id = config.book_first_mission_map.get(self.book_id)
-        msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
+        if config.ENV:
+            msg_task = f"START_MISSION_DEV_{next_mission_id} <@{self.user_id}>"
+        else:
+            msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
         await channel.send(msg_task)
 
     async def change_photo_callback(self, interaction: discord.Interaction):
@@ -352,7 +299,7 @@ class GrowthPhotoView(discord.ui.View):
 
         if self.message:
             try:
-                await self.message.edit(content="⚠️ 編輯逾時，可以在對話框輸入 [*/補上傳照片*]，重新製作喔！", view=self)
+                await self.message.edit(content="⚠️ 編輯逾時，可以在對話框輸入 [*/成長書櫃*]，重新製作喔！", view=self)
                 self.client.logger.info("GrowthALbumView: Invitation expired and message updated successfully.")
             except discord.NotFound:
                 self.client.logger.warning("GrowthALbumView: Failed to update expired invitation message as it was already deleted.")
