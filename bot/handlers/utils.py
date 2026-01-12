@@ -92,7 +92,7 @@ async def load_task_entry_messages(client):
             channel = await client.fetch_user(user_id)
             for mission_id, task_status in records[user_id].items():
                 message = await channel.fetch_message(int(task_status['message_id']))
-                result = task_status.get('result', None)
+                result = task_status.get('result', {})
                 view = TaskSelectView(client, task_status['task_type'], int(mission_id), result)
                 await message.edit(view=view)
             client.logger.info(f"✅ Restore task-entry for user {user_id}")

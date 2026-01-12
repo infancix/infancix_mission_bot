@@ -13,7 +13,7 @@ class TaskSelectView(discord.ui.View):
         super().__init__(timeout=timeout)
         self.client = client
         self.mission_id = mission_id
-        self.book_id = mission_result.get('book_id', 0)
+        self.book_id = mission_result.get('book_id', 0) if mission_result is not None else 0
         self.mission_result = mission_result
         self.message = None
 
