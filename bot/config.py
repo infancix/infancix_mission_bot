@@ -47,7 +47,7 @@ class Config:
 
         Args:
             mission_id: The mission ID
-            attachment_type: 'photo', 'video', or 'audio'
+            attachment_type: 'photo', 'video', 'audio', or 'questionnaire'
 
         Returns:
             int: Required number of attachments (default: 1)
@@ -60,8 +60,34 @@ class Config:
             return int(self.video_mission_required_count.get(mission_id_str, 1))
         elif attachment_type == 'audio':
             return int(self.audio_mission_required_count.get(mission_id_str, 1))
+        elif attachment_type == 'questionnaire':
+            return int(self.questionnaire_required_images.get(mission_id_str, 0))
         else:
             return 1
+
+    def get_required_aside_text_count(self, mission_id, mission_type='photo'):
+        """
+        Get the required number of aside_text for a mission.
+
+        Args:
+            mission_id: The mission ID
+            mission_type: 'photo', 'video', 'audio', or 'questionnaire'
+
+        Returns:
+            int: Required number of aside_text (default: 0 for photo/video/audio, 1 for questionnaire)
+        """
+        mission_id_str = str(mission_id)
+
+        if mission_type == 'photo':
+            return int(self.photo_aside_text_required_count.get(mission_id_str, 0))
+        elif mission_type == 'video':
+            return int(self.video_aside_text_required_count.get(mission_id_str, 0))
+        elif mission_type == 'audio':
+            return int(self.audio_aside_text_required_count.get(mission_id_str, 0))
+        elif mission_type == 'questionnaire':
+            return int(self.questionnaire_aside_text_required_count.get(mission_id_str, 1))
+        else:
+            return 0
 
     def get_prompt_file(self, mission_id):
         base_path = "bot/resource/prompts"
@@ -161,6 +187,13 @@ class Config:
             self.photo_mission_required_count = {}
             self.video_mission_required_count = {}
             self.audio_mission_required_count = {}
+            self.questionnaire_required_images = {}
+
+            # Load required aside_text counts for missions
+            self.photo_aside_text_required_count = {}
+            self.video_aside_text_required_count = {}
+            self.audio_aside_text_required_count = {}
+            self.questionnaire_aside_text_required_count = {}
 
             for book_data in growth_book_missions:
                 # Merge photo mission required counts from all books
@@ -172,6 +205,19 @@ class Config:
                 # Merge audio mission required counts from all books
                 if 'audio_mission_required_count' in book_data:
                     self.audio_mission_required_count.update(book_data['audio_mission_required_count'])
+                # Merge questionnaire required images from all books
+                if 'questionnaire_required_images' in book_data:
+                    self.questionnaire_required_images.update(book_data['questionnaire_required_images'])
+
+                # Merge aside_text required counts from all books
+                if 'photo_aside_text_required_count' in book_data:
+                    self.photo_aside_text_required_count.update(book_data['photo_aside_text_required_count'])
+                if 'video_aside_text_required_count' in book_data:
+                    self.video_aside_text_required_count.update(book_data['video_aside_text_required_count'])
+                if 'audio_aside_text_required_count' in book_data:
+                    self.audio_aside_text_required_count.update(book_data['audio_aside_text_required_count'])
+                if 'questionnaire_aside_text_required_count' in book_data:
+                    self.questionnaire_aside_text_required_count.update(book_data['questionnaire_aside_text_required_count'])
 
             # final confirmation mission
             self.confirm_album_mission = [item for month_data in growth_book_missions

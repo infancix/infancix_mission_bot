@@ -180,6 +180,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
 
     title = f"📸**{mission_info['photo_mission']}**"
     desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
+    if int(mission_info['mission_id']) == 1003:
+        desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
         video_url = mission_info.get('mission_video_contents', '').strip()
@@ -196,9 +198,6 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
             f"> \n"
             f"> {instruction} \n"
         )
-
-    elif int(mission_info['mission_id']) == 1003:
-        desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
 
     embed = discord.Embed(
         title=title,
@@ -224,7 +223,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
 
 def get_relation_embed(mission_info):
     embed = discord.Embed(
-        title="📝 照片裡的人和寶寶關係是?",
+        title="📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
         description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
         color=0xeeb2da,
     )
