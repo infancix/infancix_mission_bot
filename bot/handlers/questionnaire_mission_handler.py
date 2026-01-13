@@ -56,6 +56,7 @@ async def send_mission_step(client, user, mission, baby, current_step, mission_i
 
     elif step_type == 'text_input':
         # Text input - show question and wait for answer
+        client.logger.info(f"current_step: {current_step}")
         embed, files = await build_short_answer_mission_embed(current_step, mission, baby)
         if send_weekly_report and files:
             await user.send(files=files)
