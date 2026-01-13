@@ -48,14 +48,14 @@ class GrowthPhotoView(discord.ui.View):
             self.reupload_button.callback = self.reupload_photo_callback
             self.add_item(self.reupload_button)
 
-        if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
-            self.remove_aside_text_button = discord.ui.Button(
-                custom_id='remove_aside_text',
-                label="刪除回憶文字",
-                style=discord.ButtonStyle.secondary
-            )
-            self.remove_aside_text_button.callback = self.remove_aside_text_callback
-            self.add_item(self.remove_aside_text_button)
+        #if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
+        #    self.remove_aside_text_button = discord.ui.Button(
+        #        custom_id='remove_aside_text',
+        #        label="刪除回憶文字",
+        #        style=discord.ButtonStyle.secondary
+        #    )
+        #    self.remove_aside_text_button.callback = self.remove_aside_text_callback
+        #    self.add_item(self.remove_aside_text_button)
 
         if self.mission_id in config.questionnaire_mission:
             self.reselect_button = discord.ui.Button(
