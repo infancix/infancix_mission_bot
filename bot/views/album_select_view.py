@@ -463,15 +463,15 @@ class AlbumView(discord.ui.View):
                 book_id=self.book_id
             )
 
-            if self.menu_options['book_type'] == '成長繪本':
-                view = EditGrowthBookView(self.client, str(itx.user.id), book_info, submitted_missions, self.menu_options)
-                embed, file_path, filename = view.build_preview_page()
-                await self.send_embed_with_file(itx, embed, view, file_path, filename, use_response=True)
-            else:
+            if self.menu_options.get('book_type') == '寶寶主題書':
                 from bot.handlers.theme_mission_handler import handle_theme_mission_restart
                 await handle_theme_mission_restart(self.client, str(itx.user.id), self.book_id)
                 view = EditThemeBookView(self.client, book_info)
                 embed, file_path, filename = view.get_current_embed(str(itx.user.id))
+                await self.send_embed_with_file(itx, embed, view, file_path, filename, use_response=True)
+            else:
+                view = EditGrowthBookView(self.client, str(itx.user.id), book_info, submitted_missions, self.menu_options)
+                embed, file_path, filename = view.build_preview_page()
                 await self.send_embed_with_file(itx, embed, view, file_path, filename, use_response=True)
 
         revise_button.callback = revise_cb
