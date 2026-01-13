@@ -103,7 +103,6 @@ async def process_photo_mission_filling(client, message, student_mission_info):
 
     if not has_enough_attachments:
         mission_result['is_ready'] = False
-        mission_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
     else:
         student_mission_info['current_step'] = 2
         if mission_id in config.photo_mission_without_aside_text:
@@ -193,6 +192,10 @@ def prepare_api_request(client, message, student_mission_info):
                     break
                 attachment = extract_attachment_info(att.url)
                 saved_result['attachment'].append(attachment)
+
+            current_count = len(saved_result['attachment'])
+            saved_result['message'] = f"目前已收到 {current_count} 張照片，還需要 {required_count - current_count} 張照片喔！"
+
         else:
             # Single photo requirement (original behavior)
             attachment = extract_attachment_info(message.attachments[0].url)
@@ -221,6 +224,9 @@ def prepare_api_request(client, message, student_mission_info):
         context_parts.append(f"Previous question asked to user:\n{saved_result['previous_question']}")
 
     # Add previously collected text data
+    if saved_result.get('attachment') and saved_result['attachment'].get('url'):
+        context_parts.append(f"User's attachment (already provided):\n{saved_result['attachment']}")
+
     if saved_result.get('aside_text'):
         context_parts.append(f"User's aside_text (already provided):\n{saved_result['aside_text']}")
 

@@ -113,14 +113,24 @@ class TaskSelectView(discord.ui.View):
             self.add_item(self.skip_theme_book_aside_text_button)
 
         if task_type == "skip_mission":
-            label = "跳過此任務"
-            self.skip_mission_button = discord.ui.Button(
-                custom_id="skip_mission_button",
-                label=label,
-                style=discord.ButtonStyle.secondary
-            )
-            self.skip_mission_button.callback = self.go_next_mission_button_callback
-            self.add_item(self.skip_mission_button)
+            if self.mission_result.get('next_mission_id'):
+                label = "跳過此任務"
+                self.skip_mission_button = discord.ui.Button(
+                    custom_id="skip_mission_button",
+                    label=label,
+                    style=discord.ButtonStyle.secondary
+                )
+                self.skip_mission_button.callback = self.go_next_mission_button_callback
+                self.add_item(self.skip_mission_button)
+            else:
+                label = '返回繪本狀態'
+                self.return_album_button = discord.ui.Button(
+                    custom_id="return_album_button",
+                    label=label,
+                    style=discord.ButtonStyle.secondary
+                )
+                self.return_album_button.callback = self.return_album_button_callback
+                self.add_item(self.return_album_button)
 
     async def go_book_instruction_button_callback(self, interaction):
         for item in self.children:
@@ -350,6 +360,36 @@ class TaskSelectView(discord.ui.View):
         await channel.send(msg_task)
 
         await interaction.channel.send(f"🛒 已收到您的購買請求！社群客服「阿福 <@1272828469469904937>」會儘快與您聯繫。")
+
+    async def return_album_button_callback(self, interaction):
+        for item in self.children:
+            item.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        from bot.views.album_select_view import AlbumView
+
+        self.user_id = str(interaction.user.id)
+        book_info = await self.client.api_utils.get_album_info(book_id=self.book_id) or {}
+        book_status = await self.client.api_utils.get_student_album_purchase_status(self.user_id, book_id=self.book_id) or {}
+        book_info.update(book_status)
+        completed_missions = await self.client.api_utils.get_student_complete_photo_mission(
+            user_id=self.user_id,
+            book_id=self.book_id
+        )
+        incomplete_missions = await self.client.api_utils.get_student_incomplete_photo_mission(
+            user_id=self.user_id,
+            book_id=self.book_id
+        )
+
+        view = AlbumView(
+            self.client,
+            self.user_id,
+            book_info,
+            completed_missions,
+            incomplete_missions
+        )
+        embed, file_path, filename, fallback_url = view.preview_embed()
+        await view.send_embed_with_file(interaction, embed, view, file_path, filename, fallback_url, use_response=False)
 
     async def on_timeout(self):
         for item in self.children:
