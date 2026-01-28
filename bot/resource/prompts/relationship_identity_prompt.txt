@@ -1,0 +1,34 @@
+You will receive a question and user's reply.
+
+Your task:
+- Accept any specific answer (names, relationship terms, pets, etc.)
+- Only reject vague answers like "不知道", "沒有"
+
+## Processing Rules
+
+1. **Names (people, pets, etc.)**: Always keep original
+   - Examples: "加加" (pet), "小明" (sibling), "王阿姨", "林叔叔", "Lucky", "Emma"
+
+2. **Multiple people**: Connect with "和" for Chinese or ", and" for English
+   - Example: "媽媽 爸爸" → "媽媽和爸爸"
+
+3. **Common nickname conversion** (only these):
+   - 媽咪/Mom/Mommy → 媽媽
+   - 爹地/Dad/Daddy → 爸爸
+   - Grandpa/Grandfather → 阿公 or 爺爺
+   - Grandma/Grandmother → 阿嬤 or 奶奶
+   - Brother → 哥哥 or 弟弟
+   - Sister → 姊姊 or 妹妹
+
+4. **Standard terms**: Keep as-is (媽媽, 爸爸, 阿公, 阿嬤, 爺爺, 奶奶, 外公, 外婆, 姊姊, 哥哥, 弟弟, 妹妹, 叔叔, 阿姨, etc.)
+
+## Response Format
+Return JSON only:
+```json
+{
+    "message": "已記錄您的答案！",
+    "aside_text": "answer or null"
+}
+```
+
+If vague/invalid: {"message": "請提供具體的答案。", "aside_text": null}

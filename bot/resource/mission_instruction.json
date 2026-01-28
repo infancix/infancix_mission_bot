@@ -1,36 +1,312 @@
 {
-    "14": [
-        {
+    "14": {
+        "upload_instruction": {
             "title": "錄下你的哄睡聲音或噓噓聲(語音)",
             "description": "此任務有兩種方式，爸媽可擇一完成 👇\n① 哄睡話語 — 可直接用 Discord 錄音功能。\n💡 長按對話框右側的🎙️即可錄音。\n\n② 噓噓聲 — Discord 錄不到噓噓聲，請用手機錄音後再上傳檔案。\n💡 不確定怎麼\"噓\"？可點下方影片查看教學。\n\n"
-        }
-    ],
-    "56": [
-        {
-            "title": "請問這位朋友的名字是? (限填一個朋友)",
-            "description": "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
-        }
-    ],
-    "1008": [
-        {
-            "title": "✏️ 寫一封信給寶寶",
-            "description": "請於對話框輸入文字(限400字以內)\n\n英文版建議輸入英文信，排版會更美觀喔 🌟"
-        }
-    ],
-    "1093": [
-        {
-            "title": "請問照片中，寶寶吃什麼食物呢?",
-            "description": "(限定回答5個字內)\n\n範例:\n米餅、荷包蛋、牛奶、寶寶粥、地瓜餅。"
-        }
-    ],
-    "1097": [
-        {
-            "title": "上傳寶寶揮手說再見的影片",
-            "description": "💡小提醒:\n• 影片格式支援: MP4, MOV, AVI, MKV, WEBM\n• 建議影片長度在30秒內"
         },
-        {
-            "title": "上傳寶寶拍手的影片",
-            "description": "💡小提醒:\n• 影片格式支援: MP4, MOV, AVI, MKV, WEBM\n• 建議影片長度在30秒內"
-        }
-    ]
+        "question_instruction": null,
+        "questionnaire_instruction": null
+    },
+    "41": {
+        "upload_instruction": null,
+        "question_instruction": null,
+        "questionnaire_instruction": [
+            {
+                "type": "multiple_choice",
+                "question": "❓:你最常對寶寶做的睡眠儀式? (請選擇三項)",
+                "description": "\n💡回答請點選下方按鈕\n",
+                "options": [
+                    "按摩",
+                    "抱抱",
+                    "念故事",
+                    "唱歌",
+                    "播音樂"
+                ],
+                "options_en": [
+                    "massage",
+                    "cuddle",
+                    "listen to stories",
+                    "sing",
+                    "play music"
+                ],
+                "min_selections": 3,
+                "max_selections": 3
+            }
+        ]
+    },
+    "44": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "📝 這張照片裡的人是誰呢？",
+            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)"
+        },
+        "questionnaire_instruction": null
+    },
+    "56": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "請問這位朋友的名字是? (限填一個朋友)",
+            "description": "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+        },
+        "questionnaire_instruction": null
+    },
+    "1002": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
+            "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯"
+        },
+        "questionnaire_instruction": null
+    },
+    "1003": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
+            "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯"
+        },
+        "questionnaire_instruction": null
+    },
+    "1008": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "✏️ 寫一封信給寶寶",
+            "description": "請於對話框輸入文字(限400字以內)\n\n英文版建議輸入英文信，排版會更美觀喔 🌟"
+        },
+        "questionnaire_instruction": null
+    },
+    "1010": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "📝 這張照片裡的人是誰呢？",
+            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)"
+        },
+        "questionnaire_instruction": null
+    },
+    "1024": {
+        "upload_instruction": [
+            {
+                "title": "寶寶當月最可愛的照片",
+                "description": "📎 點左下 **[+]** 上傳照片"
+            }
+        ],
+        "questionnaire_instruction": [
+            {
+                "type": "single_choice",
+                "question": "✨ 探索寶寶的氣質：敏感度",
+                "options": [
+                    "閥值低/敏感度高",
+                    "中等/特質不明顯",
+                    "閥值高/敏感度低"
+                ],
+                "options_en": [
+                    "Low threshold / High sensitivity",
+                    "Moderate threshold / Average sensitivity",
+                    "High threshold / Low sensitivity"
+                ],
+                "min_selections": 1,
+                "max_selections": 1
+            }
+        ],
+        "question_instruction": null
+    },
+    "1045": {
+        "upload_instruction": [
+            {
+                "index": 0,
+                "title": "出門體驗新活動(1)",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            },
+            {
+                "index": 1,
+                "title": "出門體驗新活動(2)",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問活動是什麼呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「活動」即可，不用加句子。\n\n範例:\n去公園、去阿媽家、參加抓週、看狗狗、吹泡泡。"
+            },
+            {
+                "index": 1,
+                "question": "請問活動是什麼呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「活動」即可，不用加句子。\n\n範例:\n去公園、去阿媽家、參加抓週、看狗狗、吹泡泡。"
+            }
+        ]
+    },
+    "1059": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "請問寶寶吃什麼食物呢?",
+            "description": "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+        },
+        "questionnaire_instruction": null
+    },
+    "1060": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "請問寶寶吃什麼水果呢?",
+            "description": "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+        },
+        "questionnaire_instruction": null
+    },
+    "1062": {
+        "upload_instruction": [
+            {
+                "index": 0,
+                "title": "寶寶專注玩奇怪東西的樣子(1)",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            },
+            {
+                "index": 1,
+                "title": "寶寶專注玩奇怪東西的樣子(2)",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問寶寶在玩什麼呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「物品」即可，不用加句子。\n\n範例:\n塑膠袋、鑰匙、衛生紙、遙控器、手機。"
+            },
+            {
+                "index": 1,
+                "question": "請問寶寶在玩什麼呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「物品」即可，不用加句子。\n\n範例:\n塑膠袋、鑰匙、衛生紙、遙控器、手機。"
+            }
+        ]
+    },
+    "1070": {
+        "upload_instruction": [
+            {
+                "title": "寶寶當月最可愛的照片",
+                "description": "📎 點左下 **[+]** 上傳照片"
+            }
+        ],
+        "questionnaire_instruction": [
+            {
+                "type": "single_choice",
+                "question": "✨ 探索寶寶的氣質：規律性",
+                "options": [
+                    "規律性高",
+                    "中等/特質不明顯",
+                    "規律性低"
+                ],
+                "options_en": [
+                    "High Regularity",
+                    "Moderate Regularity / Average",
+                    "Low Regularity"
+                ],
+                "min_selections": 1,
+                "max_selections": 1
+            }
+        ],
+        "question_instruction": null
+    },
+    "1087": {
+        "upload_instruction": [
+            {
+                "index": 0,
+                "title": "上傳寶寶大哭的照片",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            },
+            {
+                "index": 1,
+                "title": "上傳寶寶大笑的照片",
+                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問寶寶大哭的原因呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「原因」即可，不用加句子。\n\n範例:\n肚子餓、想睡覺、找媽媽、大便了、被玩具嚇到。"
+            },
+            {
+                "index": 1,
+                "question": "請問寶寶大笑的原因呢?",
+                "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「原因」即可，不用加句子。\n\n範例:\n看到爸爸、被逗笑、玩玩具、洗澡時、聽音樂。"
+            }
+        ],
+        "questionnaire_instruction": null
+    },
+    "1093": {
+        "upload_instruction": null,
+        "question_instruction": {
+            "question": "請問照片中，寶寶吃什麼食物呢?",
+            "description": "(限定回答5個字內)\n\n範例:\n米餅、荷包蛋、牛奶、寶寶粥、地瓜餅。"
+        },
+        "questionnaire_instruction": null
+    },
+    "1097": {
+        "upload_instruction": [
+            {
+                "title": "上傳寶寶揮手說再見的影片",
+                "index": 0,
+                "description": "💡小提醒:\n• 影片格式支援: MP4, MOV, AVI, MKV, WEBM\n• 建議影片長度在30秒內"
+            },
+            {
+                "title": "上傳寶寶拍手的影片",
+                "index": 1,
+                "description": "💡小提醒:\n• 影片格式支援: MP4, MOV, AVI, MKV, WEBM\n• 建議影片長度在30秒內"
+            }
+        ],
+        "question_instruction": null,
+        "questionnaire_instruction": null
+    },
+    "1130": {
+        "upload_instruction": [
+            {
+                "title": "寶寶當月最可愛的照片",
+                "description": "📎 點左下 **[+]** 上傳照片"
+            }
+        ],
+        "questionnaire_instruction": [
+            {
+                "type": "single_choice",
+                "question": "✨ 探索寶寶的氣質：活動量",
+                "options": [
+                    "活動量偏高",
+                    "中等/特質不明顯",
+                    "活動量偏低"
+                ],
+                "options_en": [
+                    "High Activity Level",
+                    "Moderate Activity / Average Level",
+                    "Low Activity Level"
+                ],
+                "min_selections": 1,
+                "max_selections": 1
+            }
+        ],
+        "question_instruction": null
+    },
+    "1147": {
+        "upload_instruction": [
+            {
+                "title": "寶寶當月最可愛的照片",
+                "description": "📎 點左下 **[+]** 上傳照片"
+            }
+        ],
+        "questionnaire_instruction": [
+            {
+                "type": "single_choice",
+                "question": "✨ 探索寶寶的氣質：適應度",
+                "options": [
+                    "適應度高",
+                    "中等/特質不明顯",
+                    "適應度低"
+                ],
+                "options_en": [
+                    "High Adaptability",
+                    "Moderate Adaptability / Average",
+                    "Low Adaptability"
+                ],
+                "min_selections": 1,
+                "max_selections": 1
+            }
+        ],
+        "question_instruction": null
+    }
 }

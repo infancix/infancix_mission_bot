@@ -51,8 +51,9 @@ class MissionBot(discord.Client):
         self.skip_growth_info = defaultdict(int)
         self.submit_deadline = 5 # Default to 5th of each month
 
-        with open("bot/resource/mission_questionnaire.json", "r") as file:
-            self.mission_questionnaire = json.load(file)
+        with open("bot/resource/mission_instruction.json", "r") as file:
+            mission_instruction = json.load(file)
+            self.mission_questionnaire = {k: v['questionnaire_instruction'] for k, v in mission_instruction.items() if 'questionnaire_instruction' in v}
 
     async def query_knowledge_menu(self, interaction: discord.Interaction):
         try:

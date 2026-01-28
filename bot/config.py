@@ -27,14 +27,13 @@ class Config:
 
         self.IMAGE_ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic', '.heif']
 
-        self.available_books = [1, 2, 3]
         self._load_mission_config()
         self.photo_mission_list = set(
             [self.baby_registration_mission] +
+            self.photo_mission +
             self.relation_or_identity_mission +
-            self.photo_mission_with_aside_text +
-            self.photo_mission_without_aside_text +
-            self.photo_mission_with_title_and_content +
+            self.letter_mission +
+            self.short_answer_mission +
             self.add_on_photo_mission
         )
 
@@ -47,70 +46,89 @@ class Config:
 
         Args:
             mission_id: The mission ID
-            attachment_type: 'photo', 'video', 'audio', or 'questionnaire'
+            attachment_type: 'photo', 'video', or 'audio'
 
         Returns:
             int: Required number of attachments (default: 1)
         """
         mission_id_str = str(mission_id)
 
-        if attachment_type == 'photo':
-            return int(self.photo_mission_required_count.get(mission_id_str, 1))
-        elif attachment_type == 'video':
-            return int(self.video_mission_required_count.get(mission_id_str, 1))
-        elif attachment_type == 'audio':
-            return int(self.audio_mission_required_count.get(mission_id_str, 1))
-        elif attachment_type == 'questionnaire':
-            return int(self.questionnaire_required_images.get(mission_id_str, 0))
+        # Try mission_requirements first (new unified format)
+        requirements = self.mission_requirements.get(mission_id_str, {})
+        if attachment_type in requirements:
+            return int(requirements[attachment_type])
         else:
-            return 1
+            return 0
 
-    def get_required_aside_text_count(self, mission_id, mission_type='photo'):
+    def get_required_aside_text_count(self, mission_id, mission_type='aside_text'):
         """
         Get the required number of aside_text for a mission.
 
         Args:
             mission_id: The mission ID
-            mission_type: 'photo', 'video', 'audio', or 'questionnaire'
+            mission_type: 'photo', 'video', or 'audio'
 
         Returns:
-            int: Required number of aside_text (default: 0 for photo/video/audio, 1 for questionnaire)
+            int: Required number of aside_text (default: 0)
         """
         mission_id_str = str(mission_id)
 
-        if mission_type == 'photo':
-            return int(self.photo_aside_text_required_count.get(mission_id_str, 0))
-        elif mission_type == 'video':
-            return int(self.video_aside_text_required_count.get(mission_id_str, 0))
-        elif mission_type == 'audio':
-            return int(self.audio_aside_text_required_count.get(mission_id_str, 0))
-        elif mission_type == 'questionnaire':
-            return int(self.questionnaire_aside_text_required_count.get(mission_id_str, 1))
+        # Try mission_requirements first (new unified format)
+        requirements = self.mission_requirements.get(mission_id_str, {})
+        if 'aside_text' in requirements:
+            return int(requirements[mission_type])
         else:
             return 0
 
     def get_prompt_file(self, mission_id):
+        """
+        Get the appropriate prompt file for a mission.
+        Simplified to use mission type classification.
+        Mission validation logic is determined by mission_requirements.
+        """
         base_path = "bot/resource/prompts"
+
+        # Registration missions
         if mission_id in self.baby_profile_registration_missions:
             return f"{base_path}/baby_intro_prompt.txt"
+
+        # Pregnant registration missions
         elif mission_id == self.pregnant_registration_mission:
             return f"{base_path}/pregnant_registration_prompt.txt"
-        elif mission_id in self.photo_mission_without_aside_text or mission_id in self.questionnaire_with_image_mission:
-            return f"{base_path}/image_prompt.txt"
-        elif mission_id in self.photo_mission_with_aside_text:
-            return f"{base_path}/image_with_aside_text.txt"
+
+        # Relation/identity missions - use specific prompt with relationship term rules
         elif mission_id in self.relation_or_identity_mission:
-            return f"{base_path}/relationship_identity_mission.txt"
-        elif mission_id in self.photo_mission_with_title_and_content:
-            return f"{base_path}/image_with_content.txt"
+            return f"{base_path}/relationship_identity_prompt.txt"
+
+        # Letter missions
+        elif mission_id in self.letter_mission:
+            return f"{base_path}/letter_prompt.txt"
+
+        # Add-on photo missions
         elif mission_id in self.add_on_photo_mission:
             return f"{base_path}/add_on_mission_prompt.txt"
+
+        # General photo missions - simple aside_text with typo correction only
+        elif mission_id in self.photo_mission:
+            return f"{base_path}/aside_text_prompt.txt"
+
+        # Questionnaire missions
+        elif mission_id in self.questionnaire_mission or mission_id in self.short_answer_mission:
+            return f"{base_path}/short_answer_prompt.txt"
+
+        # Video missions
         elif mission_id in self.video_mission:
             return f"{base_path}/video_mission_prompt.txt"
+
+        # Audio missions
         elif mission_id in self.audio_mission:
             return f"{base_path}/audio_mission_prompt.txt"
+
+        # Theme missions
         elif mission_id >= 7001 and mission_id <= 7042:
             return f"{base_path}/theme_mission_prompt.txt"
+
+        # Default fallback
         else:
             return f"{base_path}/class_question.txt"
 
@@ -153,27 +171,27 @@ class Config:
             self.relation_or_identity_mission = self.relation_mission + self.identity_mission
 
             # photo missions
-            self.photo_mission_with_aside_text = [item for month_data in growth_book_missions
-                for item in month_data.get('photo_mission_with_aside_text', [])
-            ]
-            self.photo_mission_without_aside_text = [item for month_data in growth_book_missions
-                for item in month_data.get('photo_mission_without_aside_text', [])
-            ]
-            self.photo_mission_with_title_and_content = [item for month_data in growth_book_missions
-                for item in month_data.get('photo_mission_with_title_and_content', [])
+            self.photo_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('photo_mission', [])
             ]
             self.add_on_photo_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('add_on_photo_mission', [])
             ]
 
-            # other missions
-            self.questionnaire_without_image_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('questionnaire_without_image_mission', [])
+            # Questionnaire missions (multiple choice / single choice)
+            self.questionnaire_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('questionnaire_mission', [])
             ]
-            self.questionnaire_with_image_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('questionnaire_with_image_mission', [])
+
+            # Letter missions (photo + long text for letter writing)
+            self.letter_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('letter_mission', [])
             ]
-            self.questionnaire_mission = self.questionnaire_without_image_mission + self.questionnaire_with_image_mission
+
+            # Short answer missions (kind of photo mission)
+            self.short_answer_mission = [item for month_data in growth_book_missions
+                for item in month_data.get('short_answer_mission', [])
+            ]
 
             self.audio_mission = [item for month_data in growth_book_missions
                 for item in month_data.get('audio_mission', [])
@@ -183,41 +201,12 @@ class Config:
                 for item in month_data.get('video_mission', [])
             ]
 
-            # Load required attachment counts for missions
-            self.photo_mission_required_count = {}
-            self.video_mission_required_count = {}
-            self.audio_mission_required_count = {}
-            self.questionnaire_required_images = {}
-
-            # Load required aside_text counts for missions
-            self.photo_aside_text_required_count = {}
-            self.video_aside_text_required_count = {}
-            self.audio_aside_text_required_count = {}
-            self.questionnaire_aside_text_required_count = {}
-
+            # Load mission requirements (unified format)
+            self.mission_requirements = {}
             for book_data in growth_book_missions:
-                # Merge photo mission required counts from all books
-                if 'photo_mission_required_count' in book_data:
-                    self.photo_mission_required_count.update(book_data['photo_mission_required_count'])
-                # Merge video mission required counts from all books
-                if 'video_mission_required_count' in book_data:
-                    self.video_mission_required_count.update(book_data['video_mission_required_count'])
-                # Merge audio mission required counts from all books
-                if 'audio_mission_required_count' in book_data:
-                    self.audio_mission_required_count.update(book_data['audio_mission_required_count'])
-                # Merge questionnaire required images from all books
-                if 'questionnaire_required_images' in book_data:
-                    self.questionnaire_required_images.update(book_data['questionnaire_required_images'])
-
-                # Merge aside_text required counts from all books
-                if 'photo_aside_text_required_count' in book_data:
-                    self.photo_aside_text_required_count.update(book_data['photo_aside_text_required_count'])
-                if 'video_aside_text_required_count' in book_data:
-                    self.video_aside_text_required_count.update(book_data['video_aside_text_required_count'])
-                if 'audio_aside_text_required_count' in book_data:
-                    self.audio_aside_text_required_count.update(book_data['audio_aside_text_required_count'])
-                if 'questionnaire_aside_text_required_count' in book_data:
-                    self.questionnaire_aside_text_required_count.update(book_data['questionnaire_aside_text_required_count'])
+                # Merge mission_requirements from all books
+                if 'mission_requirements' in book_data:
+                    self.mission_requirements.update(book_data['mission_requirements'])
 
             # final confirmation mission
             self.confirm_album_mission = [item for month_data in growth_book_missions

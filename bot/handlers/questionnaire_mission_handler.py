@@ -24,47 +24,38 @@ from bot.utils.drive_file_utils import create_file_from_url, create_preview_imag
 from bot.utils.mission_instruction_utils import get_mission_instruction, get_current_mission_step, get_mission_total_steps
 from bot.config import config
 
-async def send_mission_step(client, user, mission, baby, current_step, mission_id, current_round, student_mission_info, send_weekly_report=True):
+async def send_mission_step(client, user, mission_id, baby, step_data, student_mission_info, send_weekly_report=True):
     """
     Send a mission step to the user based on step type.
 
     Args:
         client: Discord client
         user: Discord user object
-        mission: Mission info from API
-        baby: Baby profile info
-        current_step: Current step data from mission_questionnaire.json
+        step_data: Current step data from mission_questionnaire.json
         mission_id: Mission ID
-        current_round: Current round index
         student_mission_info: Student mission status info
         send_weekly_report: Whether to send weekly report files (default: True)
 
     Returns:
         Discord message object or None
     """
-    step_type = current_step.get('type')
+    step_type = step_data.get('type')
+    current_step = student_mission_info.get('current_step', 1)
 
     # Handle different step types
     if step_type in ['multiple_choice', 'single_choice']:
         # Multiple/Single choice - use QuestionnaireView
+        current_round = 0 # Simplified: one question per view  
         questionnaire = client.mission_questionnaire[str(mission_id)][current_round]
-        embed, files = await build_questionnaire_mission_embed(questionnaire, mission, baby)
+        embed, files = await build_questionnaire_mission_embed(questionnaire, student_mission_info, baby, current_step)
         if send_weekly_report and files:
             await user.send(files=files)
-        view = QuestionnaireView(client, mission_id, current_round, student_mission_info)
+        view = QuestionnaireView(client, mission_id, student_mission_info)
         view.message = await user.send(embed=embed, view=view)
-
-    elif step_type == 'text_input':
-        # Text input - show question and wait for answer
-        client.logger.info(f"current_step: {current_step}")
-        embed, files = await build_short_answer_mission_embed(current_step, mission, baby)
-        if send_weekly_report and files:
-            await user.send(files=files)
-        await user.send(embed=embed)
 
     elif step_type == 'photo':
         # Photo - show upload instruction
-        embed = await build_photo_mission_embed(current_step, mission)
+        embed = await build_photo_mission_embed(step_data, student_mission_info)
         await user.send(embed=embed)
 
     saved_result = get_mission_record(str(user.id), mission_id)
@@ -73,7 +64,7 @@ async def send_mission_step(client, user, mission, baby, current_step, mission_i
 
     return None
 
-async def handle_questionnaire_mission_start(client, user_id, mission_id, send_weekly_report=1, current_round=0):
+async def handle_questionnaire_mission_start(client, user_id, mission_id, send_weekly_report=1):
     user_id = str(user_id)
     mission = await client.api_utils.get_mission_info(mission_id)
     baby = await client.api_utils.get_baby_profile(user_id)
@@ -90,18 +81,20 @@ async def handle_questionnaire_mission_start(client, user_id, mission_id, send_w
         'user_id': user_id,
         'current_step': 1
     }
+    # Get current step from mission_questionnaire.json
+    current_step_data = get_current_mission_step(mission_id, student_mission_info)
+
+    if not current_step_data:
+        client.logger.warning(f"No current step found for mission {mission_id}")
+        return
+    else:
+        student_mission_info['total_stpes'] = min(4, len(current_step_data) + 1)
+
     await client.api_utils.update_student_mission_status(**student_mission_info)
 
     user = await client.fetch_user(user_id)
     if user.dm_channel is None:
         await user.create_dm()
-
-    # Get current step from mission_questionnaire.json
-    current_step = get_current_mission_step(mission_id, student_mission_info)
-
-    if not current_step:
-        client.logger.warning(f"No current step found for mission {mission_id}")
-        return
 
     # Prepare next mission
     book_id = mission.get('book_id', 0)
@@ -115,8 +108,8 @@ async def handle_questionnaire_mission_start(client, user_id, mission_id, send_w
 
     # Send the current step to user
     await send_mission_step(
-        client, user, mission, baby, current_step,
-        mission_id, current_round, student_mission_info,
+        client, user, mission_id,
+        baby, current_step_data, student_mission_info,
         send_weekly_report=bool(send_weekly_report)
     )
 
@@ -139,7 +132,7 @@ async def handle_questionnaire_round(client, message, student_mission_info, curr
         return
 
     questionnaire = client.mission_questionnaire[str(mission_id)][current_round]
-    view = QuestionnaireView(client, mission_id, current_round, student_mission_info)
+    view = QuestionnaireView(client, mission_id, student_mission_info)
     if current_round > 0 or restart:
         embed = get_questionnaire_embed(questionnaire)
         view.message = await message.channel.send(embed=embed, view=view)
@@ -156,13 +149,13 @@ async def handle_questionnaire_next_mission(client, message, student_mission_inf
         await submit_questionnaire_mission(client, user_id, mission_id, saved_result)
     else:
         # Get next step
-        next_step = get_current_mission_step(mission_id, student_mission_info)
+        next_step_data = get_current_mission_step(mission_id, student_mission_info)
         mission = await client.api_utils.get_mission_info(mission_id)
         baby = await client.api_utils.get_baby_profile(user_id)
         user = message.author
         await send_mission_step(
-            client, user, mission, baby, next_step,
-            mission_id, student_mission_info['current_step'], student_mission_info,
+            client, user, mission_id,
+            baby, next_step_data, student_mission_info,
             send_weekly_report=False
         )
 
@@ -176,19 +169,22 @@ async def process_questionnaire_mission_filling(client, message, student_mission
     mission_id = student_mission_info['mission_id']
 
     request_info = prepare_api_request(client, message, student_mission_info)
+    print(f"Request info: {request_info}")
+
     if request_info.get('direct_action') == 'error':
         await message.channel.send(request_info.get('context', '發生錯誤，請稍後再試。'))
         return
 
     elif request_info['needs_ai_prediction']:
         async with message.channel.typing():
-            # Use OpenAI to format bilingual sentence with proper grammar
-            formatted_text = client.openai_utils.format_bilingual_sentence(
-                prompt_template,
-                user_answer
-            )
+            prompt_path = config.get_prompt_file(mission_id)
             conversations = [{'role': 'user', 'message': request_info['context']}] if request_info['context'] else None
-            mission_result = client.openai_utils.process_user_message(prompt_path, request_info['user_message'], conversations=conversations)
+            mission_result = client.openai_utils.process_user_message(
+                prompt_path,
+                request_info['user_message'],
+                conversations=conversations,
+                additional_context=request_info.get('current_question')
+            )
             client.logger.info(f"Assistant response: {mission_result}")
     else:
         # Skip AI prediction, use direct response
@@ -200,7 +196,29 @@ async def process_questionnaire_mission_filling(client, message, student_mission
 
     # Save updated mission result
     saved_result = get_mission_record(user_id, mission_id) or {}
-    saved_result.update(mission_result)
+    saved_result['message'] = mission_result['message']
+
+    # Handle aside_text similar to attachments (support multiple text inputs)
+    if 'aside_text' in mission_result and mission_result['aside_text']:
+        required_text_count = config.get_required_aside_text_count(mission_id, 'questionnaire')
+
+        if required_text_count > 1:
+            # Multiple aside_texts required
+            if not saved_result.get('aside_texts'):
+                saved_result['aside_texts'] = []
+            elif not isinstance(saved_result['aside_texts'], list):
+                saved_result['aside_texts'] = [saved_result['aside_texts']]
+
+            # Add new aside_text
+            if len(saved_result['aside_texts']) < required_text_count:
+                saved_result['aside_texts'].append(mission_result['aside_text'])
+            else:
+                saved_result['aside_texts'][request_info.get('question_index', 0)] = mission_result['aside_text']
+        else:
+            # Single aside_text requirement
+            saved_result['aside_texts'] = mission_result['aside_text']
+
+    # Update with remaining fields from mission_result
     save_mission_record(user_id, mission_id, saved_result)
 
     # Check if mission is ready to finalize using the helper function
@@ -227,8 +245,32 @@ def prepare_api_request(client, message, student_mission_info):
     mission_id = student_mission_info['mission_id']
     saved_result = get_mission_record(user_id, mission_id) or {}
 
-    required_count = config.get_required_attachment_count(mission_id, 'questionnaire')
-    if message.attachments:
+    required_count = config.get_required_attachment_count(mission_id, 'photo')
+    if user_id in client.photo_mission_replace_index and message.attachments:
+        photo_index = client.photo_mission_replace_index[user_id]
+        attachments_list = saved_result.get('attachment', []) if isinstance(saved_result.get('attachment'), list) else [saved_result.get('attachment')] if saved_result.get('attachment') else []
+
+        if not attachments_list or photo_index-1 >= len(attachments_list):
+            return {
+                'needs_ai_prediction': False,
+                'direct_action': 'error',
+                'context': "無法替換照片，請重新上傳照片或是尋求客服協助喔！"
+            }
+
+        replace_attachment = extract_attachment_info(message.attachments[0].url)
+        attachments_list[photo_index-1] = replace_attachment
+        saved_result['attachment'] = attachments_list if required_count > 1 else attachments_list[0]
+        saved_result['message'] = "已收到您的照片"
+        saved_result['is_ready'] = True
+        save_mission_record(user_id, mission_id, saved_result)
+
+        return {
+            'needs_ai_prediction': False,
+            'direct_action': 'photo_replacement',
+            'direct_response': saved_result
+        }
+
+    elif message.attachments:
         # Handle multiple photos requirement
         if required_count > 1:
             if not saved_result.get('attachments'):
@@ -246,50 +288,43 @@ def prepare_api_request(client, message, student_mission_info):
             # Single photo requirement (original behavior)
             attachment = extract_attachment_info(message.attachments[0].url)
             saved_result['attachments'] = attachment
+            saved_result['message'] = "已收到您的照片"
+
+        # Save mission result
+        save_mission_record(user_id, mission_id, saved_result)
 
         return {
             'needs_ai_prediction': False,
             'direct_action': 'photo_upload',
-            'direct_response': saved_result
+            'direct_response': saved_result,
+            'message': '已收到照片'
         }
+
     else:
         user_message = message.content
         current_step_index = student_mission_info.get('current_step', 1)
 
         temp_info = {'current_step': current_step_index}
-        current_step = get_current_mission_step(mission_id, temp_info)
+        current_step_data = get_current_mission_step(mission_id, temp_info)
 
-        # Initialize variables
-        prompt_template = None
-        if current_step and current_step.get('prompt'):
-            prompt_template = current_step['prompt']
+        current_question, question_index = None, None
+        # Add current question to context (IMPORTANT for validation)
+        if current_step_data and current_step_data.get('question'):
+            current_question = f"Question: {current_step_data.get('question')}"
+            question_index = current_step_data.get('index', 0)
 
         # Build context for AI prediction
-        context_parts = []
-
-        # Add attachment status (without detailed info to avoid confusion)
-        if saved_result.get('attachments'):
-            if isinstance(saved_result['attachments'], list):
-                context_parts.append(f"Photo upload status: {len(saved_result['attachments'])} photos already uploaded")
-            else:
-                context_parts.append(f"Photo upload status: Photo already uploaded")
-
-        # Add conversation flow context
-        if saved_result.get("previous_question"):
-            context_parts.append(f"Previous question asked to user:\n{saved_result['previous_question']}")
-
-        # Add previously collected text data
-        if saved_result.get('aside_texts'):
-            context_parts.append(f"User's aside_text (already provided):\n{saved_result['aside_texts']}")
-
-        context = "\n".join(context_parts) if context_parts else "No prior context."
+        # For questionnaire text input validation, we don't need any context
+        # Each question should be validated independently based only on the question and answer
+        context = ""
 
         return {
             'needs_ai_prediction': True,
             'direct_action': None,
-            'prompt_template': prompt_template,
             'context': context,
-            'user_message': user_message
+            'user_message': user_message,
+            'current_question': current_question,
+            'question_index': question_index
         }
 
 # --------------------- Helper Functions ---------------------
@@ -357,8 +392,8 @@ def check_mission_ready(mission_id, mission_result):
         bool: True if mission has enough aside_text and attachments, False otherwise
     """
     # Get required counts from config
-    required_attachment_count = config.get_required_attachment_count(mission_id, 'questionnaire')
-    required_aside_text_count = config.get_required_aside_text_count(mission_id, 'questionnaire')
+    required_attachment_count = config.get_required_attachment_count(mission_id, 'photo')
+    required_aside_text_count = config.get_required_aside_text_count(mission_id)
 
     # Check attachments - support both 'attachment' and 'attachments' keys
     attachment = mission_result.get('attachments')
@@ -401,11 +436,10 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
     return {
         "id": attachment_id,
         "filename": filename,
-        "url": attachment_url,
-        "aside_text": None
+        "url": attachment_url
     }
 
-async def build_questionnaire_mission_embed(questionnaire_info, mission_info, baby_info=None):
+async def build_questionnaire_mission_embed(questionnaire_data, mission_info, baby_info=None, current_step=1):
     if baby_info is None:
         author = "恭喜寶寶出生！"
     else:
@@ -427,18 +461,19 @@ async def build_questionnaire_mission_embed(questionnaire_info, mission_info, ba
             author = "恭喜寶寶出生！"
 
     embed = discord.Embed(
-        title=f"**{questionnaire_info['question']}**",
+        title=f"**{questionnaire_data['question']}**",
         description=mission_info['mission_instruction'] if mission_info.get('mission_instruction') else "\n💡回答請點選下方按鈕\n",
         color=0xeeb2da
     )
-    embed.set_author(name=author)
+    if current_step <= 1:
+        embed.set_author(name=author)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
 
     files = []
-    if '週' in mission_info['mission_milestone']:
+    if '週' in mission_info.get('mission_milestone'):
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
@@ -447,7 +482,7 @@ async def build_questionnaire_mission_embed(questionnaire_info, mission_info, ba
 
     return embed, files
 
-async def build_short_answer_mission_embed(step_data, mission_info, baby_info=None):
+async def build_short_answer_mission_embed(answer_data, mission_info, baby_info=None, current_step=1):
     if baby_info is None:
         author = "恭喜寶寶出生！"
     else:
@@ -468,18 +503,16 @@ async def build_short_answer_mission_embed(step_data, mission_info, baby_info=No
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
-    step_type = step_data.get('type', 'text_input')
-
     # Get title and description
-    title = step_data.get('title', step_data.get('question', ''))
-    description = step_data.get('description', '')
+    title = answer_data.get('title', answer_data.get('question', ''))
+    description = f"**{answer_data.get('question', '')}**\n{answer_data.get('description', '')}"
 
     embed = discord.Embed(
         title=f"📝 **{title}**",
         description=description,
         color=0xeeb2da
     )
-    if step <= 1:
+    if current_step <= 1:
         embed.set_author(name=author)
 
     embed.set_footer(

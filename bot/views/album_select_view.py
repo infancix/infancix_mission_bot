@@ -47,11 +47,11 @@ BOOK_CATALOGS = {
             {'book_id': 2, 'book_title': '第二個月：照顧者的魔法篇'},
             {'book_id': 3, 'book_title': '第三個月：大樹屋冒險篇'},
             {'book_id': 4, 'book_title': '第四個月：兔子的彩虹慶典'},
-            #{'book_id': 5, 'book_title': '第五個月：挑食的國王'},
-            #{'book_id': 6, 'book_title': '第六個月：與媽媽逛街去'},
-            #{'book_id': 7, 'book_title': '第七個月：冒險學校的挑戰(上)'},
+            {'book_id': 5, 'book_title': '第五個月：挑食的國王'},
+            {'book_id': 6, 'book_title': '第六個月：與媽媽逛街去'},
+            {'book_id': 7, 'book_title': '第七個月：冒險學校的挑戰(上)'},
             #{'book_id': 8, 'book_title': '第八個月：冒險學校的挑戰(下)'},
-            #{'book_id': 9, 'book_title': '第九個月：牙齒城堡'},
+            {'book_id': 9, 'book_title': '第九個月：牙齒城堡'},
             #{'book_id': 10, 'book_title': '第十個月：森林魔法的試煉篇'},
             #{'book_id': 11, 'book_title': '第十一個月：海底挑戰賽'},
             #{'book_id': 12, 'book_title': '第十二個月：森林裡的祕密水果'},
@@ -112,6 +112,8 @@ class BookMenuView(discord.ui.View):
         self.age_code = 1
         self.book_type = '成長繪本'
         self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+        if not config.ENV:
+            self.book_list = self.book_list[:4]
         self.build_level3_book(page=0)
 
     # -------- 共用工具 --------

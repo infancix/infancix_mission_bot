@@ -42,14 +42,34 @@ async def handle_registration_mission_start(client, user_id, mission_id):
         await user.create_dm()
 
     if int(mission_id) in config.baby_pre_registration_mission:
-        embed = get_baby_name_registration_embed(mission_info)
+        # Check if user already has baby profile data
+        baby_info = await client.api_utils.get_baby_profile(user_id)
+        client.logger.info(f"baby_info: {baby_info}")
+        birthdate = baby_info.get('birthdate') or baby_info.get('birthday') if baby_info else None
+        if baby_info and baby_info.get('baby_name') and birthdate and baby_info.get('gender'):
+            # User has data - show confirmation
+            embed = get_baby_pre_registration_confirmation_embed(baby_info)
+            mission_result = {
+                'baby_name': baby_info.get('baby_name'),
+                'baby_name_en': baby_info.get('baby_name_en'),
+                'birthday': birthdate,  # Normalize to 'birthday'
+                'gender': baby_info.get('gender')
+            }
+            view = TaskSelectView(client, "baby_pre_registration_confirm", mission_id, mission_result=mission_result)
+            view.message = await user.send(embed=embed, view=view)
+            save_task_entry_record(user_id, str(view.message.id), "baby_pre_registration_confirm", mission_id, result=mission_result)
+        else:
+            # No data - ask for input
+            embed = get_baby_name_registration_embed(mission_info)
+            await user.send(embed=embed)
     elif int(mission_id) in config.baby_name_en_registration_missions:
         baby_info = await client.api_utils.get_baby_profile(user_id)
         embed = get_baby_name_en_registration_embed(mission_info, baby_info.get('gender'))
+        await user.send(embed=embed)
     else:
         embed = get_baby_registration_embed(client.reset_baby_profile.get(user_id, False))
+        await user.send(embed=embed)
 
-    await user.send(embed=embed)
     return
 
 async def handle_baby_photo_upload(client, message, student_mission_info):
@@ -223,8 +243,14 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
 
 def get_baby_name_registration_embed(mission_info):
     embed = discord.Embed(
-        title="📝 寶寶暱稱登記",
-        description="🧸 暱稱（建議2-3字）",
+        title="📝 寶寶基本資料登記",
+        description=(
+            "請提供寶寶的基本資料：\n\n"
+            "🧸 暱稱（建議2-3字）\n"
+            "🧸 英文名字/暱稱（可選）\n"
+            "🎂 出生日期（例如：2025-05-01）\n"
+            "👤 性別（男/女）"
+        ),
         color=0xeeb2da,
     )
     if mission_info['mission_id'] == 1000:
@@ -235,13 +261,48 @@ def get_baby_name_registration_embed(mission_info):
     )
     return embed
 
+def get_baby_pre_registration_confirmation_embed(baby_info):
+    """確認寶寶基本資料的 embed"""
+    embed = discord.Embed(
+        title="✅ 確認寶寶資料",
+        description="請確認以下資料是否正確：",
+        color=0x5cb85c,
+    )
+
+    context = []
+    if baby_info.get('baby_name'):
+        context.append(f"🧸 暱稱：{baby_info['baby_name']}")
+    if baby_info.get('baby_name_en'):
+        context.append(f"🧸 英文名字：{baby_info['baby_name_en']}")
+    # API returns 'birthdate', form uses 'birthday'
+    birthday = baby_info.get('birthdate') or baby_info.get('birthday')
+    if birthday:
+        context.append(f"🎂 出生日期：{birthday}")
+    # Display gender as Chinese
+    gender = baby_info.get('gender')
+    if gender:
+        gender_text = '男生' if gender in ['男', 'm', 'male', 'M'] else '女生' if gender in ['女', 'f', 'female', 'F'] else gender
+        context.append(f"👤 性別：{gender_text}")
+
+    embed.add_field(
+        name="👶 寶寶資料",
+        value="\n".join(context) if context else "無資料",
+        inline=False
+    )
+
+    embed.set_footer(
+        icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
+        text="請點選下方按鈕確認或重新填寫"
+    )
+    return embed
+
 def get_baby_name_en_registration_embed(mission_info, gender=None):
     if gender is None:
         embed = discord.Embed(
             title="✏️ 製作翻譯對照表",
             description=(
                 "請先告訴我們寶寶是 **男生** 還是 **女生**？\n"
-                "接著請輸入寶寶的 [英文名字或暱稱]，\n"
+                "請輸入寶寶的 [英文名字或暱稱]，\n"
                 "我們將為寶寶建立專屬英文翻譯對照表，\n"
                 "之後所有繪本都會自動使用這個名字喔!\n\n"
                 "📝 範例：`男生 Alex` 或 `女生 Emma`"
@@ -255,6 +316,7 @@ def get_baby_name_en_registration_embed(mission_info, gender=None):
                 "請輸入寶寶的 [英文名字或暱稱]，\n"
                 "我們將為寶寶建立專屬英文翻譯對照表，\n"
                 "之後所有繪本都會自動使用這個名字喔!"
+                "📝 範例：`Alex` 或 `Emma`"
             ),
             color=0xeeb2da,
         )
