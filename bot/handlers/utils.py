@@ -154,7 +154,7 @@ async def load_questionnaire_messages(client):
             message = await channel.fetch_message(int(entry['message_id']))
             clicked_options = set(entry.get('clicked_options', []))
             student_mission_info['clicked_options'] = clicked_options
-            view = QuestionnaireView(client, int(mission_id), len(entries)-1, student_mission_info)
+            view = QuestionnaireView(client, int(mission_id), student_mission_info)
             view.message = message
             await message.edit(view=view)
             client.logger.info(f"✅ Restored questionnaires for user {user_id}")
@@ -193,11 +193,8 @@ async def start_mission_by_id(client, user_id: str, mission_id: int, send_weekly
         from bot.handlers.profile_handler import handle_registration_mission_start
         await handle_registration_mission_start(client, user_id, mission_id)
     elif mission_id in config.relation_or_identity_mission:
-        from bot.handlers.relation_or_identity_handler import handle_relation_identity_mission_start
-        await handle_relation_identity_mission_start(client, user_id, mission_id)
-    elif mission_id in config.add_on_photo_mission:
-        from bot.handlers.add_on_mission_handler import handle_add_on_mission_start
-        await handle_add_on_mission_start(client, user_id, mission_id)
+        from bot.handlers.photo_mission_handler import handle_photo_mission_start
+        await handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=send_weekly_report)
     else:
         # Default to photo mission
         from bot.handlers.photo_mission_handler import handle_photo_mission_start

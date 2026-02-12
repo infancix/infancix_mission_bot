@@ -57,16 +57,19 @@ def get_current_mission_step(mission_id, student_mission_info) -> Optional[Dict]
     return None
 
 
-def get_mission_instruction(mission_id, step_index=0) -> Optional[Dict[str, str]]:
+def get_mission_instruction(mission_id, step_index=0, instruction_type='question') -> Optional[Dict[str, str]]:
     """
     Load mission instruction from mission_instruction.json
 
     Args:
         mission_id: Mission ID (int or str)
         step_index: Which step to retrieve (default 0 for first step)
+        instruction_type: 'upload', 'question', or 'questionnaire' (default 'question')
 
     Returns:
-        Dict with 'title' and 'description' if found, None otherwise
+        Dict with instruction data if found, None otherwise
+        - For single instruction: Dict with 'question' and 'description'
+        - For multiple instructions (array): Dict at the specified step_index
     """
     mission_id_str = str(mission_id)
     instruction_path = os.path.join(
@@ -77,10 +80,33 @@ def get_mission_instruction(mission_id, step_index=0) -> Optional[Dict[str, str]
         with open(instruction_path, 'r', encoding='utf-8') as f:
             mission_instructions = json.load(f)
 
-        if mission_id_str in mission_instructions:
-            steps = mission_instructions[mission_id_str]
-            if 0 <= step_index < len(steps):
-                return steps[step_index]
+        if mission_id_str not in mission_instructions:
+            return None
+
+        mission_data = mission_instructions[mission_id_str]
+
+        # Determine which instruction to use based on type
+        if instruction_type == 'upload':
+            instruction = mission_data.get('upload_instruction')
+        elif instruction_type == 'questionnaire':
+            instruction = mission_data.get('questionnaire_instruction')
+        else:  # 'question'
+            instruction = mission_data.get('question_instruction')
+
+        # If instruction is None, return None
+        if instruction is None:
+            return None
+
+        # If instruction is a list, get the item at step_index
+        if isinstance(instruction, list):
+            if 0 <= step_index < len(instruction):
+                return instruction[step_index]
+            return None
+
+        # If instruction is a dict (single instruction), return it
+        # Note: step_index is ignored for single instructions
+        return instruction
+
     except Exception as e:
         print(f"Error loading mission_instruction.json: {e}")
 

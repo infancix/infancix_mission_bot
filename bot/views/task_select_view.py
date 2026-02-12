@@ -92,6 +92,25 @@ class TaskSelectView(discord.ui.View):
             self.baby_optin_button.callback = self.baby_optin_button_callback
             self.add_item(self.baby_optin_button)
 
+        if task_type == "baby_pre_registration_confirm":
+            # Confirm button
+            confirm_button = discord.ui.Button(
+                custom_id="baby_pre_confirm_button",
+                label="✓ 確認並繼續",
+                style=discord.ButtonStyle.success
+            )
+            confirm_button.callback = self.baby_pre_confirm_button_callback
+            self.add_item(confirm_button)
+
+            # Re-fill button
+            refill_button = discord.ui.Button(
+                custom_id="baby_pre_refill_button",
+                label="✎ 重新填寫",
+                style=discord.ButtonStyle.secondary
+            )
+            refill_button.callback = self.baby_pre_refill_button_callback
+            self.add_item(refill_button)
+
         if task_type == "check_add_on":
             label = "我要加購"
             self.check_add_on_button = discord.ui.Button(
@@ -101,6 +120,25 @@ class TaskSelectView(discord.ui.View):
             )
             self.check_add_on_button.callback = self.check_add_on_button_callback
             self.add_item(self.check_add_on_button)
+
+            if self.mission_result.get('next_mission_id'):
+                label = "跳過此任務"
+                self.skip_mission_button = discord.ui.Button(
+                    custom_id="skip_mission_button",
+                    label=label,
+                    style=discord.ButtonStyle.secondary
+                )
+                self.skip_mission_button.callback = self.go_next_mission_button_callback
+                self.add_item(self.skip_mission_button)
+            else:
+                label = '返回繪本狀態'
+                self.return_album_button = discord.ui.Button(
+                    custom_id="return_album_button",
+                    label=label,
+                    style=discord.ButtonStyle.secondary
+                )
+                self.return_album_button.callback = self.return_album_button_callback
+                self.add_item(self.return_album_button)
 
         if task_type == "skip_theme_book_aside_text":
             label = "跳過"
@@ -224,6 +262,50 @@ class TaskSelectView(discord.ui.View):
             from bot.handlers.profile_handler import handle_baby_photo_upload
             await handle_baby_photo_upload(self.client, message, student_mission_info)
 
+    async def baby_pre_confirm_button_callback(self, interaction):
+        """確認寶寶資料,提交並產生繪本"""
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        user_id = str(interaction.user.id)
+
+        # Submit baby data (similar to process_baby_profile_filling)
+        message = SimpleNamespace(author=interaction.user, channel=interaction.channel, content=None)
+        student_mission_info = {
+            'user_id': user_id,
+            'mission_id': self.mission_id
+        }
+
+        # Submit the baby profile data
+        from bot.handlers.profile_handler import submit_baby_data, submit_image_data
+        success = await submit_baby_data(self.client, message, student_mission_info, self.mission_result)
+
+        if success:
+            # Submit image if it's baby_registration_mission and has attachment
+            if self.mission_id == config.baby_registration_mission and self.mission_result.get('attachment'):
+                await submit_image_data(self.client, message, student_mission_info, self.mission_result)
+
+            # Generate the photo/book
+            await self.client.api_utils.submit_generate_photo_request(user_id, self.mission_id)
+            self.client.logger.info(f"送出繪本任務 {self.mission_id}")
+        else:
+            await interaction.followup.send("更新寶寶資料失敗，請稍後再試。")
+
+    async def baby_pre_refill_button_callback(self, interaction):
+        """重新填寫寶寶資料"""
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        # Show the input form
+        mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
+        from bot.handlers.profile_handler import get_baby_name_registration_embed
+        embed = get_baby_name_registration_embed(mission_info)
+        await interaction.followup.send(embed=embed)
+
     async def baby_not_born_button_callback(self, interaction):
         await interaction.response.defer()
         for item in self.children:
@@ -256,14 +338,34 @@ class TaskSelectView(discord.ui.View):
         return True
 
     async def submit_image_data(self, interaction):
-        if self.mission_result and self.mission_result.get('attachment'):
+        if not self.mission_result:
+            return
+
+        user_id = str(interaction.user.id)
+
+        # Check if this is a photo mission - use new photo_mission_handler logic
+        from bot.config import config
+        if self.mission_id in config.photo_mission_list:
+            from bot.handlers.photo_mission_handler import submit_photo_mission
+            from types import SimpleNamespace
+
+            # Create a message-like object for submit_photo_mission
+            message = SimpleNamespace(author=interaction.user, channel=interaction.channel)
+            student_mission_info = {'mission_id': self.mission_id}
+
+            await submit_photo_mission(self.client, message, student_mission_info, self.mission_result)
+
+        # For other missions, use original logic
+        elif self.mission_result.get('attachment'):
             attachment_obj = [self.mission_result.get('attachment')]
             update_status = await self.client.api_utils.update_mission_image_content(
-                str(interaction.user.id), self.mission_id, attachment_obj, aside_text=self.mission_result.get('aside_text'), content=self.mission_result.get('content')
+                user_id, self.mission_id, attachment_obj,
+                aside_text=self.mission_result.get('aside_text'),
+                content=self.mission_result.get('content')
             )
 
             if bool(update_status):
-                await self.client.api_utils.submit_generate_photo_request(str(interaction.user.id), self.mission_id)
+                await self.client.api_utils.submit_generate_photo_request(user_id, self.mission_id)
                 self.client.logger.info(f"送出繪本任務 {self.mission_id}")
 
     async def check_add_on_button_callback(self, interaction):

@@ -13,18 +13,10 @@ from bot.handlers.profile_handler import (
     handle_registration_mission_start,
     process_baby_profile_filling
 )
-from bot.handlers.relation_or_identity_handler import (
-    handle_relation_identity_mission_start,
-    process_relation_identity_filling
-)
 from bot.handlers.photo_mission_handler import (
     handle_photo_mission_start,
     process_photo_mission_filling
 ) 
-from bot.handlers.add_on_mission_handler import (
-    handle_add_on_mission_start,
-    process_add_on_mission_filling
-)
 from bot.handlers.pregnancy_mission_handler import (
     handle_pregnancy_mission_start,
     process_pregnancy_registration_message
@@ -112,6 +104,13 @@ async def handle_album(client, user_id, match):
 async def handle_direct_message(client, message):
     client.logger.debug(f"Message received: {message}")
     user_id = str(message.author.id)
+
+    # Check for baby book activation keyword
+    if "開啟製作寶寶繪本" in message.content:
+        await client.api_utils.store_message(str(user_id), 'user', message.content)
+        await handle_app_instruction(client, int(user_id), 1000)
+        return
+
     student_mission_info = await client.api_utils.get_student_is_in_mission(user_id)
 
     if not bool(student_mission_info):
@@ -172,13 +171,11 @@ async def handle_direct_message(client, message):
     elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
     elif mission_id in config.relation_or_identity_mission:
-        await process_relation_identity_filling(client, message, student_mission_info)
+        await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.video_mission:
         await process_video_mission_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
         await process_audio_mission_filling(client, message, student_mission_info)
-    elif mission_id in config.add_on_photo_mission:
-        await process_add_on_mission_filling(client, message, student_mission_info)
     elif mission_id in config.questionnaire_mission:
         await process_questionnaire_mission_filling(client, message, student_mission_info)
     elif mission_id in config.photo_mission_list:
@@ -232,6 +229,7 @@ async def handle_app_instruction(client, user_id, mission_id):
             "3️⃣ 完成後預覽整本繪本\n"
             "4️⃣ 每月 1 號由客服阿福聯絡送印出貨\n"
             "⚠️ 試用版可製作部分頁面\n\n"
+            "📖 [製作繪本教學](https://baby120.ai/make-book-guide/)\n\n"
             "------\n"
             "🚀 點擊下方按鈕，開始製作第一個月的繪本吧！"
         ),

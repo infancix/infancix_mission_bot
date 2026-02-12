@@ -15,20 +15,19 @@ from bot.utils.message_tracker import (
 )
 
 class QuestionnaireView(discord.ui.View):
-    def __init__(self, client, mission_id, current_round=0, student_mission_info=None, timeout=None):
+    def __init__(self, client, mission_id, student_mission_info=None, timeout=None):
         super().__init__(timeout=timeout)
         self.client = client
         self.mission_id = mission_id
-        self.current_round = current_round
-        self.student_mission_info = student_mission_info
+        self.student_mission_info = student_mission_info or {}
         self.message = None
-        self.total_rounds = 1  # Simplified: one question per view
+        self.current_round = 0
 
-        # Get current questionnaire (only one question)
-        self.questionnaire = self.client.mission_questionnaire[str(self.mission_id)][current_round]
+        # Get current questionnaire (only one question, always index 0)
+        self.questionnaire = self.client.mission_questionnaire[str(self.mission_id)][0]
         self.min_selections = self.questionnaire.get('min_selections', 1)
         self.max_selections = self.questionnaire.get('max_selections', 3)
-        self.clicked_options = self.student_mission_info.get('clicked_options', [])
+        self.clicked_options = self.student_mission_info.get('clicked_options', [])  # Now stores indices
         self.is_response = None
 
         # Get options (use .get() to avoid KeyError for non-choice questions)
@@ -36,14 +35,14 @@ class QuestionnaireView(discord.ui.View):
         for idx, option in enumerate(self.options):
             button = discord.ui.Button(
                 label=option,
-                custom_id=f"questionnaire_{self.mission_id}_{self.current_round}_opt_{idx}",
-                style=discord.ButtonStyle.primary if option not in self.clicked_options else discord.ButtonStyle.secondary
+                custom_id=f"questionnaire_{self.mission_id}_opt_{idx}",
+                style=discord.ButtonStyle.primary if idx not in self.clicked_options else discord.ButtonStyle.secondary
             )
             button.callback = self.create_callback(idx)
             self.add_item(button)
 
         # Add skip button if there's a next mission
-        if student_mission_info and student_mission_info.get('next_mission_id'):
+        if self.student_mission_info.get('next_mission_id'):
             skip_button = discord.ui.Button(
                 label="跳過此任務",
                 custom_id=f"questionnaire_skip_{self.mission_id}",
@@ -69,14 +68,13 @@ class QuestionnaireView(discord.ui.View):
     def create_callback(self, idx):
         async def callback(interaction: discord.Interaction):
             try:
-                selected_option = self.options[idx]
-                if selected_option in self.clicked_options:
+                if idx in self.clicked_options:
                     # remove selection if already selected
-                    self.clicked_options.remove(selected_option)
+                    self.clicked_options.remove(idx)
                     self.children[idx].style = discord.ButtonStyle.primary
                 else:
                     if len(self.clicked_options) < self.max_selections:
-                        self.clicked_options.append(selected_option)
+                        self.clicked_options.append(idx)
                         self.children[idx].style = discord.ButtonStyle.secondary
 
                 # single-select or max selections reached: immediately submit
@@ -109,10 +107,19 @@ class QuestionnaireView(discord.ui.View):
 
             # Save results
             mission_result = get_mission_record(user_id, self.mission_id) or {}
-            click_summary = "、".join(opt.split('.')[-1] for opt in self.clicked_options)
+
+            # Build Chinese summary from indices
+            click_summary = "、".join(self.options[idx] for idx in self.clicked_options)
+
+            # Build English summary from indices
+            options_en = self.questionnaire.get('options_en', [])
+            click_summary_en = ", ".join(options_en[idx] for idx in self.clicked_options if idx < len(options_en) and options_en[idx])
+
+            # Combine: click_summary|click_summary_en
+            combined_summary = f"{click_summary}|{click_summary_en}" if click_summary_en else click_summary
 
             # Simplified: always save to first element since total_rounds = 1
-            mission_result['aside_texts'] = [click_summary]
+            mission_result['aside_texts'] = [combined_summary]
             save_mission_record(user_id, self.mission_id, mission_result)
 
             # Simplified: always go to completion since total_rounds = 1

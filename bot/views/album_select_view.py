@@ -112,6 +112,8 @@ class BookMenuView(discord.ui.View):
         self.age_code = 1
         self.book_type = '成長繪本'
         self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+        if not config.ENV:
+            self.book_list = self.book_list[:4]
         self.build_level3_book(page=0)
 
     # -------- 共用工具 --------

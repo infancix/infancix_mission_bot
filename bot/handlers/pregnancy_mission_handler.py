@@ -73,17 +73,15 @@ async def process_pregnancy_registration_message(client, message, student_missio
         
         # Send new mission to user
         mission_id = get_pregnancy_current_mission(mission_result['due_date'])
+        mission_id = max(mission_id, 135)
         if mission_id < 102:
             msg = "登記完成，孕養報會在第 7 周發送給您！"
             await message.channel.send(msg)
-        elif mission_id <= 135:
+        else:
             mission = await client.api_utils.get_mission_info(mission_id)
             embed = await build_pregnancy_embed(mission, mission_result['due_date'])
             msg = f"登記完成，孕養報已經發送給您！\n預產期: {mission_result['due_date']}"
             await message.channel.send(embed=embed)
-        else:
-            msg = "登記完成，已經沒有符合週期的孕養報了！"
-            await message.channel.send(msg)
 
         # Save task message
         await client.api_utils.store_message(user_id, 'assistant', msg)
@@ -112,10 +110,19 @@ async def build_pregnancy_embed(mission_info, due_date_str):
         title=f"🎉 恭喜寶寶滿 {week} 週啦！",
         description=(
             f"📅 距離預產期還有 {age} 天\n"
-            f"[👉點我查看孕養報]({mission_info['mission_image_contents']})\n"
+            f"[👉點我查看孕養報]({mission_info['mission_image_contents']})\n\n"
+            f"🌷 溫馨提醒"
+            f"使用手機閱讀孕養報，閱讀體驗最佳！\n\n"
         ),
         color=0xeeb2da,
     )
+
+    if week >= 32:
+        embed.description += (
+            f"✨想體驗製作寶寶專屬繪本嗎？✨\n"
+            f"用簡單幾步驟，為寶寶製作專屬成長繪本，記錄每個月的珍貴瞬間\n\n"
+            f"👇 立刻開始（傳一句話即可）\n"
+            f"開啟製作寶寶繪本"
+        )
     embed.set_thumbnail(url=f"https://infancixbaby120.com/discord_assets/baby120_footer_logo.png")
-    embed.set_footer(text="建議使用手機閱讀孕養報，閱讀體驗最佳！")
     return embed

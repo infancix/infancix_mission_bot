@@ -16,6 +16,12 @@ from bot.utils.message_tracker import (
 )
 from bot.utils.id_utils import encode_ids
 
+media_config = {
+    'photo': '張照片',
+    'video': '部影片',
+    'audio': '段錄音'
+}
+
 class GrowthPhotoView(discord.ui.View):
     def __init__(self, client, user_id, mission_id, mission_result={}, timeout=None):
         super().__init__(timeout=timeout)
@@ -30,16 +36,20 @@ class GrowthPhotoView(discord.ui.View):
         self.design_id = mission_result.get('design_id') if mission_result.get('design_id') else encode_ids(self.baby_id, self.book_id)
         self.mission_result = mission_result
 
-        if self.mission_id in config.add_on_photo_mission:
-            for photo_number in range(1, 5):
-                self.change_photo_button = discord.ui.Button(
-                    custom_id=f'{photo_number}',
-                    label=f"換第 {photo_number} 張照片",
-                    style=discord.ButtonStyle.secondary
-                )
-                self.change_photo_button.callback = self.change_photo_callback
-                self.add_item(self.change_photo_button)
+        # check media require count
+        for media_type, unit_label in media_config.items():
+            required_count = config.get_required_attachment_count(mission_id, media_type)
+            if required_count > 1:
+                for number in range(1, required_count + 1):
+                    button = discord.ui.Button(
+                        custom_id=f'{media_type}_{number}',
+                        label=f"換第 {number} {unit_label}",
+                        style=discord.ButtonStyle.secondary
+                    )
+                    button.callback = self.change_media_callback
+                    self.add_item(button)
 
+        if mission_id in config.add_on_photo_mission:
             self.reupload_button = discord.ui.Button(
                 custom_id='reupload_photo',
                 label="重新上傳所有照片",
@@ -47,15 +57,6 @@ class GrowthPhotoView(discord.ui.View):
             )
             self.reupload_button.callback = self.reupload_photo_callback
             self.add_item(self.reupload_button)
-
-        #if self.mission_id in config.photo_mission_with_aside_text and self.mission_result.get('aside_text', None):
-        #    self.remove_aside_text_button = discord.ui.Button(
-        #        custom_id='remove_aside_text',
-        #        label="刪除回憶文字",
-        #        style=discord.ButtonStyle.secondary
-        #    )
-        #    self.remove_aside_text_button.callback = self.remove_aside_text_callback
-        #    self.add_item(self.remove_aside_text_button)
 
         if self.mission_id in config.questionnaire_mission:
             self.reselect_button = discord.ui.Button(
@@ -89,20 +90,22 @@ class GrowthPhotoView(discord.ui.View):
         if self.mission_id in config.book_intro_mission:
             description = "恭喜你成功為寶寶製作專屬繪本封面 🎉\n\n點選下方按鈕，開始製作內頁吧！"
         elif self.mission_id in config.questionnaire_mission:
-            description = "請點選 重新選擇 或是 直接送出"
+            description = "請點選 重新選擇 或是 直接送出\n"
         elif mission_id in config.add_on_photo_mission:
-            description = "請透過下方按鈕，選擇要更換的照片（1–4）"
+            description = "請透過下方按鈕，選擇要更換的照片（1–4）\n"
         elif mission_id in config.audio_mission:
-            description = "🔊 重新錄製：點左下 [+] 重新錄音; 或是重新上傳錄音檔即可"
-        elif mission_id in config.photo_mission_with_aside_text:
-            if self.mission_result.get('aside_text', None):
-                description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出(限30字)\n ❌刪除文字: 點選刪除按鈕即可"
-            else:
-                description = "📷 換照片：請選擇要更換的照片\n💬 新增照片回憶(限30字)\n"
-        elif mission_id in config.photo_mission_with_title_and_content:
-            description = "📷 換照片：請選擇要更換的照片\n💬 修改文字：在對話框輸入並送出\n"
+            description = "🔊 重新錄製：點左下 [+] 重新錄音; 或是重新上傳錄音檔即可\n"
         else:
-            description = "📷 換照片：直接重新上傳即可"
+            description = "📷 換照片：請選擇要更換的照片\n"
+
+        # Check if mission requires aside_text from mission_requirements
+        requirements = config.mission_requirements.get(str(mission_id), {})
+        if requirements.get('aside_text', 0) > 0:
+            # Check if this is a letter mission (special handling)
+            if mission_id in config.letter_mission:
+                description += "💬 修改文字：在對話框輸入並送出(限400字)"
+            else:
+                description += "💬 修改文字：在對話框輸入並送出(限30字)"
 
         embed = discord.Embed(
             title="🤍 製作完成預覽",
@@ -229,23 +232,33 @@ class GrowthPhotoView(discord.ui.View):
             msg_task = f"START_MISSION_{next_mission_id} <@{self.user_id}>"
         await channel.send(msg_task)
 
-    async def change_photo_callback(self, interaction: discord.Interaction):
+    async def change_media_callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         for item in self.children:
             item.disabled = True
         await interaction.edit_original_response(view=self)
 
-        custom_id = int(interaction.data.get("custom_id")) if interaction.data else None
-        if custom_id is None:
-            await interaction.response.send_message("按鈕識別失敗，請再試一次。", ephemeral=True)
+        try:
+            custom_id = interaction.data.get("custom_id") if interaction.data else None
+            media_type, index_str = custom_id.split('_')
+            index = int(index_str)
+        except ValueError:
+            await interaction.followup.send("按鈕識別失敗，請再試一次。", ephemeral=True)
             return
 
-        photo_number = custom_id
-        self.client.photo_mission_replace_index[str(interaction.user.id)] = photo_number
+        user_id = str(interaction.user.id)
+        media_number = index_str
+        self.client.photo_mission_replace_index[user_id] = int(index)
 
+        if media_type == 'photo':
+            title_text = "🔼 請上傳新照片"
+        elif media_type == 'video':
+            title_text = "🔼 請上傳新影片"
+        elif media_type == 'audio':
+            title_text = "🔼 請上傳新錄音"
         embed = discord.Embed(
-            title="🔼 請上傳新照片",
-            description="📎 點左下 [+] 上傳照片",
+            title=title_text,
+            description="📎 點左下 [+] 上傳檔案",
             color=0xeeb2da,
         )
         await interaction.followup.send(embed=embed)

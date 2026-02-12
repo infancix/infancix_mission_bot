@@ -1,0 +1,33 @@
+You will receive a question and user's reply.
+
+Your task:
+- Check if the reply directly answers the question
+- Accept any reasonable, specific answer
+- Only reject if: too long, vague ("不知道"), or irrelevant
+
+## Question Type Examples (for context, no sample answers needed)
+The question may ask about various aspects of the baby:
+- 請問寶寶大哭的原因呢?
+- 請問寶寶大笑的原因呢?
+- 請問照片中，寶寶吃什麼食物呢?
+- 寶寶最喜歡的玩具是什麼?
+- 寶寶最喜歡吃什麼蔬菜呢?
+- 寶寶最喜歡玩什麼遊戲呢?
+
+## Validation Rules
+✓ Accept: Any direct, specific answer to the question (e.g., "肚子餓", "玩水", "踩水水", "看到爸爸", "米餅", "球球")
+✓ Check length limits if specified (e.g., "5個字內" = max 5 Chinese characters)
+✗ Reject: "不知道", "沒有", completely irrelevant answers, or exceeds length limit
+
+## Response Format
+Return JSON only:
+```json
+{
+    "message": "Traditional Chinese message",
+    "aside_text": "answer or null"
+}
+```
+
+If valid: {"message": "已記錄您的答案！請繼續下一步。", "aside_text": "user_answer"}
+If too long: {"message": "請簡短回答即可。", "aside_text": null}
+If vague/invalid: {"message": "請提供具體的答案。", "aside_text": null}

@@ -5,18 +5,18 @@
             "question": "❓:你最常對寶寶做的睡眠儀式? (請選擇三項)",
             "description": "\n💡回答請點選下方按鈕\n",
             "options": [
-                "A.按摩",
-                "B.抱抱",
-                "C.念故事",
-                "D.唱歌",
-                "E.播音樂"
+                "按摩",
+                "抱抱",
+                "念故事",
+                "唱歌",
+                "播音樂"
             ],
             "options_en": [
-                "A.massage",
-                "B.cuddle",
-                "C.listen to stories",
-                "D.sing",
-                "E.play music"
+                "massage",
+                "cuddle",
+                "listen to stories",
+                "sing",
+                "play music"
             ],
             "min_selections": 3,
             "max_selections": 3
@@ -34,8 +34,7 @@
             "options_en": [
                 "Low threshold / High sensitivity",
                 "Moderate threshold / Average sensitivity",
-                "High threshold / Low sensitivity",
-                "Skip"
+                "High threshold / Low sensitivity"
             ],
             "min_selections": 1,
             "max_selections": 1
@@ -46,30 +45,73 @@
             "description": "📎 點左下 **[+]** 上傳照片"
         }
     ],
-    "1087": [
+    "1070": [
         {
-            "type": "text_input",
-            "title": "紀錄寶寶的喜好(1)",
-            "question": "請問寶寶常因為什麼原因大哭呢?",
-            "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「原因」即可，不用加句子。\n\n範例:\n肚子餓、想睡覺、找媽媽、大便了、被玩具嚇到。",
-            "prompt": "當{answer}，就會不開心的哭鬧。|Cries unhappily when {answer}."
+            "type": "single_choice",
+            "question": "✨ 探索寶寶的氣質：規律性",
+            "options": [
+                "規律性高",
+                "中等/特質不明顯",
+                "規律性低"
+            ],
+            "options_en": [
+                "High Regularity",
+                "Moderate threshold / Average sensitivity",
+                "Low Regularity"
+            ],
+            "min_selections": 1,
+            "max_selections": 1
         },
         {
             "type": "photo",
-            "title": "紀錄寶寶的喜好(1)",
-            "description": "**請上傳寶寶大哭的照片**\n\n📎 點左下 **[+]** 上傳照片"
-        },
+            "title": "寶寶當月最可愛的照片",
+            "description": "📎 點左下 **[+]** 上傳照片"
+        }
+    ],
+    "1130": [
         {
-            "type": "text_input",
-            "title": "紀錄寶寶的喜好(2)",
-            "question": "請問寶寶常因為什麼原因大笑呢?",
-            "description": "(限定回答5個字內)\n\n💡小提醒:\n請填寫「原因」即可，不用加句子。\n\n範例:\n看到爸爸、被逗笑、玩玩具、洗澡時、聽音樂。",
-            "prompt": "當{answer}，就會開心的笑出來。|Laughs happily when {answer}."
+            "type": "single_choice",
+            "question": "✨ 探索寶寶的氣質：活動量",
+            "options": [
+                "活動量偏高",
+                "中等/特質不明顯",
+                "活動量偏低"
+            ],
+            "options_en": [
+                "High Activity Level",
+                "Moderate Activity / Average Level",
+                "Low Activity Level"
+            ],
+            "min_selections": 1,
+            "max_selections": 1
         },
         {
             "type": "photo",
-            "title": "紀錄寶寶的喜好(2)",
-            "description": "**請上傳寶寶大笑的照片**\n\n📎 點左下 **[+]** 上傳照片"
+            "title": "寶寶當月最可愛的照片",
+            "description": "📎 點左下 **[+]** 上傳照片"
+        }
+    ],
+    "1147": [
+        {
+            "type": "single_choice",
+            "question": "✨ 探索寶寶的氣質：適應度",
+            "options": [
+                "適應度高",
+                "中等/特質不明顯",
+                "適應度低"
+            ],
+            "options_en": [
+                "High Adaptability",
+                "Moderate Adaptability / Average",
+                "Low Adaptability"
+            ],
+            "min_selections": 1,
+            "max_selections": 1
+        },
+        {
+            "type": "photo",
+            "title": "寶寶當月最可愛的照片",
+            "description": "📎 點左下 **[+]** 上傳照片"
         }
     ]
 }

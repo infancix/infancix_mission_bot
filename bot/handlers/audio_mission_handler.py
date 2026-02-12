@@ -235,12 +235,12 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
             author = "恭喜寶寶出生！"
 
     # Check if mission_id exists in mission_instruction.json
-    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0, instruction_type='upload')
 
     if instruction_data:
         # Use custom instruction from mission_instruction.json
         title = f"🎙️ **{instruction_data['title']}**"
-        desc = instruction_data['description']
+        desc = instruction_data.get('description', '')
     else:
         # Use original embed from API data
         title = f"🎙️**{mission_info['photo_mission']}**"
@@ -274,7 +274,7 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
     )
 
     files = []
-    if '週' in mission_info['mission_milestone']:
+    if '週' in mission_info.get('mission_milestone'):
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())

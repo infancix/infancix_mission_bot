@@ -66,130 +66,232 @@ async def process_video_mission_filling(client, message, student_mission_info):
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
-    request_info = prepare_api_request(client, message, student_mission_info)
+    request_info = await process_user_input(client, message, student_mission_info)
     print(f"Request info: {request_info}")
 
     if request_info.get('direct_action') == 'error':
         await message.channel.send(request_info.get('context', '發生錯誤，請稍後再試。'))
         return
-    elif request_info['needs_ai_prediction']:
-        prompt_path = config.get_prompt_file(mission_id)
-        async with message.channel.typing():
-            conversations = [{'role': 'user', 'message': request_info['context']}] if request_info['context'] else None
-            mission_result = client.openai_utils.process_user_message(prompt_path, request_info['user_message'], conversations=conversations)
-            client.logger.info(f"Assistant response: {mission_result}")
-    else:
-        # Skip AI prediction, use direct response
-        mission_result = request_info.get('direct_response', {})
 
-    # Validate mission result
-    # Get required attachment count
-    required_count = config.get_required_attachment_count(mission_id, 'video')
+    # Get mission_result from direct_response
+    mission_result = request_info.get('direct_response', {})
 
-    # Check if we have enough attachments
-    attachment = mission_result.get('attachment')
-    if required_count > 1:
-        # Multiple attachments required
-        current_count = len(attachment) if isinstance(attachment, list) else (1 if attachment else 0)
-        has_enough_attachments = current_count >= required_count
+    # Determine next step
+    next_step_type, step_index = determine_next_step(mission_id, mission_result)
+    client.logger.info(f"Next step: {next_step_type}, index: {step_index}")
 
-        if has_enough_attachments:
-            mission_result['is_ready'] = True
-        else:
-            mission_result['is_ready'] = False
-            mission_result['message'] = f"目前已收到 {current_count} 個影片，還需要 {required_count - current_count} 個影片喔！"
-    else:
-        # Single attachment required (original behavior)
-        if attachment and (attachment.get('url') if isinstance(attachment, dict) else True):
-            mission_result['is_ready'] = True
-        else:
-            mission_result['is_ready'] = False
-            mission_result['message'] = "請上傳影片喔！"
+    # Set mission ready status
+    mission_result['is_ready'] = (next_step_type is None)
 
+    # Handle next step based on type
+    if next_step_type == 'question':
+        # Next step is to ask a question
+        mission_result['current_question_index'] = step_index
+        instruction_data = get_mission_instruction(mission_id, step_index=step_index, instruction_type='question')
+        client.logger.info(f"instruction_data: {instruction_data}")
+        if instruction_data and instruction_data.get('question'):
+            mission_result['message'] = instruction_data['question']
+
+    elif next_step_type == 'video':
+        # Next step is to request video upload
+        mission_result['current_video_index'] = step_index
+        mission_result['show_next_video_instruction'] = True
+
+    # Save the mission state
     save_mission_record(user_id, mission_id, mission_result)
 
+    # Send response or submit mission
     if mission_result.get('is_ready'):
-        embed = get_waiting_embed()
-        await message.channel.send(embed=embed)
-        await submit_video_data(client, message, student_mission_info, mission_result)
+        await submit_video_mission(client, message, student_mission_info, mission_result)
     else:
-        await message.channel.send(mission_result['message'])
+        # Send next step message to user
+        await send_mission_step(client, message, mission_id, student_mission_info, mission_result)
 
     return
 
-def prepare_api_request(client, message, student_mission_info):
+# --------------------- Input Processing Functions ---------------------
+
+def handle_video_upload(mission_id, saved_result, message, required_video_count, required_aside_text_count):
+    """
+    Handle video upload from the user.
+    Returns updated saved_result with the new video.
+    """
+    # Initialize video storage if needed
+    if not saved_result.get('attachments'):
+        saved_result['attachments'] = []
+    elif not isinstance(saved_result['attachments'], list):
+        saved_result['attachments'] = [saved_result['attachments']]
+
+    # Add new videos
+    for att in message.attachments:
+        if len(saved_result['attachments']) >= required_video_count:
+            break
+        attachment = extract_attachment_info(att.url)
+        saved_result['attachments'].append(attachment)
+
+    current_video_count = len(saved_result['attachments'])
+
+    # Update message based on progress
+    if current_video_count >= required_video_count:
+        saved_result['message'] = f"已收到 {current_video_count} 個影片"
+    else:
+        saved_result['message'] = f"已收到 {current_video_count} 個影片，還需要 {required_video_count - current_video_count} 個影片"
+
+    return {
+        'needs_ai_prediction': False,
+        'direct_action': 'video_upload',
+        'direct_response': saved_result
+    }
+
+async def handle_text_input(client, mission_id, saved_result, message):
+    """
+    Handle text input from the user for aside_text questions.
+    Uses AI to validate the response.
+    """
+    prompt_path = config.get_prompt_file(mission_id)
+    user_message = message.content
+
+    # Build context
+    context = ""
+    if saved_result.get('attachments'):
+        context_parts = []
+        if isinstance(saved_result['attachments'], list):
+            context_parts.append(f"Current attachments: {len(saved_result['attachments'])} videos collected")
+        context_parts.append(f"Attachments detail: {saved_result['attachments']}")
+        context = "\n".join(context_parts)
+
+    # Get current question
+    current_question_index = saved_result.get('current_question_index', 0)
+    instruction_data = get_mission_instruction(mission_id, step_index=current_question_index, instruction_type='question')
+
+    if instruction_data and instruction_data.get('question'):
+        context += f"\nCurrent question: {instruction_data['question']}"
+
+    # Call AI to process the response
+    async with message.channel.typing():
+        conversations = [{'role': 'user', 'message': context}] if context else None
+        mission_result = client.openai_utils.process_user_message(
+            prompt_path,
+            user_message,
+            conversations=conversations
+        )
+        client.logger.info(f"AI response: {mission_result}")
+
+    # Update saved_result with AI response
+    if mission_result.get('aside_text'):
+        # Initialize aside_texts list if needed
+        if not saved_result.get('aside_texts'):
+            saved_result['aside_texts'] = []
+
+        # Add the new aside_text
+        saved_result['aside_texts'].append(mission_result.get('aside_text'))
+        saved_result['message'] = mission_result.get('message', '已記錄您的回答')
+    else:
+        # AI rejected the answer
+        saved_result['message'] = mission_result.get('message', '請提供有效的回答')
+
+    return {
+        'needs_ai_prediction': False,
+        'direct_action': 'text_input',
+        'direct_response': saved_result
+    }
+
+async def process_user_input(client, message, student_mission_info):
+    """
+    Process user input (video or text) and return appropriate response.
+    """
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
     saved_result = get_mission_record(user_id, mission_id) or {}
 
-    # Get required attachment count for this mission
-    required_count = config.get_required_attachment_count(mission_id, 'video')
+    # Get required counts
+    required_video_count = config.get_required_attachment_count(mission_id, 'video')
+    required_aside_text_count = config.get_required_attachment_count(mission_id, 'aside_text')
 
+    # Handle video upload
     if message.attachments:
-        # Handle multiple videos requirement
-        if required_count > 1:
-            if not saved_result.get('attachment'):
-                saved_result['attachment'] = []
-            elif not isinstance(saved_result['attachment'], list):
-                saved_result['attachment'] = [saved_result['attachment']]
+        return handle_video_upload(mission_id, saved_result, message, required_video_count, required_aside_text_count)
 
-            # Add new attachments
-            for att in message.attachments:
-                if len(saved_result['attachment']) >= required_count:
-                    break
-                attachment = extract_attachment_info(att.url)
-                saved_result['attachment'].append(attachment)
+    # Handle text input
+    else:
+        return await handle_text_input(client, mission_id, saved_result, message)
 
-            current_count = len(saved_result['attachment'])
-            if current_count >= required_count:
-                saved_result['message'] = f"已收到 {current_count} 個影片"
-            else:
-                saved_result['message'] = f"已收到 {current_count} 個影片，還需要 {required_count - current_count} 個影片"
+def determine_next_step(mission_id, mission_result):
+    """
+    Determine the next step in the mission flow.
+    Only checks video_require_count and aside_text_require_count.
+
+    Returns:
+        tuple: (step_type, step_index) where step_type is 'video', 'question', or None
+    """
+    required_video_count = config.get_required_attachment_count(mission_id, 'video')
+    required_aside_text_count = config.get_required_attachment_count(mission_id, 'aside_text')
+
+    # Count current progress
+    current_video_count = len(mission_result.get('attachments', []) or [])
+    current_aside_text_count = len(mission_result.get('aside_texts', []) or [])
+
+    # Check if we need more videos
+    if current_video_count < required_video_count:
+        return ('video', current_video_count)
+
+    # Check if we need more aside_texts
+    if current_aside_text_count < required_aside_text_count:
+        return ('question', current_aside_text_count)
+
+    # All requirements met
+    return (None, None)
+
+def check_mission_ready(mission_id, mission_result):
+    """
+    Check if mission has all required components.
+    Returns True if ready to submit.
+    """
+    required_video_count = config.get_required_attachment_count(mission_id, 'video')
+    required_aside_text_count = config.get_required_attachment_count(mission_id, 'aside_text')
+
+    current_video_count = len(mission_result.get('attachments', []) or [])
+    current_aside_text_count = len(mission_result.get('aside_texts', []) or [])
+
+    has_all_videos = current_video_count >= required_video_count
+    has_all_aside_texts = current_aside_text_count >= required_aside_text_count
+
+    return has_all_videos and has_all_aside_texts
+
+async def send_mission_step(client, message, mission_id, student_mission_info, mission_result):
+    """
+    Send the appropriate message based on mission state.
+    If ready, submits the mission. Otherwise, sends next instruction.
+    """
+    if mission_result.get('show_next_video_instruction'):
+        instruction_data = get_mission_instruction(mission_id, step_index=mission_result.get('current_video_index'), instruction_type='upload')
+        if instruction_data:
+            embed, _ = await build_video_mission_embed(student_mission_info, baby_info=None, step_index=mission_result.get('current_video_index'))
+            message.channel.send(embed=embed)
         else:
-            # Single video requirement (original behavior)
-            attachment = extract_attachment_info(message.attachments[0].url)
-            saved_result['attachment'] = attachment
-            saved_result['message'] = "已收到您的影片"
-
-        return {
-            'needs_ai_prediction': False,
-            'direct_action': 'video_upload',
-            'direct_response': saved_result
-        }
+            message.channel.send("請上傳下一個影片")
     else:
-        user_message = message.content
+        # Send next step instruction
+        await message.channel.send(mission_result.get('message', '請繼續完成任務'))
 
-    # Build full context for AI prediction
-    context = ""
-    if saved_result.get('attachment'):
-        context_parts = []
-        if isinstance(saved_result['attachment'], list):
-            context_parts.append(f"Current attachments: {len(saved_result['attachment'])} videos collected")
-        context_parts.append(f"Attachments detail: {saved_result['attachment']}")
-        context = "\n".join(context_parts)
-    else:
-        return ""
-
-    return {
-        'needs_ai_prediction': True,
-        'direct_action': None,
-        'context': context,
-        'user_message': user_message
-    }
-
-# --------------------- Event Handlers ---------------------
-async def submit_video_data(client, message, student_mission_info, mission_result):
+async def submit_video_mission(client, message, student_mission_info, mission_result):
+    """
+    Submit the completed video mission to the API.
+    """
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
-    # Process the video attachment
-    if isinstance(mission_result.get('attachment'), list):
-        attachment_obj = mission_result.get('attachment')
-    else:
-        attachment_obj = [mission_result.get('attachment')]
+    # Get attachments and aside_texts
+    attachments = mission_result.get('attachments', [])
+    aside_texts = [str(aside_text) if aside_text else '' for aside_text in mission_result.get('aside_texts', [])]
+    concated_aside_text = "|".join(aside_texts)
 
+    # Update mission with all data
     update_status = await client.api_utils.update_mission_image_content(
-        user_id, mission_id, attachment_obj, aside_text=mission_result.get('aside_text'), content=mission_result.get('content')
+        user_id,
+        mission_id,
+        discord_attachments=attachments,
+        aside_text=concated_aside_text
     )
 
     if bool(update_status):
@@ -197,6 +299,7 @@ async def submit_video_data(client, message, student_mission_info, mission_resul
         client.logger.info(f"送出繪本任務 {mission_id}")
 
 # --------------------- Helper Functions ---------------------
+
 def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
     """Extracts attachment ID, filename, and full URL from a Discord attachment URL."""
     pattern = r'https://cdn\.discordapp\.com/attachments/(\d+)/(\d+)/([^?]+)(\?.*)?'
@@ -208,11 +311,10 @@ def extract_attachment_info(attachment_url: str) -> Optional[Dict[str, str]]:
     return {
         "id": attachment_id,
         "filename": filename,
-        "url": attachment_url,
-        "aside_text": None
+        "url": attachment_url
     }
 
-async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mission=True):
+async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mission=True, step_index=0):
     # Prepare description based on style
     if baby_info is None:
         author = "恭喜寶寶出生！"
@@ -235,12 +337,12 @@ async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mis
             author = "恭喜寶寶出生！"
 
     # Check if mission_id exists in mission_instruction.json
-    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+    instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=step_index, instruction_type='upload')
 
     if instruction_data:
         # Use custom instruction from mission_instruction.json
         title = f"🎬 **{instruction_data['title']}**"
-        desc = instruction_data['description']
+        desc = instruction_data.get('description', '')
     else:
         # Use original embed from API data
         title = f"🎬**{mission_info['photo_mission']}**"
@@ -269,14 +371,15 @@ async def build_video_mission_embed(mission_info=None, baby_info=None, photo_mis
         description=desc,
         color=0xeeb2da
     )
-    embed.set_author(name=author)
+    if step_index == 0:
+        embed.set_author(name=author)
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
         text="若有任何問題，隨時聯絡社群客服「阿福」。"
     )
 
     files = []
-    if '週' in mission_info['mission_milestone']:
+    if step_index == 0 and '週' in mission_info.get('mission_milestone'):
         for url in mission_info['mission_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
