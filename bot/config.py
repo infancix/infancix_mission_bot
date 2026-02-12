@@ -126,7 +126,7 @@ class Config:
 
         # Theme missions
         elif mission_id >= 7001 and mission_id <= 7042:
-            return f"{base_path}/theme_mission_prompt.txt"
+            return f"{base_path}/short_answer_prompt.txt"
 
         # Default fallback
         else:
@@ -205,6 +205,11 @@ class Config:
             self.mission_requirements = {}
             for book_data in growth_book_missions:
                 # Merge mission_requirements from all books
+                if 'mission_requirements' in book_data:
+                    self.mission_requirements.update(book_data['mission_requirements'])
+
+            # Load mission requirements from theme books
+            for book_data in theme_book_missions:
                 if 'mission_requirements' in book_data:
                     self.mission_requirements.update(book_data['mission_requirements'])
 

@@ -3,6 +3,7 @@ import discord
 import os
 import re
 import json
+import time
 from types import SimpleNamespace
 from datetime import datetime, date
 from typing import Dict, Optional, List
@@ -420,14 +421,6 @@ def should_show_confirmation(mission_id, mission_result):
     """
     if mission_id in config.letter_mission:
         return True
-    elif mission_id in config.relation_or_identity_mission:
-        return False
-
-    # Check if mission has aside_text
-    aside_texts = mission_result.get('aside_texts', [])
-    if any(text for text in aside_texts if text):
-        return True
-
     return False
 
 async def show_confirmation(client, message, mission_id, mission_result):
@@ -602,10 +595,11 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
     if step_index == 0:
         embed.set_author(name=author)
 
+    ts = int(time.time() * 1000)
     if book_info and book_info.get('lang_version', 'zh') == 'en':
         if book_info.get('book_id') in [1, 3]:
             demo_baby_id = 2024000002
-            demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg"
+            demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg?t={ts}"
             embed.set_image(url=demo_url)
         else:
             default_instruction_url = "https://infancixbaby120.com/discord_assets/photo_mission_instruction.png"
@@ -613,7 +607,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
     else:
         # zh
         demo_baby_id = 2024000001
-        demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg"
+        demo_url = f"https://infancixbaby120.com/discord_image/{demo_baby_id}/{mission_info['mission_id']}.jpg?t={ts}"
         embed.set_image(url=demo_url)
 
     embed.set_footer(
