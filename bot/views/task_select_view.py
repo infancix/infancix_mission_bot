@@ -140,6 +140,16 @@ class TaskSelectView(discord.ui.View):
                 self.return_album_button.callback = self.return_album_button_callback
                 self.add_item(self.return_album_button)
 
+        if task_type == "theme_baby_info_confirm":
+            # Confirm button
+            confirm_button = discord.ui.Button(
+                custom_id="theme_baby_info_confirm_button",
+                label="✓ 確認並繼續",
+                style=discord.ButtonStyle.success
+            )
+            confirm_button.callback = self.theme_baby_info_confirm_button_callback
+            self.add_item(confirm_button)
+
         if task_type == "skip_theme_book_aside_text":
             label = "跳過"
             self.skip_theme_book_aside_text_button = discord.ui.Button(
@@ -411,6 +421,40 @@ class TaskSelectView(discord.ui.View):
             instruction_url = "https://infancixbaby120.com/discord_assets/book1_add_on_photo_mission.png"
         embed.set_image(url=instruction_url)
         return embed
+
+    async def theme_baby_info_confirm_button_callback(self, interaction):
+        """Confirm baby info and proceed to cover photo upload for theme missions"""
+        await interaction.response.defer()
+        for item in self.children:
+            item.disabled = True
+        await interaction.edit_original_response(view=self)
+
+        user_id = str(interaction.user.id)
+        mission_id = self.mission_id
+
+        # Get saved mission record and mark step_1_completed
+        saved_result = get_mission_record(user_id, mission_id)
+        if not saved_result:
+            await interaction.followup.send("找不到任務紀錄，請重新開始任務。")
+            return
+
+        saved_result['step_1_completed'] = True
+        save_mission_record(user_id, mission_id, saved_result)
+
+        # Get mission info to show cover instruction
+        mission = await self.client.api_utils.get_mission_info(mission_id)
+        from bot.handlers.theme_mission_handler import get_cover_instruction_embed
+        embed = get_cover_instruction_embed(mission)
+        await interaction.followup.send(embed=embed)
+
+        # Update mission status to step 2
+        student_mission_info = {
+            **mission,
+            'user_id': user_id,
+            'current_step': 2,
+            'total_steps': 4
+        }
+        await self.client.api_utils.update_student_mission_status(**student_mission_info)
 
     async def skip_theme_book_aside_text_button_callback(self, interaction):
         await interaction.response.defer()
