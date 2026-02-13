@@ -550,7 +550,7 @@ class AlbumView(discord.ui.View):
         return preview_embed, file_path, filename, fallback_url
 
     def normal_preview_embed(self):
-        book_introduction = f"**{self.album_info.get('book_introduction', '')}**\n\n" else ""
+        book_introduction = f"**{self.album_info.get('book_introduction', '')}**\n\n" if self.album_info.get('book_introduction') else ""
         embed = discord.Embed(
             title=f"**{self.album_info['book_title']}**",
             description=(
