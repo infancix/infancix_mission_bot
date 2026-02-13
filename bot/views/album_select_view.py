@@ -550,10 +550,11 @@ class AlbumView(discord.ui.View):
         return preview_embed, file_path, filename, fallback_url
 
     def normal_preview_embed(self):
+        book_introduction = f"**{self.album_info.get('book_introduction', '')}**\n\n" else ""
         embed = discord.Embed(
             title=f"**{self.album_info['book_title']}**",
             description=(
-                f"**{self.album_info['book_introduction']}**\n\n"
+                f"{book_introduction}"
                 f"🔗[繪本預覽]({f"https://infancixbaby120.com/babiary/{self.design_id}"})\n\n"
                 f"繪本進度: \n"
             ),
