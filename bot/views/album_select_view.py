@@ -47,7 +47,7 @@ BOOK_CATALOGS = {
             {'book_id': 2, 'book_title': '第二個月：照顧者的魔法篇'},
             {'book_id': 3, 'book_title': '第三個月：大樹屋冒險篇'},
             {'book_id': 4, 'book_title': '第四個月：兔子的彩虹慶典'},
-            #{'book_id': 5, 'book_title': '第五個月：挑食的國王'},
+            {'book_id': 5, 'book_title': '第五個月：挑食的國王'},
             #{'book_id': 6, 'book_title': '第六個月：與媽媽逛街去'},
             #{'book_id': 7, 'book_title': '第七個月：冒險學校的挑戰(上)'},
             #{'book_id': 8, 'book_title': '第八個月：冒險學校的挑戰(下)'},
@@ -550,10 +550,11 @@ class AlbumView(discord.ui.View):
         return preview_embed, file_path, filename, fallback_url
 
     def normal_preview_embed(self):
+        book_introduction = f"**{self.album_info.get('book_introduction', '')}**\n\n" else ""
         embed = discord.Embed(
             title=f"**{self.album_info['book_title']}**",
             description=(
-                f"**{self.album_info['book_introduction']}**\n\n"
+                f"{book_introduction}"
                 f"🔗[繪本預覽]({f"https://infancixbaby120.com/babiary/{self.design_id}"})\n\n"
                 f"繪本進度: \n"
             ),
