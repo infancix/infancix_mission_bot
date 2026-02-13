@@ -47,7 +47,7 @@ BOOK_CATALOGS = {
             {'book_id': 2, 'book_title': '第二個月：照顧者的魔法篇'},
             {'book_id': 3, 'book_title': '第三個月：大樹屋冒險篇'},
             {'book_id': 4, 'book_title': '第四個月：兔子的彩虹慶典'},
-            #{'book_id': 5, 'book_title': '第五個月：挑食的國王'},
+            {'book_id': 5, 'book_title': '第五個月：挑食的國王'},
             #{'book_id': 6, 'book_title': '第六個月：與媽媽逛街去'},
             #{'book_id': 7, 'book_title': '第七個月：冒險學校的挑戰(上)'},
             #{'book_id': 8, 'book_title': '第八個月：冒險學校的挑戰(下)'},
