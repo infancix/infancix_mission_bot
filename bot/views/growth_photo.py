@@ -270,7 +270,10 @@ class GrowthPhotoView(discord.ui.View):
         await interaction.edit_original_response(view=self)
 
         # remove mission state
-        delete_mission_record(str(interaction.user.id))        
+        user_id = str(interaction.user.id)
+        delete_mission_record(user_id)
+        if user_id in self.client.photo_mission_replace_index:
+            del self.client.photo_mission_replace_index[user_id]
         embed = discord.Embed(
             title="🔼 請重新上傳所有照片",
             description="📎 點左下 [+] 上傳照片",
