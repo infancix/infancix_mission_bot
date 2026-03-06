@@ -246,7 +246,7 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
         title = f"🎙️**{mission_info['photo_mission']}**"
         desc = "長按對話框右側的🎙️即可錄音。\n"
 
-    if int(mission_info['mission_id']) < 100: # infancix_mission
+    if mission_info.get('type', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
         video_url = mission_info.get('mission_video_contents', '').strip()
         image_url = mission_info.get('mission_image_contents', '').strip()
         instruction = ""
@@ -254,6 +254,8 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
         elif video_url:
             instruction = f"▶️ [教學影片]({video_url})\n"
+        elif image_url:
+            instruction = f"📂 [圖文懶人包]({image_url})\n"
 
         desc += (
             f"> **🧠 {mission_info['mission_title']}**\n"
