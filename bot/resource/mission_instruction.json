@@ -259,7 +259,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "請問照片中，寶寶玩什麼物品呢??",
-            "description": "(限定回答5個字內)\n\n範例:\n眼鏡、水壺、衛生紙、鑰匙、包包。"
+            "description": "(限定回答5個字內)\n\n範例:\n眼鏡、水壺、乳液瓶、小兔兔、鑰匙、遙控器。"
         },
         "questionnaire_instruction": null
     },
