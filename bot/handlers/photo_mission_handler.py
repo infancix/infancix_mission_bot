@@ -567,7 +567,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
         title = f"📸**{mission_info['photo_mission']}**"
         desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
 
-    if int(mission_info['mission_id']) < 100: # infancix_mission
+    if step_index == 0 and mission_info.get('mission_type', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
         video_url = mission_info.get('mission_video_contents', '').strip()
         image_url = mission_info.get('mission_image_contents', '').strip()
         instruction = ""
@@ -575,6 +575,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
         elif video_url:
             instruction = f"▶️ [教學影片]({video_url})\n"
+        elif image_url:
+            instruction = f"📂 [圖文懶人包]({image_url})\n"
 
         desc += (
             f"> **🧠 {mission_info['mission_title']}**\n"
