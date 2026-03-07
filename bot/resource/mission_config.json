@@ -1,8 +1,8 @@
 {
   "pregnant_registration_mission": 101,
-  "baby_pre_registration_mission": [1000, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181, 1182],
+  "baby_pre_registration_mission": [1000, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181, 1182, 1184],
   "baby_registration_mission": 1001,
-  "baby_name_en_registration_missions": [1160, 1161, 1162, 1163, 1164, 1165, 1166, 1167, 1168, 1169, 1170, 1171],
+  "baby_name_en_registration_missions": [1160, 1161, 1162, 1163, 1164, 1165, 1166, 1167, 1168, 1169, 1170, 1171, 1194],
   "growth_book_missions": [
     {
       "book_id": 1,
@@ -292,7 +292,7 @@
         "1116": {"video": 1},
         "1124": {"photo": 1},
         "1130": {"photo": 1, "aside_text": 1},
-        "1115": {"photo": 4}
+        "1131": {"photo": 4}
       },
       "confirm_growth_album_mission": [1158],
       "mission_ids": [1117, 1119, 1118, 1120, 1122, 1123, 1125, 1126, 1127, 1129, 1116, 1124, 1130, 1131]
@@ -343,7 +343,7 @@
         "1190": {"photo": 2},
         "1191": {"photo": 2},
         "1192": {"photo": 1},
-        "1193": {"video": 1}
+        "1193": {"photo": 1}
       },
       "confirm_growth_album_mission": [1195],
       "mission_ids": [1185, 1186, 1187, 1188, 1189, 1190, 1191, 1192, 1193]
