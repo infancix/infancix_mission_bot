@@ -31,14 +31,14 @@ BOOK_AGE_OPTIONS = [
 BOOK_TYPES = [
     "成長繪本",
     "主題寶寶書",
-    #"特別版"
+    "特別版"
 ]
 
 BOOK_CATALOGS = {
     '特別版': {
         0: [
-            {'book_id': 21, 'book_title': '生日什麼時候才會來'},
-            {'book_id': 64, 'book_title': '我好期待你的到來'},
+            {'book_id': 19, 'book_title': '我好期待你的到來'},
+            #{'book_id': 20, 'book_title': '生日什麼時候才會來'},
         ]
     },
     '成長繪本': {
@@ -107,14 +107,15 @@ class BookMenuView(discord.ui.View):
         self.book_list: list = []  # 繪本列表
         self.current_page: int = 0  # 當前頁碼
         self.page_size: int = 4  # 每頁顯示數量
-        #self.build_level1()
 
-        self.age_code = 1
-        self.book_type = '成長繪本'
-        self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
-        if not config.ENV:
-            self.book_list = self.book_list[:5]
-        self.build_level3_book(page=0)
+        if not config.ENV: # production
+            self.book_type = '成長繪本'
+            self.age_code = 1 # 目前只有第一年
+            self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+            self.book_list = self.book_list[:6]
+            self.build_level3_book()
+        else:
+            self.build_level1()
 
     # -------- 共用工具 --------
     def clear_items(self):
@@ -142,7 +143,10 @@ class BookMenuView(discord.ui.View):
             if label == '成長繪本': # go level 2
                 async def type_cb(itx: discord.Interaction, book_type: str=label):
                     self.book_type = book_type
-                    self.build_level2_type()
+                    self.age_code = 1 # 目前只有第一年
+                    #self.build_level2_type()
+                    self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+                    self.build_level3_book()
                     await self.update_view(itx)
 
                 btn.callback = type_cb
@@ -246,8 +250,8 @@ class BookMenuView(discord.ui.View):
                 self.build_level1()
             await self.update_view(itx)
 
-        #back_button.callback = back_to_type
-        #self.add_item(back_button)
+        back_button.callback = back_to_type
+        self.add_item(back_button)
 
         # 上一頁按鈕
         if page > 0:

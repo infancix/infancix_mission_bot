@@ -1,33 +1,75 @@
-You will receive a question and user's reply.
+You will receive a question (provided in the context above) and user's reply.
 
 Your task:
-- Check if the reply directly answers the question
-- Accept any reasonable, specific answer
-- Only reject if: too long, vague ("不知道"), or irrelevant
+- Validate if the reply is reasonable and specific based on the question asked
+- Be flexible and accept diverse answers as long as they directly address the question
+- IMPORTANT: Analyze the question to understand what type of answer is expected
 
-## Question Type Examples (for context, no sample answers needed)
-The question may ask about various aspects of the baby:
-- 請問寶寶大哭的原因呢?
-- 請問寶寶大笑的原因呢?
-- 請問照片中，寶寶吃什麼食物呢?
-- 寶寶最喜歡的玩具是什麼?
-- 寶寶最喜歡吃什麼蔬菜呢?
-- 寶寶最喜歡玩什麼遊戲呢?
+## Core Validation Principle
 
-## Validation Rules
-✓ Accept: Any direct, specific answer to the question (e.g., "肚子餓", "玩水", "踩水水", "看到爸爸", "米餅", "球球")
-✓ Check length limits if specified (e.g., "5個字內" = max 5 Chinese characters)
-✗ Reject: "不知道", "沒有", completely irrelevant answers, or exceeds length limit
+**Focus on the question keywords** to determine what type of answer is acceptable:
+- If question asks about "物品/東西" → expect objects/items
+- If question asks about "活動/體驗" → expect activities/experiences
+- If question asks about "食物" → expect food items
+- If question asks about "原因/為什麼" → expect reasons/explanations
+- If question asks about "地點/哪裡" → expect locations
+
+## Question-Specific Guidelines
+
+**For ACTIVITY/EXPERIENCE questions** (e.g., "體驗的活動", "做什麼"):
+- ✓ Accept ANY activity or experience:
+  * Outings: "去公園", "去阿媽家", "去動物園", "逛街", "看風景"
+  * Events: "參加抓週", "慶生會", "打預防針"
+  * Interactions: "看狗狗", "餵魚", "玩水"
+  * Actions: "吹泡泡", "溜滑梯", "盪鞦韆"
+- ✗ Reject only: "不知道", "沒有", "活動" (too vague)
+
+**For OBJECT/ITEM questions** (e.g., "玩什麼物品", "什麼東西", "咬什麼物品"):
+- ✓ Accept ANY object the baby interacts with:
+  * Toys: "球球", "積木", "玩具車"
+  * Toy/object names: "小兔兔", "小熊", "奶嘴" (accept specific names even without "玩具"/"物品" suffix)
+  * Everyday items: "身體乳液", "乳液瓶", "鑰匙", "遙控器", "衛生紙", "眼鏡"
+  * Household objects: "水壺", "包包", "手機"
+  * Body parts: "媽媽的手", "爸爸的手" (when contextually appropriate)
+- ✗ Reject only: "不知道", "沒有", "東西", "物品" (too vague)
+- IMPORTANT: "小兔兔" is just as valid as "小兔兔玩具" - focus on whether the answer identifies something specific
+
+**For FOOD questions** (e.g., "吃什麼食物"):
+- ✓ Accept: "米餅", "香蕉", "粥", "麵包", "副食品" etc.
+- ✗ Reject only: "不知道", "沒有", "食物" (too vague)
+
+**For REASON questions** (e.g., "原因", "為什麼"):
+- ✓ Accept: "肚子餓", "玩水", "看到爸爸", "想睡覺" etc.
+- ✗ Reject only: "不知道", completely unrelated answers
+
+**For LOCATION questions** (e.g., "在哪裡", "什麼地方"):
+- ✓ Accept: "客廳", "公園", "阿媽家", "醫院" etc.
+- ✗ Reject only: "不知道", "沒有", "地方" (too vague)
+
+## General Validation Rules
+
+✓ **ACCEPT** if:
+  - The answer is specific and directly addresses what the question asks for
+  - Accept specific names/nouns even without category words (e.g., "小兔兔" for "什麼物品")
+  - Within length limit (if specified, e.g., "5個字內" = max 5 Chinese characters)
+  - Not a generic/vague term
+
+✗ **REJECT** ONLY if:
+  - Answer is vague: "不知道", "沒有", or generic category terms like "東西", "物品", "食物", "活動", "地方"
+  - Completely unrelated to what the question asks (e.g., answering with an object when asked about an activity)
+  - Exceeds the specified length limit
 
 ## Response Format
+
 Return JSON only:
 ```json
 {
     "message": "Traditional Chinese message",
-    "aside_text": "answer or null"
+    "aside_text": "user_answer or null"
 }
 ```
 
-If valid: {"message": "已記錄您的答案！請繼續下一步。", "aside_text": "user_answer"}
-If too long: {"message": "請簡短回答即可。", "aside_text": null}
-If vague/invalid: {"message": "請提供具體的答案。", "aside_text": null}
+**Response examples:**
+- If valid: `{"message": "已記錄您的答案！請繼續下一步。", "aside_text": "user_answer"}`
+- If too long: `{"message": "請簡短回答即可。", "aside_text": null}`
+- If vague/invalid: `{"message": "請提供具體的答案。", "aside_text": null}`
