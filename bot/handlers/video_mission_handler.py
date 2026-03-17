@@ -116,6 +116,8 @@ def handle_video_upload(mission_id, saved_result, message, required_video_count,
     Handle video upload from the user.
     Returns updated saved_result with the new video.
     """
+    user_id = str(message.author.id)
+
     # Initialize video storage if needed
     if not saved_result.get('attachments'):
         saved_result['attachments'] = []
@@ -133,9 +135,12 @@ def handle_video_upload(mission_id, saved_result, message, required_video_count,
 
     # Update message based on progress
     if current_video_count >= required_video_count:
-        saved_result['message'] = f"已收到 {current_video_count} 個影片"
+        saved_result['message'] = f"已收到 {current_video_count} 部影片"
     else:
-        saved_result['message'] = f"已收到 {current_video_count} 個影片，還需要 {required_video_count - current_video_count} 個影片"
+        saved_result['message'] = f"目前已收到 {current_video_count} 部影片，還需要 {required_video_count - current_video_count} 部影片喔！"
+
+    # Save mission_record
+    save_mission_record(user_id, mission_id, saved_result)
 
     return {
         'needs_ai_prediction': False,
@@ -148,6 +153,7 @@ async def handle_text_input(client, mission_id, saved_result, message):
     Handle text input from the user for aside_text questions.
     Uses AI to validate the response.
     """
+    user_id = str(message.author.id)
     prompt_path = config.get_prompt_file(mission_id)
     user_message = message.content
 
@@ -189,6 +195,9 @@ async def handle_text_input(client, mission_id, saved_result, message):
     else:
         # AI rejected the answer
         saved_result['message'] = mission_result.get('message', '請提供有效的回答')
+
+    # Save mission_record
+    save_mission_record(user_id, mission_id, saved_result)
 
     return {
         'needs_ai_prediction': False,
@@ -267,9 +276,9 @@ async def send_mission_step(client, message, mission_id, student_mission_info, m
         instruction_data = get_mission_instruction(mission_id, step_index=mission_result.get('current_video_index'), instruction_type='upload')
         if instruction_data:
             embed, _ = await build_video_mission_embed(student_mission_info, baby_info=None, step_index=mission_result.get('current_video_index'))
-            message.channel.send(embed=embed)
+            await message.channel.send(embed=embed)
         else:
-            message.channel.send("請上傳下一個影片")
+            await message.channel.send(mission_result.get("message", "請上傳下一個影片"))
     else:
         # Send next step instruction
         await message.channel.send(mission_result.get('message', '請繼續完成任務'))
@@ -285,6 +294,10 @@ async def submit_video_mission(client, message, student_mission_info, mission_re
     attachments = mission_result.get('attachments', [])
     aside_texts = [str(aside_text) if aside_text else '' for aside_text in mission_result.get('aside_texts', [])]
     concated_aside_text = "|".join(aside_texts)
+
+    if attachments:
+        waiting_embed = get_waiting_embed()
+        await message.channel.send(embed=waiting_embed)
 
     # Update mission with all data
     update_status = await client.api_utils.update_mission_image_content(

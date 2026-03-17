@@ -38,7 +38,7 @@ BOOK_CATALOGS = {
     '特別版': {
         0: [
             {'book_id': 19, 'book_title': '我好期待你的到來'},
-            {'book_id': 20, 'book_title': '生日什麼時候才會來'},
+            #{'book_id': 20, 'book_title': '生日什麼時候才會來'},
         ]
     },
     '成長繪本': {
@@ -108,10 +108,14 @@ class BookMenuView(discord.ui.View):
         self.current_page: int = 0  # 當前頁碼
         self.page_size: int = 4  # 每頁顯示數量
 
-        if not config.ENV:
-            self.book_list = self.book_list[:5]
-
-        self.build_level1()
+        if not config.ENV: # production
+            self.book_type = '成長繪本'
+            self.age_code = 1 # 目前只有第一年
+            self.book_list = BOOK_CATALOGS.get(self.book_type, {}).get(self.age_code, [])
+            self.book_list = self.book_list[:6]
+            self.build_level3_book()
+        else:
+            self.build_level1()
 
     # -------- 共用工具 --------
     def clear_items(self):
