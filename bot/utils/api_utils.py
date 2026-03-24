@@ -211,17 +211,6 @@ class APIUtils:
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
         return await self._post_request(endpoint, payload)
 
-    async def update_student_registration_done(self, user_id, endpoint='update_student_data'):
-        payload = {
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
-            "discord_id": str(user_id),
-            "action": {
-                "type": "profile_update_status",
-                "status": '已完成'
-            }
-        }
-        return await self._post_request(endpoint, payload)
-
     async def update_student_confirmed_growth_album(self, user_id, book_id, endpoint='growth_album/ship_status_update'):
         payload = {
             'discord_id': str(user_id),
