@@ -123,9 +123,6 @@ class APIUtils:
 
         return sorted(response, key=lambda x: x["day_id"])[0]
 
-    async def get_student_babies(self, user_id, endpoint='get_student_babies'):
-        return await self._get_request(f"{endpoint}?discord_id={user_id}")
-
     async def get_baby_additional_info(self, user_id):
         baby = await self.get_baby_profile(user_id)
         if not baby:

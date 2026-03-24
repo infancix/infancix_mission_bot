@@ -31,7 +31,6 @@ class Config:
         self.photo_mission_list = set(
             [self.baby_registration_mission] +
             self.photo_mission +
-            self.relation_or_identity_mission +
             self.letter_mission +
             self.short_answer_mission +
             self.add_on_photo_mission
@@ -96,10 +95,6 @@ class Config:
         elif mission_id == self.pregnant_registration_mission:
             return f"{base_path}/pregnant_registration_prompt.txt"
 
-        # Relation/identity missions - use specific prompt with relationship term rules
-        elif mission_id in self.relation_or_identity_mission:
-            return f"{base_path}/relationship_identity_prompt.txt"
-
         # Letter missions
         elif mission_id in self.letter_mission:
             return f"{base_path}/letter_prompt.txt"
@@ -160,15 +155,6 @@ class Config:
                 month_data['book_id']: month_data['book_first_mission']
                 for month_data in growth_book_missions
             }
-
-            # relation and identity missions
-            self.relation_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('relation_mission', [])
-            ]
-            self.identity_mission = [item for month_data in growth_book_missions
-                for item in month_data.get('identity_mission', [])
-            ]
-            self.relation_or_identity_mission = self.relation_mission + self.identity_mission
 
             # photo missions
             self.photo_mission = [item for month_data in growth_book_missions

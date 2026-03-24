@@ -196,13 +196,6 @@ async def handle_text_input(client, mission_id, saved_result, message):
 
     if instruction_data and instruction_data.get('question'):
         additional_context = f"Question: {instruction_data['question']}"
-    elif mission_id in config.relation_or_identity_mission:
-        # For relation/identity missions, get question from instruction
-        instruction_data = get_mission_instruction(mission_id, step_index=0, instruction_type='question')
-        if instruction_data:
-            question_text = instruction_data.get('question')
-            if question_text:
-                additional_context = f"Question: {question_text}"
 
     # If no specific question, use AI only for typo correction
     if additional_context is None:
@@ -245,11 +238,7 @@ async def handle_text_input(client, mission_id, saved_result, message):
                 return saved_result
             processed_text = aside_text
 
-        # 2. Relation/identity missions: no normalization (just names/terms)
-        elif mission_id in config.relation_or_identity_mission:
-            processed_text = aside_text
-
-        # 3. General photo missions: normalize and check line limit (max 2 lines)
+        # 2. General photo missions: normalize and check line limit (max 2 lines)
         else:
             from bot.utils.openai_utils import normalize_aside_text, line_count
             processed_text = normalize_aside_text(aside_text)
@@ -471,7 +460,6 @@ async def send_mission_step(client, message, mission_id, student_mission_info, m
         # Check if this mission type should have a skip button
         # Skip button for photo missions, but NOT for identity/relation/letter missions
         should_show_skip = (
-            mission_id not in config.relation_or_identity_mission and
             mission_id not in config.short_answer_mission and
             mission_id not in config.letter_mission
         )
@@ -487,7 +475,6 @@ async def send_mission_step(client, message, mission_id, student_mission_info, m
         else:
             # Show without skip button (identity/relation/letter missions)
             await message.channel.send(embed=embed)
-
 
     elif message_text:
         # Send simple text message

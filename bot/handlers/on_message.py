@@ -170,8 +170,6 @@ async def handle_direct_message(client, message):
         await process_baby_profile_filling(client, message, student_mission_info)
     elif mission_id == config.pregnant_registration_mission:
         await process_pregnancy_registration_message(client, message, student_mission_info)
-    elif mission_id in config.relation_or_identity_mission:
-        await process_photo_mission_filling(client, message, student_mission_info)
     elif mission_id in config.video_mission:
         await process_video_mission_filling(client, message, student_mission_info)
     elif mission_id in config.audio_mission:
