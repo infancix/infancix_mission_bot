@@ -52,18 +52,24 @@
     },
     "1002": {
         "upload_instruction": null,
-        "question_instruction": {
-            "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
-            "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯"
-        },
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
+                "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯"
+            }
+        ],
         "questionnaire_instruction": null
     },
     "1003": {
         "upload_instruction": null,
-        "question_instruction": {
-            "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
-            "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯"
-        },
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
+                "description": "例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯\n\n💡 也可以上傳寶寶與其他重要照顧者的合照喔！"
+            }
+        ],
         "questionnaire_instruction": null
     },
     "1008": {

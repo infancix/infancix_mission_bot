@@ -204,12 +204,11 @@ async def submit_baby_data(client, message, student_mission_info, mission_result
         str(message.author.name),
         '寶寶已出生'
     )
-    await client.api_utils.update_student_registration_done(str(message.author.id))
 
     # update baby profile
     payload = {
         'baby_name': mission_result.get('baby_name', None),
-        'baby_name_en': mission_result.get('baby_name_en', None),
+        'baby_name_en': mission_result.get('baby_name_en', 'Baby'),
         'gender': mission_result.get('gender', None),
         'birthday': mission_result.get('birthday', None),
         'height': mission_result.get('height', None),

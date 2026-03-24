@@ -329,7 +329,6 @@ class TaskSelectView(discord.ui.View):
             str(interaction.user.name),
             '寶寶已出生'
         )
-        await self.client.api_utils.update_student_registration_done(str(interaction.user.id))
 
         # update baby profile
         payload = {

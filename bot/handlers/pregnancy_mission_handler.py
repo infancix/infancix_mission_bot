@@ -57,7 +57,6 @@ async def process_pregnancy_registration_message(client, message, student_missio
             '懷孕中',
             mission_result['due_date']
         )
-        await client.api_utils.update_student_registration_done(user_id)
 
         if mission_id == config.pregnant_registration_mission:
             # Mission end

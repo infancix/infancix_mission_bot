@@ -79,17 +79,10 @@ async def process_relation_identity_filling(client, message, student_mission_inf
             client.logger.info(f"送出繪本任務 {mission_id}")
             return
     elif mission_result.get("relation_or_identity", None) is None:
-        if int(mission_id) in config.relation_mission:
-            embed = get_relation_embed(student_mission_info)
+        instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
+        if instruction_data:
+            embed = build_embed(student_mission_info, instruction_data)
             await message.channel.send(embed=embed)
-        elif int(mission_id) in config.identity_mission:
-            embed = get_identity_embed(student_mission_info)
-            await message.channel.send(embed=embed)
-        else:
-            instruction_data = get_mission_instruction(mission_info['mission_id'], step_index=0)
-            if instruction_data:
-                embed = build_embed(student_mission_info, instruction_data)
-                await message.channel.send(embed=embed)
     else:
         await message.channel.send(mission_result['message'])
     return
@@ -220,26 +213,6 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
                     files.append(file)
 
     return embed, files
-
-def get_relation_embed(mission_info):
-    embed = discord.Embed(
-        title="📝 照片裡的人是寶寶的誰? (限填一個稱謂)",
-        description="例如：媽媽、爸爸、阿公、阿嬤、兄弟姊妹⋯⋯",
-        color=0xeeb2da,
-    )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
-    return embed
-
-def get_identity_embed(mission_info):
-    embed = discord.Embed(
-        title="📝 這張照片裡的人是誰呢？",
-        description="例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)",
-        color=0xeeb2da,
-    )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
-    embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
-    return embed
 
 def build_embed(mission_info, instruction_data):
     embed = discord.Embed(

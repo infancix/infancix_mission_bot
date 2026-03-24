@@ -123,9 +123,6 @@ class APIUtils:
 
         return sorted(response, key=lambda x: x["day_id"])[0]
 
-    async def get_student_babies(self, user_id, endpoint='get_student_babies'):
-        return await self._get_request(f"{endpoint}?discord_id={user_id}")
-
     async def get_baby_additional_info(self, user_id):
         baby = await self.get_baby_profile(user_id)
         if not baby:
@@ -212,17 +209,6 @@ class APIUtils:
             payload['due_date'] = due_date
 
         self.logger.info(f"User {user_id} call {endpoint} {payload}.")
-        return await self._post_request(endpoint, payload)
-
-    async def update_student_registration_done(self, user_id, endpoint='update_student_data'):
-        payload = {
-            "timestamp": datetime.now().strftime('%Y-%m-%d %H:%M'),
-            "discord_id": str(user_id),
-            "action": {
-                "type": "profile_update_status",
-                "status": '已完成'
-            }
-        }
         return await self._post_request(endpoint, payload)
 
     async def update_student_confirmed_growth_album(self, user_id, book_id, endpoint='growth_album/ship_status_update'):

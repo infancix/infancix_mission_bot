@@ -192,9 +192,6 @@ async def start_mission_by_id(client, user_id: str, mission_id: int, send_weekly
     elif mission_id in config.baby_profile_registration_missions:
         from bot.handlers.profile_handler import handle_registration_mission_start
         await handle_registration_mission_start(client, user_id, mission_id)
-    elif mission_id in config.relation_or_identity_mission:
-        from bot.handlers.photo_mission_handler import handle_photo_mission_start
-        await handle_photo_mission_start(client, user_id, mission_id, send_weekly_report=send_weekly_report)
     else:
         # Default to photo mission
         from bot.handlers.photo_mission_handler import handle_photo_mission_start
