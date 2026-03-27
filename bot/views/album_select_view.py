@@ -511,7 +511,7 @@ class AlbumView(discord.ui.View):
                 await self.go_next_missions_button_callback(itx, next_mission_id)
             main_button.callback = start_cb
 
-        elif len(self.incomplete_missions) == 0 and self.album_info.get('purchase_status') != '已購買':
+        elif (len(self.completed_missions) >= 5 or len(self.incomplete_missions) == 0) and self.album_info.get('purchase_status') != '已購買':
             main_button = discord.ui.Button(
                 label="購買繪本",
                 style=discord.ButtonStyle.success,
