@@ -24,12 +24,11 @@ class APIUtils:
     async def fetch_baby_list(self):
         return await self._get_request('get_baby_list')
 
-    async def get_mission_info(self, mission_id=None, month_id:int=None, mission_type:str=None, min_notification_day:int=None, group_by:str=None, endpoint='mission/mission_info'):
+    async def get_mission_info(self, mission_id=None, month_id:int=None, milestone_domain:str=None, group_by:str=None, endpoint='mission/mission_info'):
         return await self._get_request(f"{endpoint}?"
             + (f'mission_id={mission_id}' if mission_id else '')
-            + (f'&query_month={month_id}' if month_id else '')
-            + (f'&query_type={mission_type}' if mission_type else '')
-            + (f'&query_min_notification_day={min_notification_day}' if min_notification_day else '')
+            + (f'&query_book_id={month_id}' if month_id else '')
+            + (f'&query_type={milestone_domain}' if milestone_domain else '')
             + (f'&group_by={group_by}' if group_by else '')
         )
 
@@ -68,13 +67,6 @@ class APIUtils:
 
     async def get_purchase_students_reminder_list(self, user_id=None):
         return await self._get_request('photo_mission/schedule/monthly_print_reminder' + (f'?discord_id={user_id}' if user_id else ''))
-
-    async def get_student_milestones(self, user_id, month_id:int=None, query_type:str=None, query_min_notification_day:int=None):
-        return await self._get_request(f'get_student_milestones?discord_id={user_id}' \
-            + (f'&query_month={month_id}' if month_id else '') \
-            + (f'&query_type={query_type}' if query_type else '') \
-            + (f'&query_min_notification_day={query_min_notification_day}' if query_min_notification_day else '')
-        )
 
     async def get_student_complete_photo_mission(self, user_id, book_id=None):
         response = await self._get_request(f'photo_mission/completed_mission_list?discord_id={user_id}' \

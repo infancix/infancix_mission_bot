@@ -171,14 +171,14 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
-    title = f"📸**{mission_info['photo_mission']}**"
+    title = f"📸**{mission_info['mission_title']}**"
     desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
     if int(mission_info['mission_id']) == 1003:
         desc += f"💡 也可以上傳寶寶與其他重要照顧者的合照喔！\n"
 
     if int(mission_info['mission_id']) < 100: # infancix_mission
-        video_url = mission_info.get('mission_video_contents', '').strip()
-        image_url = mission_info.get('mission_image_contents', '').strip()
+        video_url = mission_info.get('milestone_video_contents', '').strip()
+        image_url = mission_info.get('milestone_image_contents', '').strip()
         instruction = ""
         if video_url and image_url:
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
@@ -186,7 +186,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
             instruction = f"▶️ [教學影片]({video_url})\n"
 
         desc += (
-            f"> **🧠 {mission_info['mission_title']}**\n"
+            f"> **🧠 {mission_info['milestone_title']}**\n"
             f"> {mission_info['mission_instruction']}\n"
             f"> \n"
             f"> {instruction} \n"
@@ -205,8 +205,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None):
     )
 
     files = []
-    if '週' in mission_info.get('mission_milestone'):
-        for url in mission_info['mission_image_contents'].split(','):
+    if '週' in mission_info.get('development_week'):
+        for url in mission_info['milestone_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
                 if file:
@@ -220,6 +220,6 @@ def build_embed(mission_info, instruction_data):
         description=instruction_data['description'],
         color=0xeeb2da,
     )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
+    embed.set_author(name=f"成長繪本｜{mission_info['milestone_title']}")
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed

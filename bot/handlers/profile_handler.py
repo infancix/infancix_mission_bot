@@ -256,7 +256,7 @@ def get_baby_name_registration_embed(mission_info):
         embed.set_author(name="恭喜寶寶出生！")
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text=f"成長繪本｜{mission_info['volume_title']} - {mission_info['photo_mission']}"
+        text=f"成長繪本｜{mission_info['book_month_label']} - {mission_info['mission_title']}"
     )
     return embed
 
@@ -321,7 +321,7 @@ def get_baby_name_en_registration_embed(mission_info, gender=None):
         )
     embed.set_footer(
         icon_url="https://infancixbaby120.com/discord_assets/baby120_footer_logo.png",
-        text=f"成長繪本｜{mission_info['volume_title']} - {mission_info['photo_mission']}"
+        text=f"成長繪本｜{mission_info['book_month_label']} - {mission_info['mission_title']}"
     )
     return embed
 
@@ -391,7 +391,7 @@ def get_baby_data_confirmation_embed(mission_result):
     return embed
 
 async def build_photo_instruction_embed(mission_info):
-    title = f"**{mission_info['photo_mission']}**"
+    title = f"**{mission_info['mission_title']}**"
     description = f"\n📎 點左下 **[+]** 上傳照片\n"
     embed = discord.Embed(
         title=title,
