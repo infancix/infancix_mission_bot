@@ -243,12 +243,12 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
         desc = instruction_data.get('description', '')
     else:
         # Use original embed from API data
-        title = f"🎙️**{mission_info['photo_mission']}**"
+        title = f"🎙️**{mission_info['mission_title']}**"
         desc = "長按對話框右側的🎙️即可錄音。\n"
 
-    if mission_info.get('mission_type', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
-        video_url = mission_info.get('mission_video_contents', '').strip()
-        image_url = mission_info.get('mission_image_contents', '').strip()
+    if mission_info.get('milestone_domain', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
+        video_url = mission_info.get('milestone_video_contents', '').strip()
+        image_url = mission_info.get('milestone_image_contents', '').strip()
         instruction = ""
         if video_url and image_url:
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
@@ -258,7 +258,7 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
             instruction = f"📂 [圖文懶人包]({image_url})\n"
 
         desc += (
-            f"> **🧠 {mission_info['mission_title']}**\n"
+            f"> **🧠 {mission_info['milestone_title']}**\n"
             f"> {mission_info['mission_instruction']}\n"
             f"> \n"
             f"> {instruction} \n"
@@ -276,8 +276,8 @@ async def build_audio_mission_embed(mission_info=None, baby_info=None, photo_mis
     )
 
     files = []
-    if '週' in mission_info.get('mission_milestone'):
-        for url in mission_info['mission_image_contents'].split(','):
+    if '週' in mission_info.get('development_week'):
+        for url in mission_info['milestone_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
                 if file:

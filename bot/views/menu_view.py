@@ -93,7 +93,7 @@ class KnowledgeMenuView(discord.ui.View):
                 self.selected_month = mv
                 self.knowledge_group = await self.client.api_utils.get_mission_info(
                     month_id=mv,
-                    group_by='mission_type',
+                    group_by='milestone_domain',
                 )
                 self.build_level3_type()
                 await self.update_view(itx)
@@ -251,15 +251,15 @@ class KnowledgePostButton(discord.ui.Button):
         )
 
     def setup_label(self, post_info):
-        if '週' in post_info.get('mission_milestone', ''):
-            return f"{post_info['mission_milestone']} | {post_info['mission_title']}"
-        return post_info['mission_title']
+        if '週' in post_info.get('development_week', ''):
+            return f"{post_info['development_week']} | {post_info['milestone_title']}"
+        return post_info['milestone_title']
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         knowledge_list = await self.client.api_utils.get_mission_info(
             month_id=self.menu_options['selected_month'],
-            mission_type=self.menu_options['selected_category']
+            milestone_domain=self.menu_options['selected_category']
         )
 
         view = KnowledgePostView(
@@ -303,7 +303,7 @@ class KnowledgePostView(discord.ui.View):
         async def back_cb(itx: discord.Interaction):
             knowledge_group = await self.client.api_utils.get_mission_info(
                 month_id=self.menu_options['selected_month'],
-                group_by='mission_type',
+                group_by='milestone_domain',
             )
             knowledge_list = knowledge_group[self.menu_options['selected_category']]
             # rebuild book selection view
@@ -372,8 +372,8 @@ class KnowledgePostView(discord.ui.View):
         self.add_item(next_button)
 
     async def build_post_embed(self):
-        video_url = self.post_info.get('mission_video_contents', '').strip()
-        image_url = self.post_info.get('mission_image_contents', '').strip()
+        video_url = self.post_info.get('milestone_video_contents', '').strip()
+        image_url = self.post_info.get('milestone_image_contents', '').strip()
         instruction = ""
         if video_url and image_url:
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
@@ -381,19 +381,19 @@ class KnowledgePostView(discord.ui.View):
             instruction = f"▶️ [教學影片]({video_url})\n"
 
         embed = discord.Embed(
-            title=f"🧠 **{self.post_info['mission_title']}**",
+            title=f"🧠 **{self.post_info['milestone_title']}**",
             description=(
                 f"{self.post_info['mission_instruction']}\n\n"
                 f"{instruction}\n"
             ),
             color=0xeeb2da
         )
-        embed.set_author(name=f"{self.post_info['mission_milestone']}")
+        embed.set_author(name=f"{self.post_info['development_week']}")
         embed.set_footer(text="用科學育兒，用愛紀錄成長")
 
         files = []
-        if '週' in self.post_info['mission_milestone']:
-            for url in self.post_info['mission_image_contents'].split(','):
+        if '週' in self.post_info['development_week']:
+            for url in self.post_info['milestone_image_contents'].split(','):
                 if url.strip():
                     file = await create_file_from_url(url.strip())
                     if file:

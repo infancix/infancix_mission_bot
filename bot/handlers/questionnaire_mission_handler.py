@@ -473,8 +473,8 @@ async def build_questionnaire_mission_embed(questionnaire_data, mission_info, ba
     )
 
     files = []
-    if '週' in mission_info.get('mission_milestone'):
-        for url in mission_info['mission_image_contents'].split(','):
+    if '週' in mission_info.get('development_week'):
+        for url in mission_info['milestone_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
                 if file:
@@ -521,8 +521,8 @@ async def build_short_answer_mission_embed(answer_data, mission_info, baby_info=
     )
 
     files = []
-    if '週' in mission_info.get('mission_milestone', ''):
-        for url in mission_info.get('mission_image_contents', '').split(','):
+    if '週' in mission_info.get('development_week', ''):
+        for url in mission_info.get('milestone_image_contents', '').split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
                 if file:

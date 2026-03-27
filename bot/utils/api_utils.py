@@ -24,11 +24,11 @@ class APIUtils:
     async def fetch_baby_list(self):
         return await self._get_request('get_baby_list')
 
-    async def get_mission_info(self, mission_id=None, month_id:int=None, mission_type:str=None, group_by:str=None, endpoint='mission/mission_info'):
+    async def get_mission_info(self, mission_id=None, month_id:int=None, milestone_domain:str=None, group_by:str=None, endpoint='mission/mission_info'):
         return await self._get_request(f"{endpoint}?"
             + (f'mission_id={mission_id}' if mission_id else '')
             + (f'&query_book_id={month_id}' if month_id else '')
-            + (f'&query_type={mission_type}' if mission_type else '')
+            + (f'&query_type={milestone_domain}' if milestone_domain else '')
             + (f'&group_by={group_by}' if group_by else '')
         )
 

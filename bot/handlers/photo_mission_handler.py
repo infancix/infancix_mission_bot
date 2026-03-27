@@ -551,12 +551,12 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
         desc = instruction_data.get('description', '')
     else:
         # Use original embed from API data
-        title = f"📸**{mission_info['photo_mission']}**"
+        title = f"📸**{mission_info['mission_title']}**"
         desc = f"\n📎 點左下 **[+]** 上傳照片\n\n"
 
-    if step_index == 0 and mission_info.get('mission_type', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
-        video_url = mission_info.get('mission_video_contents', '').strip()
-        image_url = mission_info.get('mission_image_contents', '').strip()
+    if step_index == 0 and mission_info.get('milestone_domain', None) in ['照護', '營養', '早教', '睡眠', '健康', '產後']:
+        video_url = mission_info.get('milestone_video_contents', '').strip()
+        image_url = mission_info.get('milestone_image_contents', '').strip()
         instruction = ""
         if video_url and image_url:
             instruction = f"▶️ [教學影片]({video_url})\u2003\u2003📂 [圖文懶人包]({image_url})\n"
@@ -566,7 +566,7 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
             instruction = f"📂 [圖文懶人包]({image_url})\n"
 
         desc += (
-            f"> **🧠 {mission_info['mission_title']}**\n"
+            f"> **🧠 {mission_info['milestone_title']}**\n"
             f"> {mission_info['mission_instruction']}\n"
             f"> \n"
             f"> {instruction} \n"
@@ -605,8 +605,8 @@ async def build_photo_mission_embed(mission_info=None, baby_info=None, book_info
     )
 
     files = []
-    if step_index == 0 and '週' in mission_info.get('mission_milestone'):
-        for url in mission_info['mission_image_contents'].split(','):
+    if step_index == 0 and '週' in mission_info.get('development_week'):
+        for url in mission_info['milestone_image_contents'].split(','):
             if url.strip():
                 file = await create_file_from_url(url.strip())
                 if file:
@@ -652,7 +652,7 @@ def get_embed_from_instruction(mission_info, instruction_data):
         description=instruction_data.get('description', ''),
         color=0xeeb2da,
     )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
+    embed.set_author(name=f"成長繪本｜{mission_info['milestone_title']}")
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 

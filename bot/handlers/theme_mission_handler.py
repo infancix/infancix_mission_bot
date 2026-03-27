@@ -790,7 +790,7 @@ async def load_current_mission_status(client, user_id, book_id):
 # --------------------- Embed Builders ---------------------
 def build_theme_mission_instruction_embed(mission_info):
     embed = discord.Embed(
-        title=mission_info['mission_type'],
+        title=mission_info['milestone_domain'],
         description=mission_info['mission_instruction'],
         color=0xeeb2da
     )
@@ -847,14 +847,14 @@ def get_identity_embed(mission_info):
         description="例如：爸爸、媽媽、爺爺奶奶、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)",
         color=0xeeb2da,
     )
-    embed.set_author(name=f"成長繪本｜{mission_info['mission_title']}")
+    embed.set_author(name=f"成長繪本｜{mission_info['milestone_title']}")
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
 def get_cover_instruction_embed(mission_info):
     embed = discord.Embed(
         title="📤 請上傳封面照片",
-        description=f"📸 {mission_info.get('photo_mission', '請上傳寶寶的照片')}\n\n💡 請選擇寶寶頭部置中的照片\n",
+        description=f"📸 {mission_info.get('mission_title', '請上傳寶寶的照片')}\n\n💡 請選擇寶寶頭部置中的照片\n",
         color=0xeeb2da,
     )
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
@@ -892,7 +892,7 @@ def get_story_pages_embed(book_id, mission_info, photo_index, required_photos=6,
         description=description,
         color=0xeeb2da,
     )
-    embed.set_author(name=f"{mission_info.get('mission_type', '主題繪本')}")
+    embed.set_author(name=f"{mission_info.get('milestone_domain', '主題繪本')}")
     embed.set_thumbnail(url="https://infancixbaby120.com/discord_assets/logo.png")
     return embed
 
@@ -906,7 +906,7 @@ def get_question_embed_with_photo(mission_info, mission_result, instruction_data
         description=description,
         color=0xeeb2da,
     )
-    embed.set_author(name=f"✍️ {mission_info.get('mission_type', '主題繪本')} ({photo_index}/6)")
+    embed.set_author(name=f"✍️ {mission_info.get('milestone_domain', '主題繪本')} ({photo_index}/6)")
 
     # IMPORTANT: Show the photo for this question
     attachments = mission_result.get('attachments', [])

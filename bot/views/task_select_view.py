@@ -187,7 +187,7 @@ class TaskSelectView(discord.ui.View):
 
         mission_info = await self.client.api_utils.get_mission_info(self.mission_id)
         embed = discord.Embed(
-            title=f"📖繪本介紹: **{mission_info['volume_title']} - {mission_info['photo_mission']}**",
+            title=f"📖繪本介紹: **{mission_info['book_month_label']} - {mission_info['mission_title']}**",
             description=mission_info['mission_instruction'],
             color=0xeeb2da,
         )

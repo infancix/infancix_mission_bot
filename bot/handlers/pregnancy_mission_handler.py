@@ -115,7 +115,7 @@ async def build_pregnancy_embed(mission_info, due_date_str):
         title=f"🎉 恭喜寶寶滿 {week} 週啦！",
         description=(
             f"📅 距離預產期還有 {age} 天\n"
-            f"[👉點我查看孕養報]({mission_info['mission_image_contents']})\n\n"
+            f"[👉點我查看孕養報]({mission_info['milestone_image_contents']})\n\n"
             f"🌷 溫馨提醒\n"
             f"使用手機閱讀孕養報，閱讀體驗最佳！\n\n"
         ),
