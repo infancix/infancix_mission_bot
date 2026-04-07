@@ -38,7 +38,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "📝 這張照片裡的人是誰呢？",
-            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)"
+            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n💡小提醒: 也可以輸入名字喔"
         },
         "questionnaire_instruction": null
     },
@@ -46,7 +46,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "請問這位朋友的名字是? (限填一個朋友)",
-            "description": "英文版建議輸入英文名稱，排版會更美觀喔 🌟"
+            "description": "例如：小明、小白、愛莎、安娜"
         },
         "questionnaire_instruction": null
     },
@@ -76,7 +76,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "✏️ 寫一封信給寶寶",
-            "description": "請於對話框輸入文字(限400字以內)\n\n英文版建議輸入英文信，排版會更美觀喔 🌟"
+            "description": "請於對話框輸入文字(限400字以內)"
         },
         "questionnaire_instruction": null
     },
@@ -84,7 +84,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "📝 這張照片裡的人是誰呢？",
-            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n(也可以輸入名字喔！)\n\n(英文版建議輸入英文名稱，排版會比較美觀～)"
+            "description": "例如：媽媽、阿公、阿嬤、兄弟姊妹、寵物⋯⋯\n💡小提醒: 也可以輸入名字喔"
         },
         "questionnaire_instruction": null
     },
@@ -326,7 +326,7 @@
         "upload_instruction": null,
         "question_instruction": {
             "question": "請問寶寶吃什麼水果呢?",
-            "description": "(限定回答5個字內)\n\n範例:\n蘋果、葡萄、香蕉、火龍果、草莓。\n\n(英文版建議輸入英文名稱，排版會比較美觀～)"
+            "description": "(限定回答5個字內)\n\n範例:\n蘋果、葡萄、香蕉、火龍果、草莓。"
         },
         "questionnaire_instruction": null
     },
@@ -361,13 +361,25 @@
         "upload_instruction": [
             {
                 "index": 0,
-                "title": "孕初期孕肚照",
-                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+                "title": "剛發現小生命的你",
+                "description": "📎 點左下 **[+]** 上傳你的照片"
             },
             {
                 "index": 1,
-                "title": "孕初期超音波照",
+                "title": "當時的超音波紀錄",
                 "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問照片中，一起和寶寶去哪或做什麼呢?(限定3-5個字)",
+                "description": "(限定回答5個字內)\n\n範例:\n運動、散步、游泳、旅行、產檢。"
+            },
+            {
+                "index": 1,
+                "question": "請問這張超音波照是懷孕第幾週拍的？",
+                "description": "(限定回答5個字內)\n\n範例:\n12週、20週"
             }
         ]
     },
@@ -375,13 +387,25 @@
         "upload_instruction": [
             {
                 "index": 0,
-                "title": "孕中期孕肚照",
-                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+                "title": "肚子開始有變化的你",
+                "description": "📎 點左下 [+] 上傳你的照片\n\n"
             },
             {
                 "index": 1,
-                "title": "孕中期超音波照",
+                "title": "當時的超音波紀錄",
                 "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問照片中，一起和寶寶去哪或做什麼呢?(限定3-5個字)",
+                "description": "(限定回答5個字內)\n\n範例:\n運動、散步、游泳、旅行、產檢。"
+            },
+            {
+                "index": 1,
+                "question": "請問這張超音波照是懷孕第幾週拍的？",
+                "description": "(限定回答5個字內)\n\n範例:\n12週、20週"
             }
         ]
     },
@@ -389,13 +413,25 @@
         "upload_instruction": [
             {
                 "index": 0,
-                "title": "孕後期孕肚照",
-                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+                "title": "肚子明顯越來越大的你",
+                "description": "📎 點左下 [+] 上傳你的照片\n\n"
             },
             {
                 "index": 1,
-                "title": "孕後期超音波照",
+                "title": "當時的超音波紀錄",
                 "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問照片中，一起和寶寶去哪或做什麼呢?(限定3-5個字)",
+                "description": "(限定回答5個字內)\n\n範例:\n運動、散步、游泳、旅行、產檢。"
+            },
+            {
+                "index": 1,
+                "question": "請問這張超音波照是懷孕第幾週拍的？",
+                "description": "(限定回答5個字內)\n\n範例:\n12週、20週"
             }
         ]
     },
@@ -403,13 +439,25 @@
         "upload_instruction": [
             {
                 "index": 0,
-                "title": "爸爸(或是伴侶)的照片",
-                "description": "📎 點左下 **[+]** 上傳照片\n\n"
+                "title": "準備迎接寶寶的你",
+                "description": "📎 點左下 [+] 上傳你的照片\n\n💡小提醒: 也可以和另一半/家人一起入鏡喔"
             },
             {
                 "index": 1,
-                "title": "臨盆前超音波照",
+                "title": "當時的超音波紀錄",
                 "description": "📎 點左下 **[+]** 上傳照片\n\n"
+            }
+        ],
+        "question_instruction": [
+            {
+                "index": 0,
+                "question": "請問照片中，一起和寶寶去哪或做什麼呢?(限定3-5個字)",
+                "description": "(限定回答5個字內)\n\n範例:\n運動、散步、游泳、旅行、產檢。"
+            },
+            {
+                "index": 1,
+                "question": "請問這張超音波照是懷孕第幾週拍的？",
+                "description": "(限定回答5個字內)\n\n範例:\n12週、20週"
             }
         ]
     },
@@ -430,7 +478,7 @@
             {
                 "index": 0,
                 "question": "請問照片中的家人是誰？(2-4字)",
-                "description": "💡 請寫出具體的稱謂，繪本呈現會更準確喔！\n\n例如：爸爸、阿公、阿姨、哥哥等。\n(也可以輸入名字！)\n\n💡 建議每張照片只寫一個人，效果會更好～"
+                "description": "💡小提醒1: 請寫出具體的稱謂，繪本呈現會更準確喔！\n例如：爸爸、阿公、阿姨、哥哥或是名字等。\n💡小提醒2: 建議每張照片只寫一個人，效果會更好～"
             }
         ],
         "questionnaire_instruction": null

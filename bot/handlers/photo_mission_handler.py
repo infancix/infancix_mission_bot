@@ -196,6 +196,8 @@ async def handle_text_input(client, mission_id, saved_result, message):
 
     if instruction_data and instruction_data.get('question'):
         additional_context = f"Question: {instruction_data['question']}"
+        if instruction_data.get('description'):
+            additional_context += f"\nAcceptable answer examples: {instruction_data['description']}"
 
     # If no specific question, use AI only for typo correction
     if additional_context is None:
