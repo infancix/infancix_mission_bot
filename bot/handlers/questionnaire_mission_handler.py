@@ -168,6 +168,31 @@ async def process_questionnaire_mission_filling(client, message, student_mission
     user_id = str(message.author.id)
     mission_id = student_mission_info['mission_id']
 
+    # Check if waiting for custom blessing input
+    saved_result = get_mission_record(user_id, mission_id) or {}
+    if saved_result.get('waiting_for_custom_blessing') and message.content and not message.attachments:
+        custom_blessing = message.content.strip()
+
+        # Validate character count (max 20 characters)
+        if len(custom_blessing) > 20:
+            await message.channel.send(f"❌ 祝福語超過 20 字（目前 {len(custom_blessing)} 字），請重新輸入。")
+            return
+
+        # Save custom blessing as aside_text
+        saved_result['aside_texts'] = [custom_blessing]
+        saved_result['waiting_for_custom_blessing'] = False
+        save_mission_record(user_id, mission_id, saved_result)
+
+        await message.channel.send("✅ 已收到您的祝福語！")
+
+        # Move to next step (photo upload)
+        student_mission_info['current_step'] += 1
+        await client.api_utils.update_student_mission_status(**student_mission_info)
+
+        # Continue to next step
+        await handle_questionnaire_next_mission(client, message, student_mission_info, saved_result)
+        return
+
     request_info = prepare_api_request(client, message, student_mission_info)
     print(f"Request info: {request_info}")
 
@@ -460,9 +485,11 @@ async def build_questionnaire_mission_embed(questionnaire_data, mission_info, ba
             print(f"Error parsing birthday: {e}")
             author = "恭喜寶寶出生！"
 
+    # Use questionnaire description if available, otherwise fallback to mission_instruction
+    description = questionnaire_data.get('description') or mission_info.get('mission_instruction') or "\n💡回答請點選下方按鈕\n"
     embed = discord.Embed(
         title=f"**{questionnaire_data['question']}**",
-        description=mission_info['mission_instruction'] if mission_info.get('mission_instruction') else "\n💡回答請點選下方按鈕\n",
+        description=description,
         color=0xeeb2da
     )
     if current_step <= 1:
@@ -548,9 +575,10 @@ async def build_photo_mission_embed(step_data, mission_info, baby_info=None):
     return embed
 
 def get_questionnaire_embed(questionnaire):
+    description = f"\n{questionnaire.get('description', '')}"
     embed = discord.Embed(
         title=f"**{questionnaire['question']}**",
-        description=f"\n💡回答請點選下方按鈕\n",
+        description=f"{description}\n",
         color=0xeeb2da
     )
     return embed

@@ -99,7 +99,6 @@ class QuestionnaireView(discord.ui.View):
         return callback
 
     async def submit_callback(self, interaction: discord.Interaction):
-        await self.send_ephemeral(interaction, "繪本製作中")
         user_id = str(interaction.user.id)
         try:
             save_questionnaire_record(user_id, str(self.message.id), self.mission_id, self.current_round, self.clicked_options)
@@ -108,8 +107,35 @@ class QuestionnaireView(discord.ui.View):
             # Save results
             mission_result = get_mission_record(user_id, self.mission_id) or {}
 
+            # Check if replace_aside_text exists for mapping button labels to actual text
+            replace_aside_text = self.questionnaire.get('replace_aside_text', [])
+            selected_idx = self.clicked_options[0] if self.clicked_options else None
+
+            # Check if user selected "自行輸入" (index >= len(replace_aside_text))
+            if replace_aside_text and selected_idx is not None and selected_idx >= len(replace_aside_text):
+                # User selected custom input option
+                mission_result['waiting_for_custom_blessing'] = True
+                save_mission_record(user_id, self.mission_id, mission_result)
+
+                # Send prompt message to channel (use channel.send since interaction already responded)
+                embed = discord.Embed(
+                    title="✏️ 請輸入您的祝福語",
+                    description="請在下方輸入您想對寶寶說的話（限 20 字內）",
+                    color=0xeeb2da
+                )
+                await interaction.channel.send(embed=embed)
+                self.stop()
+                return
+
+            await self.send_ephemeral(interaction, "繪本製作中")
+
             # Build Chinese summary from indices
-            click_summary = "、".join(self.options[idx] for idx in self.clicked_options)
+            if replace_aside_text and selected_idx is not None and selected_idx < len(replace_aside_text):
+                # Use replace_aside_text for the actual text value
+                click_summary = replace_aside_text[selected_idx]
+            else:
+                # Fallback to original behavior
+                click_summary = "、".join(self.options[idx] for idx in self.clicked_options)
 
             # Build English summary from indices
             options_en = self.questionnaire.get('options_en', [])

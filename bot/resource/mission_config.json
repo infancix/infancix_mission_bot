@@ -34,10 +34,12 @@
       "book_intro_mission": 1172,
       "book_first_mission": 1010,
       "short_answer_mission": [1010],
+      "questionnaire_mission": [1198],
       "audio_mission": [14],
       "photo_mission": [15, 16, 17, 20, 28, 30, 1011, 1012, 1013, 1014],
       "add_on_photo_mission": [1015],
       "mission_requirements": {
+        "1198": {"photo": 1, "aside_text": 1},
         "14": {"audio": 1},
         "15": {"photo": 1, "aside_text": 1},
         "16": {"photo": 1, "aside_text": 1},
@@ -53,7 +55,7 @@
         "1015": {"photo": 4}
       },
       "confirm_growth_album_mission": [1149],
-      "mission_ids": [1010, 1012, 15, 20, 30, 28, 16, 14, 17, 1011, 1013, 1014, 1015]
+      "mission_ids": [1198, 1010, 1012, 15, 20, 30, 28, 16, 14, 17, 1011, 1013, 1014, 1015]
     },
     {
       "book_id": 3,
@@ -83,11 +85,12 @@
       "book_id": 4,
       "book_intro_mission": 1174,
       "book_first_mission": 1021,
-      "questionnaire_mission": [1024],
+      "questionnaire_mission": [1024, 1199],
       "short_answer_mission": [56],
       "photo_mission": [50, 51, 52, 63, 64, 65, 66, 1021, 1022, 1023],
       "add_on_photo_mission": [1025],
       "mission_requirements": {
+        "1199": {"photo": 1, "aside_text": 1},
         "50": {"photo": 1},
         "51": {"photo": 1},
         "52": {"photo": 1},
@@ -103,17 +106,18 @@
         "1025": {"photo": 4}
       },
       "confirm_growth_album_mission": [1151],
-      "mission_ids": [1021, 50, 64, 56, 66, 63, 65, 51, 52, 1022, 1023, 1024, 1025]
+      "mission_ids": [1199, 1021, 50, 64, 56, 66, 63, 65, 51, 52, 1022, 1023, 1024, 1025]
     },
     {
       "book_id": 5,
       "book_intro_mission": 1175,
       "book_first_mission": 1026,
-      "questionnaire_mission": [],
+      "questionnaire_mission": [2000],
       "photo_mission": [1026, 1027, 1029, 1031, 1032, 1033, 1035, 1036, 1037, 1039],
       "video_mission": [1030],
       "add_on_photo_mission": [1040],
       "mission_requirements": {
+        "2000": {"photo": 1, "aside_text": 1},
         "1026": {"photo": 1},
         "1027": {"photo": 1},
         "1029": {"photo": 1},
@@ -128,18 +132,19 @@
         "1040": {"photo": 4}
       },
       "confirm_growth_album_mission": [1152],
-      "mission_ids": [1026, 1027, 1029, 1031, 1032, 1033, 1030, 1036, 1035, 1037, 1039, 1040]
+      "mission_ids": [2000, 1026, 1027, 1029, 1031, 1032, 1033, 1030, 1036, 1035, 1037, 1039, 1040]
     },
     {
       "book_id": 6,
       "book_intro_mission": 1176,
       "book_first_mission": 1041,
-      "questionnaire_mission": [],
+      "questionnaire_mission": [2001],
       "short_answer_mission": [1045],
       "photo_mission": [1041, 1042, 1043, 1047, 1048, 1049, 1050, 1051, 1052],
       "video_mission": [1044],
       "add_on_photo_mission": [1055],
       "mission_requirements": {
+        "2001": {"photo": 1, "aside_text": 1},
         "1041": {"photo": 1},
         "1042": {"photo": 1},
         "1043": {"photo": 1},
@@ -154,18 +159,19 @@
         "1055": {"photo": 4}
       },
       "confirm_growth_album_mission": [1152],
-      "mission_ids": [1041, 1042, 1043, 1045, 1048, 1049, 1050, 1051, 1052, 1044, 1047, 1055]
+      "mission_ids": [2001, 1041, 1042, 1043, 1045, 1048, 1049, 1050, 1051, 1052, 1044, 1047, 1055]
     },
     {
       "book_id": 7,
       "book_intro_mission": 1177,
       "book_first_mission": 1056,
-      "questionnaire_mission": [1070],
+      "questionnaire_mission": [1070, 2002],
       "short_answer_mission": [1059, 1060, 1062],
       "photo_mission": [1056, 1057, 1058, 1061, 1063, 1066, 1069],
       "video_mission": [],
       "add_on_photo_mission": [1071],
       "mission_requirements": {
+        "2002": {"photo": 1, "aside_text": 1},
         "1056": {"photo": 1},
         "1057": {"photo": 1},
         "1058": {"photo": 1},
@@ -180,18 +186,19 @@
         "1071": {"photo": 4}
       },
       "confirm_growth_album_mission": [1156],
-      "mission_ids": [1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1066, 1069, 1070, 1071]
+      "mission_ids": [2002, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1066, 1069, 1070, 1071]
     },
     {
       "book_id": 8,
       "book_intro_mission": 1178,
       "book_first_mission": 1072,
-      "questionnaire_mission": [],
+      "questionnaire_mission": [2003],
       "short_answer_mission": [1084],
       "photo_mission": [1072, 1074, 1075, 1077, 1078, 1079, 1081, 1082, 1083, 1080],
       "video_mission": [1076],
       "add_on_photo_mission": [1086],
       "mission_requirements": {
+        "2003": {"photo": 1, "aside_text": 1},
         "1072": {"photo": 1},
         "1074": {"photo": 1},
         "1075": {"photo": 1},
@@ -207,18 +214,19 @@
         "1086": {"photo": 4}
       },
       "confirm_growth_album_mission": [1155],
-      "mission_ids": [1072, 1074, 1075, 1077, 1078, 1079, 1081, 1082, 1083, 1076, 1080, 1084, 1086]
+      "mission_ids": [2003, 1072, 1074, 1075, 1077, 1078, 1079, 1081, 1082, 1083, 1076, 1080, 1084, 1086]
     },
     {
       "book_id": 9,
       "book_intro_mission": 1179,
       "book_first_mission": 1089,
-      "questionnaire_mission": [],
+      "questionnaire_mission": [2004],
       "short_answer_mission": [1087, 1093],
       "photo_mission": [1087, 1088, 1089, 1091, 1092, 1094, 1095, 1096, 1098],
       "video_mission": [1090, 1097],
       "add_on_photo_mission": [1100],
       "mission_requirements": {
+        "2004": {"photo": 1, "aside_text": 1},
         "1087": {"photo": 2, "aside_text": 2},
         "1088": {"photo": 1},
         "1089": {"photo": 1},
@@ -234,18 +242,19 @@
         "1100": {"photo": 4}
       },
       "confirm_growth_album_mission": [1156],
-      "mission_ids": [1089, 1091, 1092, 1098, 1093, 1088, 1095, 1094, 1096, 1087, 1090, 1097, 1100]
+      "mission_ids": [2004, 1089, 1091, 1092, 1098, 1093, 1088, 1095, 1094, 1096, 1087, 1090, 1097, 1100]
     },
     {
       "book_id": 10,
       "book_intro_mission": 1180,
       "book_first_mission": 1102,
-      "questionnaire_mission": [],
+      "questionnaire_mission": [2005],
       "short_answer_mission": [1113],
       "photo_mission": [1102, 1103, 1104, 1106, 1108, 1109, 1111, 1112, 1101, 1105],
       "video_mission": [],
       "add_on_photo_mission": [1115],
       "mission_requirements": {
+        "2005": {"photo": 1, "aside_text": 1},
         "1102": {"photo": 1},
         "1103": {"photo": 1},
         "1104": {"photo": 1},
@@ -260,18 +269,19 @@
         "1115": {"photo": 4}
       },
       "confirm_growth_album_mission": [1157],
-      "mission_ids": [1102, 1103, 1104, 1106, 1109, 1108, 1111, 1112, 1101, 1105, 1113, 1115]
+      "mission_ids": [2005, 1102, 1103, 1104, 1106, 1109, 1108, 1111, 1112, 1101, 1105, 1113, 1115]
     },
     {
       "book_id": 11,
       "book_intro_mission": 1181,
       "book_first_mission": 1117,
       "questionnaire_mission": [1130],
-      "short_answer_mission": [],
+      "short_answer_mission": [2006],
       "photo_mission": [1117, 1119, 1118, 1120, 1123, 1125, 1126, 1127, 1129, 1124],
       "video_mission": [1116, 1122],
       "add_on_photo_mission": [1131],
       "mission_requirements": {
+        "2006": {"photo": 1, "aside_text": 1},
         "1117": {"photo": 1},
         "1119": {"photo": 1},
         "1118": {"photo": 1},
@@ -288,18 +298,19 @@
         "1131": {"photo": 4}
       },
       "confirm_growth_album_mission": [1158],
-      "mission_ids": [1117, 1119, 1118, 1120, 1122, 1123, 1125, 1126, 1127, 1129, 1116, 1124, 1130, 1131]
+      "mission_ids": [2006, 1117, 1119, 1118, 1120, 1122, 1123, 1125, 1126, 1127, 1129, 1116, 1124, 1130, 1131]
     },
     {
       "book_id": 12,
       "book_intro_mission": 1182,
       "book_first_mission": 1132,
-      "questionnaire_mission": [1147],
+      "questionnaire_mission": [1147, 2007],
       "short_answer_mission": [1132],
       "photo_mission": [1133, 1134, 1135, 1138, 1139, 1141, 1136, 1143],
       "video_mission": [1140],
       "add_on_photo_mission": [1183],
       "mission_requirements": {
+        "2007": {"photo": 1, "aside_text": 1},
         "1132": {"photo": 1, "aside_text": 1},
         "1133": {"photo": 1},
         "1134": {"photo": 1},
@@ -314,7 +325,7 @@
         "1183": {"photo": 4}
       },
       "confirm_growth_album_mission": [1159],
-      "mission_ids": [1132, 1133, 1134, 1135, 1138, 1139, 1141, 1136, 1140, 1143, 1147, 1183]
+      "mission_ids": [2007, 1132, 1133, 1134, 1135, 1138, 1139, 1141, 1136, 1140, 1143, 1147, 1183]
     },
     {
       "book_id": 19,
