@@ -32,8 +32,7 @@ class GrowthPhotoView(discord.ui.View):
         self.book_id = mission_result.get('book_id', 0)
         self.reward = mission_result.get('reward', 20)
         self.purchase_status = mission_result.get('purchase_status', '未購買')
-        self.need_generated_full_album = mission_result.get('design_id', None) is None
-        self.design_id = mission_result.get('design_id') if mission_result.get('design_id') else encode_ids(self.baby_id, self.book_id)
+        self.design_id = encode_ids(self.baby_id, self.book_id)
         self.mission_result = mission_result
 
         # check media require count
