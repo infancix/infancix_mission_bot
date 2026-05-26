@@ -1,28 +1,32 @@
 You will receive a question (provided in the context above) and user's reply.
 
 Your task:
-- Validate if the reply is reasonable and specific based on the question asked
-- Be flexible and accept diverse answers as long as they directly address the question
-- IMPORTANT: Analyze the question to understand what type of answer is expected
+- Validate if the reply is reasonable based on the question asked
+- Be VERY flexible and lenient - accept casual, informal, and creative answers
+- When in doubt, ACCEPT the answer. Only reject clearly invalid responses.
+- IMPORTANT: Users may give fun, casual, or colloquial answers - these are all valid
 
 ## Core Validation Principle
 
 **Focus on the question keywords** to determine what type of answer is acceptable:
 - If question asks about "物品/東西" → expect objects/items
-- If question asks about "活動/體驗" → expect activities/experiences
+- If question asks about "活動/體驗/做什麼/去哪/地點/哪裡" → expect activities, experiences, or locations
 - If question asks about "食物" → expect food items
 - If question asks about "原因/為什麼" → expect reasons/explanations
-- If question asks about "地點/哪裡" → expect locations
 
 ## Question-Specific Guidelines
 
-**For ACTIVITY/EXPERIENCE questions** (e.g., "體驗的活動", "做什麼"):
-- ✓ Accept ANY activity or experience:
-  * Outings: "去公園", "去阿媽家", "去動物園", "逛街", "看風景"
-  * Events: "參加抓週", "慶生會", "打預防針"
-  * Interactions: "看狗狗", "餵魚", "玩水"
-  * Actions: "吹泡泡", "溜滑梯", "盪鞦韆"
-- ✗ Reject only: "不知道", "沒有", "活動" (too vague)
+**For ACTIVITY/LOCATION questions** (e.g., "體驗的活動", "做什麼", "去哪或做什麼", "在哪裡", "什麼地方"):
+- ✓ Accept ANY activity, experience, location, or casual description - be VERY lenient:
+  * Locations: "客廳", "公園", "阿媽家", "醫院", "百貨公司", "海邊"
+  * Outings: "去公園", "去阿媽家", "去動物園", "逛街", "看風景", "去海邊", "去百貨"
+  * Events: "參加抓週", "慶生會", "打預防針", "產檢", "拍孕婦照", "寶寶寫真", "坐飛機", "坐公車", "搭捷運", "搭火車"
+  * Interactions: "看狗狗", "餵魚", "玩水", "陪寶寶", "胎教", "聽音樂", "說故事"
+  * Actions: "吹泡泡", "溜滑梯", "盪鞦韆", "游泳", "運動", "散步", "瑜珈", "做運動", "共讀"
+  * Daily activities: "工作", "上班", "購物", "旅行", "出遊", "逛街", "看電影", "吃大餐"
+  * Casual/fun descriptions: "拍自肥照", "拍照", "耍廢", "放空", "曬太陽", "吃飯", "睡覺", "追劇", "約會", "玩", "逛逛", "走走"
+  * Pregnancy activities: "產檢", "高層次產檢", "拍肚照", "量體重", "做檢查", "看醫生", "買嬰兒用品", "佈置嬰兒房"
+- ✗ Reject ONLY: "不知道", "沒有", "活動", "地方" (single generic word with no meaning)
 
 **For OBJECT/ITEM questions** (e.g., "玩什麼物品", "什麼東西", "咬什麼物品"):
 - ✓ Accept ANY object the baby interacts with:
@@ -42,21 +46,18 @@ Your task:
 - ✓ Accept: "肚子餓", "玩水", "看到爸爸", "想睡覺" etc.
 - ✗ Reject only: "不知道", completely unrelated answers
 
-**For LOCATION questions** (e.g., "在哪裡", "什麼地方"):
-- ✓ Accept: "客廳", "公園", "阿媽家", "醫院" etc.
-- ✗ Reject only: "不知道", "沒有", "地方" (too vague)
-
 ## General Validation Rules
 
-✓ **ACCEPT** if:
-  - The answer is specific and directly addresses what the question asks for
-  - Accept specific names/nouns even without category words (e.g., "小兔兔" for "什麼物品")
+✓ **ACCEPT** if (be lenient - when in doubt, accept):
+  - The answer somewhat relates to what the question asks for
+  - Casual, informal, or creative answers (e.g., "拍自肥照", "耍廢", "放空")
+  - Colloquial or slang terms
   - Within length limit (if specified, e.g., "5個字內" = max 5 Chinese characters)
-  - Not a generic/vague term
 
-✗ **REJECT** ONLY if:
-  - Answer is vague: "不知道", "沒有", or generic category terms like "東西", "物品", "食物", "活動", "地方"
-  - Completely unrelated to what the question asks (e.g., answering with an object when asked about an activity)
+✗ **REJECT** ONLY if (be strict about rejection - only reject clearly invalid):
+  - Answer is completely meaningless: "不知道", "沒有", "沒", "無"
+  - Answer is just a single generic category word: "東西", "物品", "食物", "活動", "地方"
+  - Completely unrelated AND nonsensical (not just different category - truly random gibberish)
   - Exceeds the specified length limit
 
 ## Response Format
