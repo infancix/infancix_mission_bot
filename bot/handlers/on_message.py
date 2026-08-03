@@ -101,7 +101,19 @@ async def handle_album(client, user_id, match):
     else:
         await handle_notify_album_ready_job(client, user_id, baby_id, book_id)
 
+SERVICE_STOPPED_MESSAGE = (
+    "Discord 繪本工坊服務已停止提供\n"
+    "如需製作繪本，請點擊下方連結加入官方 LINE，並在選單中選擇「點我開始製作繪本」即可開始製作：\n"
+    "👉 加入官方 LINE「Baby120繪本」：https://line.me/R/ti/p/@500burvg"
+)
+
 async def handle_direct_message(client, message):
+    client.logger.debug(f"Message received: {message}")
+    await message.channel.send(SERVICE_STOPPED_MESSAGE)
+    return
+
+
+async def _handle_direct_message_deprecated(client, message):
     client.logger.debug(f"Message received: {message}")
     user_id = str(message.author.id)
 
