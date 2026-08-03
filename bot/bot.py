@@ -2,30 +2,13 @@ import discord
 from discord import app_commands
 from collections import defaultdict
 from datetime import datetime
-import schedule
-import asyncio
 import json
 
 from bot.config import config
 from bot.logger import setup_logger
-from bot.handlers.on_message import handle_background_message, handle_direct_message
-from bot.handlers.utils import (
-    run_scheduler,
-    daily_job,
-    monthly_print_reminder_job,
-    load_task_entry_messages,
-    load_growth_photo_messages,
-    load_theme_book_edit_messages,
-    load_questionnaire_messages,
-    load_confirm_growth_album_messages
-)
-from bot.utils.message_tracker import (
-    save_confirm_growth_albums_record
-)
+from bot.handlers.on_message import handle_direct_message
 from bot.utils.api_utils import APIUtils
 from bot.utils.openai_utils import OpenAIUtils
-from bot.views.album_select_view import BookMenuView
-from bot.views.menu_view import KnowledgeMenuView
 
 class MissionBot(discord.Client):
     def __init__(self, guild_id):
@@ -55,66 +38,15 @@ class MissionBot(discord.Client):
             mission_instruction = json.load(file)
             self.mission_questionnaire = {k: v['questionnaire_instruction'] for k, v in mission_instruction.items() if 'questionnaire_instruction' in v}
 
-    async def query_knowledge_menu(self, interaction: discord.Interaction):
-        try:
-            await interaction.response.defer(ephemeral=True)
-            message = await interaction.followup.send(
-                "請先選擇想看的育兒知識",
-                view=KnowledgeMenuView(self, str(interaction.user.id)),
-                ephemeral=True
-            )
-        except Exception as e:
-            print(f"Error while sending message: {str(e)}")
-
-    async def query_bookcase_menu(self, interaction: discord.Interaction):
-        try:
-            await interaction.response.defer(ephemeral=True)
-            view=BookMenuView(self, str(interaction.user.id))
-            embed = view.get_current_embed()
-            message = await interaction.followup.send(
-                embed=embed,
-                view=view,
-                ephemeral=True
-            )
-        except Exception as e:
-            print(f"Error while sending message: {str(e)}")
-
     async def setup_hook(self):
-        await load_task_entry_messages(self)
-        self.logger.info("Finished loading task entry messages")
-
-        await load_growth_photo_messages(self)
-        self.logger.info("Finished loading growth photo messages")
-
-        await load_theme_book_edit_messages(self)
-        self.logger.info("Finished loading theme book edit messages")
-
-        await load_questionnaire_messages(self)
-        self.logger.info("Finished loading questionnaire messages")
-
-        await load_confirm_growth_album_messages(self)
-        self.logger.info("Finished loading confirm growth album messages")
-
-        self.tree.add_command(
-            app_commands.Command(
-                name="科學育兒懶人包",
-                description="從寶寶的發展、照護知識，到陪伴爸媽的 0–3 歲育兒專欄，讓育兒路上不孤單。",
-                callback=self.query_knowledge_menu
-            )
-        )
-        self.tree.add_command(
-            app_commands.Command(
-                name="我的書櫃",
-                description="管理您的寶寶繪本：修改照片、繼續製作、查看進度，並完成送印📖",
-                callback=self.query_bookcase_menu
-            )
-        )
-        self.tree.copy_global_to(guild=discord.Object(id=self.guild_id))
+        # 繪本工坊服務已停止：移除所有 slash 指令
+        self.tree.clear_commands(guild=None)
+        self.tree.clear_commands(guild=discord.Object(id=self.guild_id))
         await self.tree.sync(guild=discord.Object(id=self.guild_id))
         await self.tree.sync()
 
     async def on_ready(self):
-        self.loop.create_task(run_scheduler())
+        # 繪本工坊服務已停止：不再啟動排程任務
         self.logger.info(f'Logged in as {self.user.name} (ID: {self.user.id})')
 
     async def on_reaction_add(self, reaction, user):
@@ -123,15 +55,11 @@ class MissionBot(discord.Client):
             await self.api_utils.store_reaction(str(user.id), reaction.emoji)
 
     async def on_message(self, message):
-        if (
-            message.author == self.user
-            and message.channel.id != config.BACKGROUND_LOG_CHANNEL_ID
-        ):
+        if message.author == self.user:
             return
 
-        if message.channel.id == config.BACKGROUND_LOG_CHANNEL_ID:
-            await handle_background_message(self, message)
-        elif isinstance(message.channel, discord.channel.DMChannel):
+        # 繪本工坊服務已停止：不再監聽背景頻道，僅回覆 DM 停止通知
+        if isinstance(message.channel, discord.channel.DMChannel):
             await handle_direct_message(self, message)
 
 def run_bot():
@@ -140,8 +68,6 @@ def run_bot():
 
     client = MissionBot(config.MY_GUILD_ID)
 
-    if not config.ENV:
-        schedule.every().day.at("10:00").do(lambda: asyncio.create_task(daily_job(client)))
-        schedule.every().day.at("12:30").do(lambda: asyncio.create_task(monthly_print_reminder_job(client)))
+    # 繪本工坊服務已停止：不再註冊每日/每月排程任務
 
     client.run(config.DISCORD_TOKEN)
